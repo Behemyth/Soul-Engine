@@ -8,9 +8,6 @@ Soul Engine is a real-time visualization engine built on the back of CUDA and Vu
 
 For more information, visit our [Wiki](https://github.com/Synodic-Software/Soul-Engine/wiki)
 
-[![Build status](https://travis-ci.org/Synodic-Software/Soul-Engine.svg?branch=development)](https://travis-ci.org/Synodic-Software/Soul-Engine)
-
-
 
 ![Tree Model](Resources/Images/Tree.png)
 
@@ -20,7 +17,7 @@ For more information, visit our [Wiki](https://github.com/Synodic-Software/Soul-
 
 1. Install the required dependencies.
     * [Python 3.7.2](https://www.python.org/downloads/release/python-372/) or newer.
-    * [Conan 1.15.0](https://conan.io/downloads.html) or newer.
+    * [Conan 1.18.2](https://conan.io/downloads.html) or newer.
 
 1. Run `Setup.py`.
 
