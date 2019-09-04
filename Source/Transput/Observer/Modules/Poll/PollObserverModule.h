@@ -2,12 +2,12 @@
 
 #include "Transput/Observer/ObserverModule.h"
 
-class WindowsObserverModule : public ObserverModule {
+class PollObserverModule : public ObserverModule {
 	
 public:
 
-	WindowsObserverModule();
-	~WindowsObserverModule() = default;
+	PollObserverModule();
+	~PollObserverModule() = default;
 
 	Entity CreateObserver(std::string_view) override;
 	bool RemoveObserver(Entity) override;
@@ -15,6 +15,7 @@ public:
 	bool AttachCallback(Entity, std::function<void(ChangeType)>) override;
 
 private:
-
+	
+	std::chrono::duration<int, std::milli> delay_;
 
 };
