@@ -155,7 +155,7 @@ Entity VulkanRasterBackend::CreatePass(const ShaderSet& ShaderSet, std::function
 	{
 
 		pipelineArrayIterator->second.emplace_back(
-			devices_[0].Logical(), subPassArray[i].Shaders(), renderPass.Handle(), i);
+			devices_[0].Logical(), std::vector<VulkanShader>(), renderPass.Handle(), i);
 		
 	}
 		
