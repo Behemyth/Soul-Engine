@@ -20,7 +20,7 @@ For more information, visit our [Wiki](https://github.com/Synodic-Software/Soul-
 
 1. Install the required dependencies.
     * [Python 3.7.2](https://www.python.org/downloads/release/python-372/) or newer.
-    * [Conan 1.14.0](https://conan.io/downloads.html) or newer.
+    * [Conan 1.15.0](https://conan.io/downloads.html) or newer.
 
 1. Run `Setup.py`.
 

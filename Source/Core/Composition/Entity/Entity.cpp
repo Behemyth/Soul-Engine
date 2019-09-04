@@ -34,3 +34,8 @@ Entity::version_type Entity::GetVersion() const{
 Entity::id_type Entity::GetId() const {
 	return entity_ & entityMask;
 }
+
+bool Entity::operator==(const Entity& other) const
+{
+	return entity_ == other.entity_;
+}

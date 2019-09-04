@@ -11,8 +11,8 @@ public:
 	ClassID() = delete;
 
 	template<typename... Type>
-	static size_t Id() noexcept;
-
+	static size_t ID() noexcept;
+	
 
 private:
 
@@ -25,7 +25,8 @@ private:
 
 
 template<typename... Type>
-size_t ClassID::Id() noexcept {
+size_t ClassID::ID() noexcept
+{
 	return GenerateID<std::decay_t<Type>...>();
 }
 

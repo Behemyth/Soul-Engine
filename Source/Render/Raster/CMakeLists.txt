@@ -1,0 +1,54 @@
+
+##############################################
+#Rasterer
+
+target_sources(${PROJECT_NAME}
+    PRIVATE
+        Modules/Vulkan/Buffer/VulkanBuffer.h
+        Modules/Vulkan/Command/VulkanCommandBuffer.cpp
+        Modules/Vulkan/Command/VulkanCommandBuffer.h
+        Modules/Vulkan/Command/VulkanCommandPool.cpp
+        Modules/Vulkan/Command/VulkanCommandPool.h
+        Modules/Vulkan/Device/VulkanDevice.cpp
+        Modules/Vulkan/Device/VulkanDevice.h
+        Modules/Vulkan/Device/VulkanQueue.cpp
+        Modules/Vulkan/Device/VulkanQueue.h
+        Modules/Vulkan/Device/VulkanPhysicalDevice.cpp
+        Modules/Vulkan/Device/VulkanPhysicalDevice.h
+        Modules/Vulkan/VulkanFramebuffer.cpp
+        Modules/Vulkan/VulkanFramebuffer.h
+        Modules/Vulkan/Pipeline/VulkanPipeline.cpp
+        Modules/Vulkan/Pipeline/VulkanPipeline.h
+        Modules/Vulkan/Pipeline/VulkanPipelineLayout.cpp
+        Modules/Vulkan/Pipeline/VulkanPipelineLayout.h
+        Modules/Vulkan/Pipeline/VulkanPipelineCache.cpp
+        Modules/Vulkan/Pipeline/VulkanPipelineCache.h
+        Modules/Vulkan/VulkanInstance.cpp
+        Modules/Vulkan/VulkanInstance.h
+        Modules/Vulkan/VulkanRasterBackend.cpp
+        Modules/Vulkan/VulkanRasterBackend.h
+        Modules/Vulkan/VulkanRenderPass.cpp
+        Modules/Vulkan/VulkanRenderPass.h
+        Modules/Vulkan/VulkanSubPass.cpp
+        Modules/Vulkan/VulkanSubPass.h
+        Modules/Vulkan/VulkanSemaphore.cpp
+        Modules/Vulkan/VulkanSemaphore.h
+        Modules/Vulkan/VulkanFence.cpp
+        Modules/Vulkan/VulkanFence.h
+        Modules/Vulkan/Surface/VulkanFrame.cpp
+        Modules/Vulkan/Surface/VulkanFrame.h
+        Modules/Vulkan/VulkanShader.cpp
+        Modules/Vulkan/VulkanShader.h
+        Modules/Vulkan/Surface/VulkanSurface.cpp
+        Modules/Vulkan/Surface/VulkanSurface.h
+        Modules/Vulkan/Surface/VulkanSwapChain.cpp
+        Modules/Vulkan/Surface/VulkanSwapChain.h
+        CommandList.cpp
+        CommandList.h
+        RenderResource.h
+        RenderCommands.h
+        RenderTypes.h
+        RasterModule.cpp
+        RasterModule.h
+        RasterDevice.h
+)

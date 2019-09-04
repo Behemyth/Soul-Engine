@@ -2,12 +2,6 @@
 
 #include <filesystem>
 
-
-enum class ResourceType {
-    Image,
-    Shader
-};
-
 class Resource {
 	
 public:

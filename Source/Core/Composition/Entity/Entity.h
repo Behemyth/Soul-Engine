@@ -2,13 +2,14 @@
 
 #include "Types.h"
 
-class EntityModule;
+class EntityRegistry;
 
-
-class Entity
+class Entity 
 {
 
+	//TODO: Replace with badge/attorney -client
 	friend class EntityRegistry;
+	friend struct std::hash<Entity>; 
 
 	using value_type = uint64;
 	using id_type = uint32;
@@ -18,6 +19,7 @@ class Entity
 	static constexpr auto versionMask = 0xFFFFFFFF;
 	static constexpr auto entityBitCount = 32;
 	static constexpr auto nullState = entityMask;
+
 
 public:
 
@@ -30,6 +32,8 @@ public:
 
 	Entity& operator=(const Entity &) = default;
 	Entity& operator=(Entity &&) noexcept = default;
+
+	bool operator==(const Entity&) const;
 
 	//public funcs
 	bool IsNull() const;
@@ -49,3 +53,15 @@ private:
 	value_type entity_;
 
 };
+
+namespace std {
+
+	template<>
+	struct hash<Entity> {
+		std::size_t operator()(const Entity& entity) const
+		{
+			return static_cast<std::size_t>(entity.GetId());
+		}
+	};
+
+}

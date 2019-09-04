@@ -6,6 +6,7 @@
 
 #include <GLFW/glfw3.h>
 
+#include <cassert>
 
 GLFWInputBackend::GLFWInputBackend() : mouseXOffset_(0), mouseYOffset_(0), mouseXPos_(0), mouseYPos_(0)
 {
@@ -16,11 +17,11 @@ void GLFWInputBackend::KeyCallback(GLFWwindow* window, int key, int scancode, in
 	if (action == GLFW_PRESS) {
 
 		//if the state was previously open, start the timer
-		if (keyStates_[key].state == KeyState::OPEN) {
-			keyStates_[key].sincePress.Reset();
+		if (buttonStates_[key].state == ButtonState::OPEN) {
+			buttonStates_[key].sincePress.Reset();
 		}
 
-		keyStates_[key].state = KeyState::PRESS;
+		buttonStates_[key].state = ButtonState::PRESS;
 
 	}
 	else if (action == GLFW_REPEAT) {
@@ -30,7 +31,7 @@ void GLFWInputBackend::KeyCallback(GLFWwindow* window, int key, int scancode, in
 	}
 	else if (action == GLFW_RELEASE) {
 
-		keyStates_[key].state = KeyState::RELEASE;
+		buttonStates_[key].state = ButtonState::RELEASE;
 
 	}
 	else {
@@ -51,6 +52,21 @@ void GLFWInputBackend::ModdedCharacterCallback(GLFWwindow* window, uint, int) {
 
 void GLFWInputBackend::ButtonCallback(GLFWwindow* window, int button, int action, int mods) {
 
+	assert(button >= 0);
+
+	for (const auto& callback : mouseButtonCallbacks_) {
+
+		switch(action) {
+			case GLFW_PRESS:
+				callback(button, ButtonState::PRESS);
+				break;
+
+			case GLFW_RELEASE:
+				callback(button, ButtonState::OPEN);
+		}
+
+	}
+
 }
 
 void GLFWInputBackend::CursorCallback(GLFWwindow* window, double xPos, double yPos) {
@@ -59,6 +75,12 @@ void GLFWInputBackend::CursorCallback(GLFWwindow* window, double xPos, double yP
 	mouseYOffset_ = yPos - mouseYPos_;
 	mouseXPos_ = xPos;
 	mouseYPos_ = yPos;
+
+	for (const auto& callback : mousePositionCallbacks_) {
+
+		callback(xPos, yPos);
+
+	}
 
 }
 
@@ -130,25 +152,25 @@ bool GLFWInputBackend::Poll() {
 
 	//TODO break into tasks 
 	//fire off all key events and their logic
-	for (auto&[keyID, key] : keyStates_) {
+	for (auto&[keyID, key] : buttonStates_) {
 
-		if (key.state != KeyState::OPEN) {
+		if (key.state != ButtonState::OPEN) {
 
 			//change state if the key timer is beyond the requested.
-			if (key.state == KeyState::PRESS &&
+			if (key.state == ButtonState::PRESS &&
 				key.sincePress.Elapsed() > key.timeToRepeat) {
 
-				key.state = KeyState::REPEAT;
+				key.state = ButtonState::REPEAT;
 
 			}
 
 			//TODO implement inputsets
-			const auto inputSetOffset = 0 * 350; //350+ are not defined in GLFW keystates
+			const auto inputSetOffset = 0 * 350; //350+ are not defined in GLFW ButtonStates
 			//eventManager_->Emit("Input"_hashed, keyID + inputSetOffset, key.state);
 
 			//handle reset case after emitting a release event
-			if (key.state == KeyState::RELEASE) {
-				key.state = KeyState::OPEN;
+			if (key.state == ButtonState::RELEASE) {
+				key.state = ButtonState::OPEN;
 			}
 
 		}

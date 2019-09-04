@@ -5,19 +5,18 @@
 
 class EntityManager;
 
-template<typename T>
-class Component : CRTP<T, Component>
+class Component 
 {
 
 public:
 
 	Component() = default;
-	~Component() = default; //No VTable
+	~Component() = default;
 
-	Component(const Component&) = default;
+	Component(const Component&) = delete;
 	Component(Component&&) noexcept = default;
 
-	Component& operator=(const Component&) = default;
+	Component& operator=(const Component&) = delete;
 	Component& operator=(Component&&) noexcept = default;
 
 

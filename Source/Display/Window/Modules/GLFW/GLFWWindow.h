@@ -40,6 +40,4 @@ private:
 
 	bool master_;
 
-	uint surface_;
-
 };

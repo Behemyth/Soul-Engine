@@ -13,3 +13,10 @@ WindowParameters& Window::Parameters()
 	return windowParams_;
 
 }
+
+Entity Window::Surface()
+{
+
+	return surface_;
+
+}

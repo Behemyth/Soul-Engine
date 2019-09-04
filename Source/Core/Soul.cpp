@@ -6,7 +6,8 @@
 #include "Parallelism/Scheduler/SchedulerModule.h"
 #include "Compute/ComputeModule.h"
 #include "Display/Window/WindowModule.h"
-#include "Rasterer/RasterModule.h"
+#include "Render/Raster/RasterModule.h"
+#include "Render/RenderGraph/RenderGraphModule.h"
 #include "Display/GUI/GUIModule.h"
 #include "Display/Input/InputModule.h"
 #include "Core/Composition/Entity/EntityRegistry.h"
@@ -18,14 +19,16 @@ Soul::Soul(SoulParameters& params) :
 	parameters_(params),
 	frameTime_(),
 	active_(true),
+	entityRegistry_(new EntityRegistry()), 
+	eventRegistry_(new EventRegistry()),
 	schedulerModule_(SchedulerModule::CreateModule(parameters_.threadCount)),
 	computeModule_(ComputeModule::CreateModule()),
 	inputModule_(InputModule::CreateModule()), 
 	windowModule_(WindowModule::CreateModule(inputModule_)), 
-	guiModule_(GUIModule::CreateModule(inputModule_, windowModule_)),
-	rasterModule_(RasterModule::CreateModule(schedulerModule_, windowModule_)),
-	entityRegistry_(new EntityRegistry()), 
-	eventRegistry_(new EventRegistry())
+	rasterModule_(RasterModule::CreateModule(schedulerModule_, entityRegistry_, windowModule_)),
+	renderGraphModule_(
+		RenderGraphModule::CreateModule(rasterModule_, schedulerModule_, entityRegistry_)),
+	guiModule_(GUIModule::CreateModule(inputModule_, windowModule_, renderGraphModule_))
 {
 	parameters_.engineRefreshRate.AddCallback([this](const int value)
 	{
@@ -72,8 +75,8 @@ void Soul::Render(Frame& oldFrame, Frame& newFrame) {
 	if (newFrame.Dirty()) {
 
 		//	//RayEngine::Instance().Process(*scenes[0], engineRefreshRate);
-
-		rasterModule_->Render();
+		renderGraphModule_->Execute();
+		rasterModule_->Present();
 
 	}
 
@@ -110,7 +113,7 @@ void Soul::LateFrameUpdate(Frame& oldFrame, Frame& newFrame)
 
 	if (windowModule_->Active()) {
 
-		guiModule_->Update();
+		guiModule_->Update(frameTime_);
 
 	}
 
@@ -168,7 +171,8 @@ void Soul::Run()
 
 	FramePipeline<3> framePipeline {
 		schedulerModule_,
-		{[this](Frame& oldFrame, Frame& newFrame) { Process(oldFrame, newFrame); },
+		{
+			[this](Frame& oldFrame, Frame& newFrame) { Process(oldFrame, newFrame); },
 			[this](Frame& oldFrame, Frame& newFrame) { Update(oldFrame, newFrame); },
 			[this](Frame& oldFrame, Frame& newFrame) { Render(oldFrame, newFrame); }
 		}

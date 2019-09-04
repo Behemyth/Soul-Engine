@@ -35,7 +35,7 @@ public:
 
 private:
 
-	std::unordered_map<int, Button> keyStates_;
+	std::unordered_map<int, Button> buttonStates_;
 
 	double mouseXPos_;
 	double mouseYPos_;

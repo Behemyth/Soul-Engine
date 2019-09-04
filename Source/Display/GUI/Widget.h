@@ -6,18 +6,12 @@
 #include <bitset>
 
 
-class Widget : public Component<Widget> {
+class Widget : public Component{
 
 public:
 
 	Widget() = default;
 	virtual ~Widget() = default;
-
-	Widget(const Widget&) = delete;
-	Widget(Widget&&) noexcept = default;
-
-	Widget& operator=(const Widget&) = delete;
-	Widget& operator=(Widget&&) noexcept = default;
 
 
 protected:

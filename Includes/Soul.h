@@ -14,8 +14,9 @@ class SchedulerModule;
 class ComputeModule;
 class InputModule;
 class WindowModule;
-class GUIModule;
 class RasterModule;
+class RenderGraphModule;
+class GUIModule;
 
 class EntityRegistry;
 class EventRegistry;
@@ -66,14 +67,16 @@ private:
 
 
 	//services and modules	
+	std::shared_ptr<EntityRegistry> entityRegistry_;
+	std::shared_ptr<EventRegistry> eventRegistry_;
+
 	std::shared_ptr<SchedulerModule> schedulerModule_;
 	std::shared_ptr<ComputeModule> computeModule_;
 	std::shared_ptr<InputModule> inputModule_;
 	std::shared_ptr<WindowModule> windowModule_;
-	std::shared_ptr<GUIModule> guiModule_;
 	std::shared_ptr<RasterModule> rasterModule_;
-	std::shared_ptr<EntityRegistry> entityRegistry_;
-	std::shared_ptr<EventRegistry> eventRegistry_;
+	std::shared_ptr<RenderGraphModule> renderGraphModule_;
+	std::shared_ptr<GUIModule> guiModule_;
 
 
 };

@@ -3,10 +3,11 @@
 #include "Core/Interface/Module/Module.h"
 
 #include <memory>
+#include <chrono>
 
 class InputModule;
 class WindowModule;
-
+class RenderGraphModule;
 
 class GUIModule : public Module<GUIModule> {
 
@@ -22,12 +23,12 @@ public:
 	GUIModule& operator=(GUIModule&&) noexcept = default;
 
 
-	virtual void Update() = 0;
-	virtual void Draw() = 0;
+	virtual void Update(std::chrono::nanoseconds) = 0;
 
 	// Factory
 	static std::shared_ptr<GUIModule> CreateModule(std::shared_ptr<InputModule>&,
-		std::shared_ptr<WindowModule>&);
+		std::shared_ptr<WindowModule>&,
+		std::shared_ptr<RenderGraphModule>&);
 
 
 };

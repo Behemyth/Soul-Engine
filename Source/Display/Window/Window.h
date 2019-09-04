@@ -19,11 +19,12 @@ public:
 	Window& operator=(Window &&) noexcept = default;
 
 	WindowParameters& Parameters();
-
+	Entity Surface();
 
 protected:
 
 	Entity layout_;
+	Entity surface_;
 	WindowParameters windowParams_;
 
 };

@@ -2,6 +2,6 @@
 
 Button::Button(): 
 	timeToRepeat(50.0f), 
-	state(KeyState::OPEN)
+	state(ButtonState::OPEN)
 {
 }

@@ -2,7 +2,7 @@
 
 #include "Core/Utility/Timer/Timer.h"
 
-enum class KeyState { PRESS, REPEAT, RELEASE, OPEN };
+enum class ButtonState { PRESS, REPEAT, RELEASE, OPEN };
 
 class Button {
 
@@ -13,6 +13,7 @@ public:
 	float timeToRepeat; //in milliseconds
 	Timer sincePress;
 
-	KeyState state;
+
+	ButtonState state;
 
 };

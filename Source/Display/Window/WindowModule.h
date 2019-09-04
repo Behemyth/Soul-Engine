@@ -3,6 +3,7 @@
 #include "Core/Interface/Module/Module.h"
 #include "WindowParameters.h"
 #include "Display/GUI/GUIModule.h"
+#include <Core/Structure/Span.h>
 
 #include <vector>
 #include <memory>
@@ -30,10 +31,9 @@ public:
 
 	virtual void CreateWindow(const WindowParameters&, std::shared_ptr<RasterModule>&) = 0;
 
-	virtual std::vector<const char*> GetRasterExtensions() = 0;
+	virtual nonstd::span<const char*> GetRasterExtensions() = 0;
 
-	virtual Window& GetWindow() = 0;
-
+	virtual Window& MasterWindow() = 0;
 
 	//Factory
 	static std::unique_ptr<WindowModule> CreateModule(std::shared_ptr<InputModule>&);

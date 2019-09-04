@@ -21,6 +21,7 @@ public:
 	ThreadLocal<T>& operator= (const T&);
 	operator T&() const;
 
+
 private:
 
 	int id_;

@@ -9,7 +9,7 @@
 #include <chrono>
 #include <memory>
 
-#if defined(FIBER)
+#if defined(FIBER_SCHEDULER)
 
 #include "Modules/Fiber/FiberSchedulerBackend.h"
 
@@ -54,7 +54,7 @@ public:
 
 private:
 
-	#if defined(FIBER)
+	#if defined(FIBER_SCHEDULER)
 
 	constexpr static SchedulerID schedulerID_ = SchedulerID::Fiber;
 	FiberSchedulerBackend scheduler_;

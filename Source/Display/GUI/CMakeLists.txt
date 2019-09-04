@@ -10,6 +10,7 @@ target_sources(${PROJECT_NAME}
         Modules/Imgui/EmptyWidget.h
         Modules/Imgui/ImguiBackend.cpp
         Modules/Imgui/ImguiBackend.h
+        Modules/Imgui/ImguiConfig.h
         Modules/Imgui/ImguiLayout.cpp
         Modules/Imgui/ImguiLayout.h
         Modules/Imgui/ImguiWidget.cpp

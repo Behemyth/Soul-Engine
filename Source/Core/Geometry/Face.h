@@ -5,20 +5,13 @@
 #include <glm/glm.hpp>
 #include "Types.h"
 
-class Face : Component<Face>
+class Face : Component
 {
 
 public:
 
 	Face() = default;
 	~Face() = default;
-
-	Face(const Face &) = default;
-	Face(Face &&) noexcept = default;
-
-	Face& operator=(const Face &) = default;
-	Face& operator=(Face &&) noexcept = default;
-
 
 	glm::uvec3 indices;
 	uint material; //TODO investigate materials

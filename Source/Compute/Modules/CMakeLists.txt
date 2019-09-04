@@ -27,3 +27,9 @@ if(BUILD_CUDA_COMPUTE)
     add_subdirectory("OpenCL")
 
 endif()
+
+target_compile_definitions(${PROJECT_NAME} 
+    PRIVATE
+        CUDA_COMPUTE=BUILD_CUDA_COMPUTE
+        OPENCL_COMPUTE=BUILD_OPENCL_COMPUTE
+)

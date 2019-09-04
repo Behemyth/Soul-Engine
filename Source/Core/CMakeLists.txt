@@ -7,8 +7,8 @@ target_sources(${PROJECT_NAME}
         Composition/Component/Component.h
         Composition/Entity/Entity.cpp
         Composition/Entity/Entity.h
-        Composition/Entity/EntityRegistry.cpp
         Composition/Entity/EntityRegistry.h
+        Composition/Entity/EntityRegistry.cpp
         Composition/Event/Event.h
         Composition/Event/EventRegistry.cpp
         Composition/Event/EventRegistry.h
@@ -46,8 +46,19 @@ target_sources(${PROJECT_NAME}
         Structure/Acceleration/LBVHManager.h
         Structure/Acceleration/Node.cpp
         Structure/Acceleration/Node.h
-        Structure/IntrusiveSparseSet.h
+        Structure/External/ExternalBuffer.h
+        Structure/Sparse/SparseArray.h
+        Structure/Sparse/SparseBitMap.h
+        Structure/Sparse/SparseHashMap.h
+        Structure/Sparse/SparseHashSet.h
+        Structure/Sparse/SparseVector.h
+        Structure/ExternalStructure.h
         Structure/RingBuffer.h
+        Structure/Structure.h
+        Structure/StructureConcepts.h
+        Structure/SparseStructure.h
+        Structure/View.h
+        Structure/Span.h
         System/Compiler.h
         System/Platform.h
         Utility/Exception/Exception.h

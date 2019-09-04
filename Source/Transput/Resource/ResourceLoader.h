@@ -1,12 +1,8 @@
 #pragma once
 
-#include "Core/Utility/Template/CRTP.h"
-
 #include <filesystem>
 
-
-template <typename T>
-class ResourceLoader : CRTP<T, ResourceLoader> {
+class ResourceLoader {
 
 public:
 

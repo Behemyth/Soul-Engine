@@ -6,19 +6,13 @@
 #include <glm/glm.hpp>
 
 
-class Vertex : Component<Vertex>
+class Vertex : Component
 {
 
 public:
 
 	Vertex() = default;
 	~Vertex() = default;
-
-	Vertex(const Vertex&) = default;
-	Vertex(Vertex&&) noexcept = default;
-
-	Vertex& operator=(const Vertex&) = default;
-	Vertex& operator=(Vertex&&) noexcept = default;
 
 
 	glm::vec3 position;
@@ -27,5 +21,19 @@ public:
 	glm::vec3 velocity;
 
 	uint object;
+
+};
+
+class GUIVertex : Component {
+
+public:
+
+	GUIVertex() = default;
+	~GUIVertex() = default;
+
+
+	glm::vec2 position;
+	glm::vec2 textureCoord;
+	uint colour;
 
 };

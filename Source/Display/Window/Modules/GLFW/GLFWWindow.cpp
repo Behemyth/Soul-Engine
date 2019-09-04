@@ -1,8 +1,9 @@
 #include "GLFWWindow.h"
 
+
 #include "GLFWMonitor.h"
-#include "Rasterer/RasterModule.h"
-#include "Rasterer/Modules/Vulkan/VulkanRasterBackend.h"
+#include "Render/Raster/RasterModule.h"
+#include "Render/Raster/Modules/Vulkan/VulkanRasterBackend.h"
 
 #include <vulkan/vulkan.hpp>
 #include <GLFW/glfw3.h>
@@ -67,9 +68,9 @@ GLFWWindow::GLFWWindow(const WindowParameters& params,
 		const auto vulkanRasterModule =
 			std::static_pointer_cast<VulkanRasterBackend>(rasterModule_);
 		VkSurfaceKHR castSurface;
-
+		
 		// guaranteed to use GLFW if using Vulkan
-		const VkResult error = glfwCreateWindowSurface(static_cast<VkInstance>(vulkanRasterModule->GetInstance()),
+		const VkResult error = glfwCreateWindowSurface(static_cast<VkInstance>(vulkanRasterModule->Instance().Handle()),
 				context_, nullptr, &castSurface);
 
 		assert(error == VK_SUCCESS);
@@ -78,7 +79,7 @@ GLFWWindow::GLFWWindow(const WindowParameters& params,
 	}
 
 	
-	surface_ = rasterModule_->RegisterSurface(surface, windowParams_.pixelSize);
+	surface_ = rasterModule_->CreateSurface(surface, windowParams_.pixelSize);
 }
 
 GLFWWindow::~GLFWWindow()
@@ -87,6 +88,7 @@ GLFWWindow::~GLFWWindow()
 	rasterModule_->RemoveSurface(surface_);
 
 	glfwDestroyWindow(context_);
+	
 }
 
 void GLFWWindow::FrameBufferResize(int x, int y)

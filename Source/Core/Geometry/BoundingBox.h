@@ -4,20 +4,13 @@
 
 #include <glm/glm.hpp>
 
-class BoundingBox : Component<BoundingBox>
+class BoundingBox : Component
 {
 
 public:
 
 	BoundingBox() = default;
 	~BoundingBox() = default;
-
-	BoundingBox(const BoundingBox &) = default;
-	BoundingBox(BoundingBox &&) noexcept = default;
-
-	BoundingBox& operator=(const BoundingBox &) = default;
-	BoundingBox& operator=(BoundingBox &&) noexcept = default;
-
 
 	glm::vec3 min;
 	glm::vec3 max;
