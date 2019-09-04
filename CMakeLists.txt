@@ -35,26 +35,6 @@ if(NOT TARGET CONAN_PKG::SoulEngine)
 
 endif()
 
-#Externally managed dependancies
-find_package(OpenCL 1.2)
-
-#TODO: Remove reliance on pre-installed VulkanSDK. Via Conan instead.
-find_package(Vulkan)
-
-check_language(CUDA)
-
-#`CMAKE_CUDA_COMPILER` will point to nvcc or be `NOTFOUND`
-if(CMAKE_CUDA_COMPILER)
-
-	enable_language(CUDA)
-    set(CUDA_FOUND True)
-
-else()
-
-    set(CUDA_FOUND False)
-
-endif()
-
 
 ##############################################
 #Options
@@ -62,14 +42,7 @@ endif()
 option(BUILD_TESTS "Build test projects" OFF)#TODO: Implement testing framework. Once that is done, this option can be defaulted to ON
 option(BUILD_EXAMPLES "Build example projects" ON)
 option(BUILD_SHARED_LIBS "Build shared library" OFF)#TODO: Implement use of this option
-option(BUILD_CPU_COMPUTE "Build the OpenCL Compute backend" ON)#TODO: Implement use of this option
-option(BUILD_CUDA_COMPUTE "Build the CUDA Compute backend" ${CUDA_FOUND})#TODO: Implement use of this option
-option(BUILD_OPENCL_COMPUTE "Build the OpenCL Compute backend" ${OpenCL_FOUND})#TODO: Implement use of this option
-option(BUILD_VULKAN_RASTER "Build the Vulkan Raster backend" ${Vulkan_FOUND})#TODO: Implement use of this option
-option(BUILD_GLFW_DISPLAY "Build the GLFW Display backend" ON)#TODO: Implement use of this option
-option(BUILD_IMGUI_GUI "Build the Imgui GUI backend" ON)#TODO: Implement use of this option
-option(BUILD_FIBER_SCHEDULER "Build the Fiber Scheduler backend" ON)
-option(BUILD_ENTITY_GRAPH "Build the Entity Graph backend" ON)
+
 
 ##############################################
 #Project Target
@@ -81,7 +54,6 @@ set_target_properties(${PROJECT_NAME}
 	PROPERTIES 
         LINKER_LANGUAGE CXX
 	   	CXX_EXTENSIONS OFF	
-		CUDA_SEPARABLE_COMPILATION ON
         CXX_STANDARD 20
         CXX_STANDARD_REQUIRED ON
 		USE_FOLDERS ON
@@ -100,11 +72,9 @@ target_link_libraries(${PROJECT_NAME}
         CONAN_PKG::glm
 
     PRIVATE	
-        CONAN_PKG::glfw
         CONAN_PKG::boost
         CONAN_PKG::stb
         CONAN_PKG::imgui
-        $<$<BOOL:${BUILD_VULKAN_RASTER}>:Vulkan::Vulkan>
 )
 
 

@@ -15,5 +15,3 @@ target_sources(${PROJECT_NAME}
         DeviceBuffer.cpp
         DeviceBuffer.h
 )
-
-add_subdirectory(Modules)
