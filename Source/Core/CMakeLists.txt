@@ -4,14 +4,6 @@
 
 target_sources(${PROJECT_NAME}
     PRIVATE
-        Composition/Component/Component.h
-        Composition/Entity/Entity.cpp
-        Composition/Entity/Entity.h
-        Composition/Entity/EntityRegistry.h
-        Composition/Entity/EntityRegistry.cpp
-        Composition/Event/Event.h
-        Composition/Event/EventRegistry.cpp
-        Composition/Event/EventRegistry.h
         Frame/Frame.cpp
         Frame/Frame.h
         Frame/FramePipeline.h
@@ -30,7 +22,6 @@ target_sources(${PROJECT_NAME}
         Material/Colour/Colour.h
         Material/Material.cpp
         Material/Material.h
-        Material/ShaderNode.h
         Object/Character/Character.cpp
         Object/Character/Character.h
         Object/Loader.cpp

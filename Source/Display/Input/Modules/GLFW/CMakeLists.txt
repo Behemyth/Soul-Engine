@@ -1,9 +1,9 @@
 
 ##############################################
-#Audio
+#Input/GLFW
 
 target_sources(${PROJECT_NAME}
     PRIVATE
-        Interface/AudioManager.cpp
-        Interface/AudioManager.h
+        GLFWInputBackend.cpp
+        GLFWInputBackend.h
 )

@@ -10,5 +10,3 @@ target_sources(${PROJECT_NAME}
         Resource.h
         ResourceLoader.h
 )
-
-add_subdirectory(Modules/Shader)

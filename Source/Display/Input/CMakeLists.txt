@@ -9,8 +9,4 @@ target_sources(${PROJECT_NAME}
         InputModule.h
         InputModule.cpp
         InputSet.h
-        Modules/GLFW/GLFWInputBackend.cpp
-        Modules/GLFW/GLFWInputBackend.h
-        Modules/Mock/MockInputBackend.cpp
-        Modules/Mock/MockInputBackend.h
 )
