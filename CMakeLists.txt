@@ -92,7 +92,6 @@ target_sources(${PROJECT_NAME}
 )
 
 #Each `Source` subdirectory handles its own sources and compilation choices
-add_subdirectory(Source/Audio)
 add_subdirectory(Source/Composition/Entity)
 add_subdirectory(Source/Composition/Event)
 add_subdirectory(Source/Compute)
@@ -101,10 +100,8 @@ add_subdirectory(Source/Display/Window)
 add_subdirectory(Source/Display/Input)
 add_subdirectory(Source/Display/GUI)
 add_subdirectory(Source/Memory)
-add_subdirectory(Source/Network)
 add_subdirectory(Source/Parallelism/Graph)
 add_subdirectory(Source/Parallelism/Scheduler)
-add_subdirectory(Source/Physics)
 add_subdirectory(Source/Render/Raster)
 add_subdirectory(Source/Render/RenderGraph)
 add_subdirectory(Source/Tracer)
