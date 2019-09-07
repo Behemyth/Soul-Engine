@@ -1,3 +1,5 @@
 
 ##############################################
-#Composition/Event
+#Composition/Entity
+
+ModuleImplementation()

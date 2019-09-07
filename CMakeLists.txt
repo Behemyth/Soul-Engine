@@ -1,7 +1,9 @@
-cmake_minimum_required(VERSION 3.13.1 FATAL_ERROR)
+cmake_minimum_required(VERSION 3.14.1 FATAL_ERROR)
 
 #Set CMake tools location
-list(APPEND CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/Tools/CMake)
+list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/Tools/CMake)
+
+include(Module)
 
 
 ##############################################
