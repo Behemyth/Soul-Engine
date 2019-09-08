@@ -83,31 +83,23 @@ target_link_libraries(${PROJECT_NAME}
 ##############################################
 #Sources
 
+file(GLOB_RECURSE PUBLIC_SOURCES CONFIGURE_DEPENDS Includes/*)
+
 target_sources(${PROJECT_NAME}
     PUBLIC
-        Includes/Property.h
-        Includes/Soul.h
-        Includes/SoulApplication.h
-        Includes/SoulParameters.h
-        Includes/Types.h
-        Includes/WindowParameters.h    
+        ${PUBLIC_SOURCES}
 )
 
-#Each `Source` subdirectory handles its own sources and compilation choices
-add_subdirectory(Source/Composition/Entity)
-add_subdirectory(Source/Composition/Event)
-add_subdirectory(Source/Compute)
-add_subdirectory(Source/Core)
-add_subdirectory(Source/Display/Window)
-add_subdirectory(Source/Display/Input)
-add_subdirectory(Source/Display/GUI)
-add_subdirectory(Source/Memory)
-add_subdirectory(Source/Parallelism/Graph)
-add_subdirectory(Source/Parallelism/Scheduler)
-add_subdirectory(Source/Render/Raster)
-add_subdirectory(Source/Render/RenderGraph)
-add_subdirectory(Source/Tracer)
-add_subdirectory(Source/Transput/Resource)
+
+#Search for all modules
+FindModules(MODULES ${CMAKE_CURRENT_SOURCE_DIR}/Source)
+
+foreach(MODULE ${MODULES})
+
+    add_subdirectory(${MODULE})
+
+endforeach()
+
 
 #Provides Visual Studio filter support
 get_target_property(PROJECT_SOURCES ${PROJECT_NAME} SOURCES)
