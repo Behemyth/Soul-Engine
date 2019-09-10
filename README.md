@@ -12,19 +12,20 @@ For more information, visit our [Wiki](https://github.com/Synodic-Software/Soul-
 ![Tree Model](Resources/Images/Tree.png)
 
 
-# Development
+# Introductory Development
 
+The simplest application to get up and running is `Soul Info` which will query your hardware and report information back to you.
 
 1. Install the required dependencies.
-    * [Python 3.7.2](https://www.python.org/downloads/release/python-372/) or newer.
-    * [Conan 1.18.2](https://conan.io/downloads.html) or newer.
+    * [Python 3.7](https://www.python.org/downloads/).
+    * [Poetry](https://pypi.org/project/poetry/).
+
+1. Clone `Soul Engine`.
 
 1. Run `Setup.py`.
 
-1. Clone and open the `Soul Engine` directory in Visual Studio 2019.
+1. Build `Soul Info` via CMake.
 
-1. Build and run `Soul Info`.
+1. Run `Soul Info`.
 
-*Just like that, you can start development!*
-
-For a detailed installation process on Windows and other platforms, visit our Wiki's [Getting Started](https://github.com/Synodic-Software/Soul-Engine/wiki/Getting-Started).
+For a detailed installation process visit our Wiki's [Getting Started](https://github.com/Synodic-Software/Soul-Engine/wiki/Getting-Started).

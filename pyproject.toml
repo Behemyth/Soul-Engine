@@ -1,0 +1,19 @@
+[tool.poetry]
+name = "Soul-Engine"
+version = "0.0.1"
+description = "Soul Engine is a real-time visualization and simulation engine built on the back of CUDA, OpenCL, and Vulkan."
+
+license = "GPLv3"
+
+authors = [
+    "Synodic Software"
+]
+
+readme = 'README.md'
+
+repository = "https://github.com/Synodic-Software/Soul-Engine"
+homepage = "https://github.com/Synodic-Software/Soul-Engine"
+
+[tool.poetry.dependencies]
+python = "3.7.*"
+conan = "1.18.*"
