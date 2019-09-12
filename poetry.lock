@@ -1,5 +1,5 @@
 [[package]]
-category = "main"
+category = "dev"
 description = "An abstract syntax tree for Python with inference support."
 name = "astroid"
 optional = false
@@ -13,7 +13,7 @@ typed-ast = ">=1.3.0"
 wrapt = "*"
 
 [[package]]
-category = "main"
+category = "dev"
 description = "Classes Without Boilerplate"
 name = "attrs"
 optional = false
@@ -21,7 +21,7 @@ python-versions = ">=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*"
 version = "19.1.0"
 
 [[package]]
-category = "main"
+category = "dev"
 description = "Fast and simple WSGI-framework for small web-applications."
 name = "bottle"
 optional = false
@@ -29,7 +29,7 @@ python-versions = "*"
 version = "0.12.17"
 
 [[package]]
-category = "main"
+category = "dev"
 description = "Python package for providing Mozilla's CA Bundle."
 name = "certifi"
 optional = false
@@ -37,7 +37,7 @@ python-versions = "*"
 version = "2019.6.16"
 
 [[package]]
-category = "main"
+category = "dev"
 description = "Universal encoding detector for Python 2 and 3"
 name = "chardet"
 optional = false
@@ -45,7 +45,7 @@ python-versions = "*"
 version = "3.0.4"
 
 [[package]]
-category = "main"
+category = "dev"
 description = "Cross-platform colored terminal text."
 name = "colorama"
 optional = false
@@ -53,12 +53,12 @@ python-versions = ">=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*"
 version = "0.4.1"
 
 [[package]]
-category = "main"
+category = "dev"
 description = "Conan C/C++ package manager"
 name = "conan"
 optional = false
 python-versions = "*"
-version = "1.18.2"
+version = "1.18.3"
 
 [package.dependencies]
 Jinja2 = ">=2.3,<3"
@@ -82,7 +82,7 @@ six = ">=1.10.0"
 tqdm = ">=4.28.1,<5"
 
 [[package]]
-category = "main"
+category = "dev"
 description = "A library to handle automated deprecations"
 name = "deprecation"
 optional = false
@@ -93,7 +93,7 @@ version = "2.0.7"
 packaging = "*"
 
 [[package]]
-category = "main"
+category = "dev"
 description = "Linux Distribution - a Linux OS platform information API"
 name = "distro"
 optional = false
@@ -101,7 +101,7 @@ python-versions = "*"
 version = "1.1.0"
 
 [[package]]
-category = "main"
+category = "dev"
 description = "A python package that provides useful locks."
 name = "fasteners"
 optional = false
@@ -113,7 +113,7 @@ monotonic = ">=0.1"
 six = "*"
 
 [[package]]
-category = "main"
+category = "dev"
 description = "Clean single-source support for Python 3 and 2"
 name = "future"
 optional = false
@@ -121,7 +121,7 @@ python-versions = "*"
 version = "0.16.0"
 
 [[package]]
-category = "main"
+category = "dev"
 description = "Internationalized Domain Names in Applications (IDNA)"
 name = "idna"
 optional = false
@@ -129,7 +129,7 @@ python-versions = ">=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*"
 version = "2.8"
 
 [[package]]
-category = "main"
+category = "dev"
 description = "A Python utility / library to sort Python imports."
 name = "isort"
 optional = false
@@ -137,7 +137,7 @@ python-versions = ">=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*"
 version = "4.3.21"
 
 [[package]]
-category = "main"
+category = "dev"
 description = "A small but fast and easy to use stand-alone template engine written in pure python."
 name = "jinja2"
 optional = false
@@ -148,7 +148,7 @@ version = "2.10.1"
 MarkupSafe = ">=0.23"
 
 [[package]]
-category = "main"
+category = "dev"
 description = "A fast and thorough lazy object proxy."
 name = "lazy-object-proxy"
 optional = false
@@ -156,7 +156,7 @@ python-versions = ">=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*"
 version = "1.4.2"
 
 [[package]]
-category = "main"
+category = "dev"
 description = "Safely add untrusted strings to HTML/XML markup."
 name = "markupsafe"
 optional = false
@@ -164,7 +164,7 @@ python-versions = ">=2.7,!=3.0.*,!=3.1.*,!=3.2.*,!=3.3.*"
 version = "1.1.1"
 
 [[package]]
-category = "main"
+category = "dev"
 description = "McCabe checker, plugin for flake8"
 name = "mccabe"
 optional = false
@@ -172,7 +172,7 @@ python-versions = "*"
 version = "0.6.1"
 
 [[package]]
-category = "main"
+category = "dev"
 description = "An implementation of time.monotonic() for Python 2 & < 3.3"
 name = "monotonic"
 optional = false
@@ -180,7 +180,7 @@ python-versions = "*"
 version = "1.5"
 
 [[package]]
-category = "main"
+category = "dev"
 description = "port of node-semver"
 name = "node-semver"
 optional = false
@@ -188,7 +188,7 @@ python-versions = "*"
 version = "0.6.1"
 
 [[package]]
-category = "main"
+category = "dev"
 description = "Core utilities for Python packages"
 name = "packaging"
 optional = false
@@ -201,7 +201,7 @@ pyparsing = ">=2.0.2"
 six = "*"
 
 [[package]]
-category = "main"
+category = "dev"
 description = "Library to parse and apply unified diffs"
 name = "patch"
 optional = false
@@ -209,7 +209,7 @@ python-versions = "*"
 version = "1.16"
 
 [[package]]
-category = "main"
+category = "dev"
 description = "PluginBase is a module for Python that enables the development of flexible plugin systems in Python."
 name = "pluginbase"
 optional = false
@@ -217,7 +217,7 @@ python-versions = "*"
 version = "0.7"
 
 [[package]]
-category = "main"
+category = "dev"
 description = "Pygments is a syntax highlighting package written in Python."
 name = "pygments"
 optional = false
@@ -225,7 +225,7 @@ python-versions = ">=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*, !=3.4.*"
 version = "2.4.2"
 
 [[package]]
-category = "main"
+category = "dev"
 description = "JSON Web Token implementation in Python"
 name = "pyjwt"
 optional = false
@@ -233,7 +233,7 @@ python-versions = "*"
 version = "1.7.1"
 
 [[package]]
-category = "main"
+category = "dev"
 description = "python code static checker"
 name = "pylint"
 optional = false
@@ -247,7 +247,7 @@ isort = ">=4.2.5,<5"
 mccabe = ">=0.6,<0.7"
 
 [[package]]
-category = "main"
+category = "dev"
 description = "Python parsing module"
 name = "pyparsing"
 optional = false
@@ -255,7 +255,7 @@ python-versions = ">=2.6, !=3.0.*, !=3.1.*, !=3.2.*"
 version = "2.4.2"
 
 [[package]]
-category = "main"
+category = "dev"
 description = "Extensions to the standard Python datetime module"
 name = "python-dateutil"
 optional = false
@@ -266,7 +266,7 @@ version = "2.8.0"
 six = ">=1.5"
 
 [[package]]
-category = "main"
+category = "dev"
 description = "YAML parser and emitter for Python"
 name = "pyyaml"
 optional = false
@@ -274,7 +274,7 @@ python-versions = ">=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*"
 version = "5.1.2"
 
 [[package]]
-category = "main"
+category = "dev"
 description = "Python HTTP for Humans."
 name = "requests"
 optional = false
@@ -288,7 +288,7 @@ idna = ">=2.5,<2.9"
 urllib3 = ">=1.21.1,<1.25.0 || >1.25.0,<1.25.1 || >1.25.1,<1.26"
 
 [[package]]
-category = "main"
+category = "dev"
 description = "Python 2 and 3 compatibility utilities"
 name = "six"
 optional = false
@@ -296,7 +296,7 @@ python-versions = ">=2.6, !=3.0.*, !=3.1.*"
 version = "1.12.0"
 
 [[package]]
-category = "main"
+category = "dev"
 description = "Fast, Extensible Progress Meter"
 name = "tqdm"
 optional = false
@@ -304,7 +304,7 @@ python-versions = ">=2.6, !=3.0.*, !=3.1.*"
 version = "4.35.0"
 
 [[package]]
-category = "main"
+category = "dev"
 description = "a fork of Python 2 and 3 ast modules with type comment support"
 marker = "implementation_name == \"cpython\""
 name = "typed-ast"
@@ -313,7 +313,7 @@ python-versions = "*"
 version = "1.4.0"
 
 [[package]]
-category = "main"
+category = "dev"
 description = "HTTP library with thread-safe connection pooling, file post, and more."
 name = "urllib3"
 optional = false
@@ -321,7 +321,7 @@ python-versions = ">=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*, <4"
 version = "1.25.3"
 
 [[package]]
-category = "main"
+category = "dev"
 description = "Module for decorators, wrappers and monkey patching."
 name = "wrapt"
 optional = false
@@ -329,7 +329,7 @@ python-versions = "*"
 version = "1.11.2"
 
 [metadata]
-content-hash = "c506af47f3436166e3039592900b3e4e375f57bc2ef209255195168667dcefcf"
+content-hash = "96958846717cd1fa4a930506c47b2c4b6c49c173acd88a58f40ad7be1fdc7cc3"
 python-versions = "3.7.*"
 
 [metadata.hashes]
@@ -339,7 +339,7 @@ bottle = ["1896a33b2c7c5be07491e6789e341f2e9593a0ff024cc0374615118587c81647", "e
 certifi = ["046832c04d4e752f37383b628bc601a7ea7211496b4638f6514d0e5b9acc4939", "945e3ba63a0b9f577b1395204e13c3a231f9bc0223888be653286534e5873695"]
 chardet = ["84ab92ed1c4d4f16916e05906b6b75a6c0fb5db821cc65e70cbd64a3e2a5eaae", "fc323ffcaeaed0e0a02bf4d117757b98aed530d9ed4531e3e15460124c106691"]
 colorama = ["05eed71e2e327246ad6b38c540c4a3117230b19679b875190486ddd2d721422d", "f8ac84de7840f5b9c4e3347b3c1eaa50f7e49c2b07596221daec5edaabbd7c48"]
-conan = ["be59d523e841a8e1e5f45213c18153223e26fa22d5d80583b0940020dc986139"]
+conan = ["4f358720ec3fb48ba845ab33bdf694ef3f93a3cae2533114b9cd49b2fbdf7ed2"]
 deprecation = ["c0392f676a6146f0238db5744d73e786a43510d54033f80994ef2f4c9df192ed", "dc9b4f252b7aca8165ce2764a71da92a653b5ffbf7a389461d7a640f6536ecb2"]
 distro = ["722054925f339a39ca411a8c7079f390a41d42c422697bedf228f1a9c46ac1ee", "f0e43d555fd45eda71eb474c2927c17b75e0673bf13f90f70bdce5b1a90cf0c5"]
 fasteners = ["007e4d2b2d4a10093f67e932e5166722d2eab83b77724156e92ad013c6226574", "3a176da6b70df9bb88498e1a18a9e4a8579ed5b9141207762368a1017bf8f5ef"]

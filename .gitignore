@@ -13,4 +13,5 @@ Resources/Objects/*
 Resources/Textures/*
 
 #Python
-Pipfile.lock
+*.egg-info
+*.pyc

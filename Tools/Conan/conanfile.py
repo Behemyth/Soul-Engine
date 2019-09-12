@@ -16,12 +16,20 @@ class SoulEngine(ConanFile):
     options = {"shared": [True, False]}
     default_options = {"shared": False}
 
-    generators = "cmake"
+    generators = "cmake_find_package_multi", "cmake_paths"
+    build_policy = "missing"
+
+    # Project Structure
+    projectRoot = Path('.') / ".." / ".."
+    projectRootString = str(projectRoot)
+
+    projectBuild = projectRoot / "Build"
+    projectBuildString = str(projectBuild)
 
     scm = {
         "type" : "git",
         "url" : "auto",
-        "subfolder": "../..",
+        "subfolder": projectRootString,
         "revision" : "auto"
     }
 
@@ -39,10 +47,9 @@ class SoulEngine(ConanFile):
     def configureCMake(self):
         
         cmake = CMake(self)
-        cmake.configure(source_folder="../..")
+        cmake.configure()
 
         return cmake
-
 
     def build(self):
 
@@ -57,11 +64,7 @@ class SoulEngine(ConanFile):
 
     def package_info(self):
 
-        self.cpp_info.libs = ["SoulEngine"]
+        self.cpp_info.libs.append("SoulEngine")
 
-        projectRoot = Path('.') / ".." / ".."
-        self.cpp_info.includedirs = [str(projectRoot / "Includes")]
-        self.cpp_info.resdirs = [str(projectRoot / "Resources")]
-
-        #CMAKE environment variables
-        self.user_info.ENGINE_PATH = str(projectRoot.absolute())
+        self.cpp_info.includedirs = [str(self.projectRoot / "Includes")]
+        self.cpp_info.resdirs = [str(self.projectRoot / "Resources")]

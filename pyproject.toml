@@ -9,11 +9,29 @@ authors = [
     "Synodic Software"
 ]
 
-readme = 'README.md'
+readme = "README.md"
 
 repository = "https://github.com/Synodic-Software/Soul-Engine"
 homepage = "https://github.com/Synodic-Software/Soul-Engine"
 
+packages = [
+    { include = "Scripts.py", from = "Tools/Python"}
+]
+
+
 [tool.poetry.dependencies]
-python = "3.7.*"
-conan = "1.18.*"
+python  = "3.7.*"
+
+
+[tool.poetry.dev-dependencies]
+conan   = "^1.18.*"
+
+
+[tool.poetry.scripts]
+setup   = "Scripts:Setup"
+update  = "Scripts:Update"
+
+
+[build-system]
+requires        = ["poetry>=0.12"]
+build-backend   = "poetry.masonry.api"

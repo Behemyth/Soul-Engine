@@ -1,10 +1,13 @@
-cmake_minimum_required(VERSION 3.14.1 FATAL_ERROR)
+cmake_minimum_required(VERSION 3.15.2 FATAL_ERROR)
 
 #Set CMake tools location
 list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/Tools/CMake)
 
-include(Module)
+#Global Options
+set(CMAKE_FIND_PACKAGE_PREFER_CONFIG ON) # Opposite module/PCF order for `find_package`
 
+include(Module)
+include(${CMAKE_BINARY_DIR}/conan_paths.cmake)
 
 ##############################################
 #Project 
@@ -19,24 +22,10 @@ project(SoulEngine
 ##############################################
 #Dependencies
 
-include(CheckLanguage)
-
-#Conan via CMake
-if(EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/Build/conanbuildinfo_multi.cmake)
-    #The building case
-    include(${CMAKE_CURRENT_SOURCE_DIR}/Build/conanbuildinfo_multi.cmake)
-else()
-    #The packaging case
-    include(${CMAKE_CURRENT_SOURCE_DIR}/Build/conanbuildinfo.cmake)
-endif()
-
-#if this repository is used via `add_subdirectory` we can't double initialize Conan packages
-if(NOT TARGET CONAN_PKG::SoulEngine)
-
-    conan_basic_setup(TARGETS)
-
-endif()
-
+find_package(glm REQUIRED)
+find_package(boost REQUIRED)
+find_package(stb REQUIRED)
+find_package(imgui REQUIRED)
 
 ##############################################
 #Options
@@ -71,18 +60,20 @@ target_include_directories(${PROJECT_NAME}
 
 target_link_libraries(${PROJECT_NAME}
     PUBLIC
-        CONAN_PKG::glm
+        glm::glm
 
     PRIVATE	
-        CONAN_PKG::boost
-        CONAN_PKG::stb
-        CONAN_PKG::imgui
+        boost::boost
+        stb::stb
+        imgui::imgui
 )
 
 
 ##############################################
 #Sources
 
+#TODO: Includes should exist in their own modules
+#Public Includes
 file(GLOB_RECURSE PUBLIC_SOURCES CONFIGURE_DEPENDS Includes/*)
 
 target_sources(${PROJECT_NAME}
