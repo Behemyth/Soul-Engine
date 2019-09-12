@@ -8,11 +8,7 @@ from Utilities import Task
 
 def Update():
 
-    print("Updating the Python environment...")
-
-    Task("poetry", "install")
-
-    print("Updating the C++ environment...")
+    Task("Poetry: Update From Lockfile", "poetry", "install")
 
     buildPath = Path().absolute() / "Build"
     buildPathString = str(buildPath)
@@ -21,8 +17,5 @@ def Update():
     conanFilePathString = str(conanFilePath)
 
     #update conan dependencies
-    Task("conan", "install", conanFilePathString, "-if", buildPathString,"-l", conanFilePathString, "-s", "build_type=Debug")
-    Task("conan", "install", conanFilePathString, "-if", buildPathString,"-l", conanFilePathString, "-s", "build_type=Release")
-
-
-    print("Finished update")
+    Task("Conan: Install Debug Dependencies", "conan", "install", conanFilePathString, "-if", buildPathString,"-l", conanFilePathString, "-s", "build_type=Debug")
+    Task("Conan: Install Release Dependencies", "conan", "install", conanFilePathString, "-if", buildPathString,"-l", conanFilePathString, "-s", "build_type=Release")
