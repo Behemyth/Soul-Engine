@@ -4,17 +4,17 @@ from colorama import Fore, Style, deinit, init
 
 def Task(name, *arguments):
 
-    print("[{}] started".format(name))
+    print("Task \"{}\" started...".format(name), end = " ", flush=True)
     response = subprocess.run(arguments, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     
     init(autoreset=True)
 
     try:      
         response.check_returncode()
-        print(Fore.GREEN +"[{}] completed successfully".format(name))
+        print(Fore.GREEN + "completed successfully")
 
     except:
-        print(Fore.RED + "[{}] failed".format(name))
+        print(Fore.RED + "failed")
         print(Fore.RED + response.stderr.decode('ascii'))
 
     deinit()
