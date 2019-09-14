@@ -2,12 +2,14 @@ cmake_minimum_required(VERSION 3.15.2 FATAL_ERROR)
 
 #Set CMake tools location
 list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/Tools/CMake)
+list(APPEND CMAKE_MODULE_PATH ${CMAKE_BINARY_DIR}) #TODO: remove with new Conan generator
+list(APPEND CMAKE_PREFIX_PATH ${CMAKE_BINARY_DIR}) #TODO: remove with new Conan generator
 
 #Global Options
 set(CMAKE_FIND_PACKAGE_PREFER_CONFIG ON) # Opposite module/PCF order for `find_package`
 
 include(Module)
-include(${CMAKE_BINARY_DIR}/conan_paths.cmake)
+
 
 ##############################################
 #Project 

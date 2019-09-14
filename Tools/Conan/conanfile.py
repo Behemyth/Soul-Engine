@@ -1,7 +1,8 @@
 from conans import ConanFile, CMake, tools
 from pathlib import Path
-
+import subprocess
 import os
+from os import walk
 
 class SoulEngine(ConanFile):
 
@@ -16,7 +17,7 @@ class SoulEngine(ConanFile):
     options = {"shared": [True, False]}
     default_options = {"shared": False}
 
-    generators = "cmake_find_package_multi", "cmake_paths"
+    generators = "cmake_find_package"
     build_policy = "missing"
 
     # Project Structure
@@ -29,7 +30,6 @@ class SoulEngine(ConanFile):
     scm = {
         "type" : "git",
         "url" : "auto",
-        "subfolder": projectRootString,
         "revision" : "auto"
     }
 
@@ -44,16 +44,10 @@ class SoulEngine(ConanFile):
 	    "imgui/1.69@bincrafters/stable"    
     )
 
-    def configureCMake(self):
-        
-        cmake = CMake(self)
-        cmake.configure()
-
-        return cmake
-
     def build(self):
 
-        cmake = self.configureCMake()
+        cmake = CMake(self)
+        cmake.configure()
         cmake.build()
 
 

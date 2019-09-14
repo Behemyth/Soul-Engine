@@ -1,0 +1,19 @@
+{"_action": "COMMAND", "name": "create", "parameters": {"lockfile": null, "test_build_folder": null}, "time": 1568352514.1084292}
+{"_action": "GOT_RECIPE_FROM_LOCAL_CACHE", "_id": "SoulEngine/0.0.1@demo/testing", "time": 1568352514.5739534}
+{"_action": "GOT_RECIPE_FROM_LOCAL_CACHE", "_id": "glfw/3.3@bincrafters/stable", "time": 1568352514.5839436}
+{"_action": "GOT_RECIPE_FROM_LOCAL_CACHE", "_id": "boost/1.71.0@conan/stable", "time": 1568352514.593937}
+{"_action": "GOT_RECIPE_FROM_LOCAL_CACHE", "_id": "zlib/1.2.11@conan/stable", "time": 1568352514.6089344}
+{"_action": "GOT_RECIPE_FROM_LOCAL_CACHE", "_id": "bzip2/1.0.8@conan/stable", "time": 1568352514.6179252}
+{"_action": "GOT_RECIPE_FROM_LOCAL_CACHE", "_id": "glm/0.9.9.5@g-truc/stable", "time": 1568352514.625914}
+{"_action": "GOT_RECIPE_FROM_LOCAL_CACHE", "_id": "stb/20190512@conan/stable", "time": 1568352514.6368942}
+{"_action": "GOT_RECIPE_FROM_LOCAL_CACHE", "_id": "flatbuffers/1.11.0@google/stable", "time": 1568352514.6518817}
+{"_action": "GOT_RECIPE_FROM_LOCAL_CACHE", "_id": "imgui/1.69@bincrafters/stable", "time": 1568352514.669879}
+{"_action": "GOT_PACKAGE_FROM_LOCAL_CACHE", "_id": "bzip2/1.0.8@conan/stable:d16a91eadaaf5829b928b12d2f836ff7680d3df5", "time": 1568352514.7158387}
+{"_action": "GOT_PACKAGE_FROM_LOCAL_CACHE", "_id": "flatbuffers/1.11.0@google/stable:3fb49604f9c2f729b85ba3115852006824e72cab", "time": 1568352514.7228317}
+{"_action": "GOT_PACKAGE_FROM_LOCAL_CACHE", "_id": "glfw/3.3@bincrafters/stable:3fb49604f9c2f729b85ba3115852006824e72cab", "time": 1568352514.7298255}
+{"_action": "GOT_PACKAGE_FROM_LOCAL_CACHE", "_id": "glm/0.9.9.5@g-truc/stable:5ab84d6acfe1f23c4fae0ab88f26e3a396351ac9", "time": 1568352514.7378151}
+{"_action": "GOT_PACKAGE_FROM_LOCAL_CACHE", "_id": "imgui/1.69@bincrafters/stable:3fb49604f9c2f729b85ba3115852006824e72cab", "time": 1568352514.743809}
+{"_action": "GOT_PACKAGE_FROM_LOCAL_CACHE", "_id": "stb/20190512@conan/stable:5ab84d6acfe1f23c4fae0ab88f26e3a396351ac9", "time": 1568352514.7498085}
+{"_action": "GOT_PACKAGE_FROM_LOCAL_CACHE", "_id": "zlib/1.2.11@conan/stable:3fb49604f9c2f729b85ba3115852006824e72cab", "time": 1568352514.7558157}
+{"_action": "GOT_PACKAGE_FROM_LOCAL_CACHE", "_id": "boost/1.71.0@conan/stable:4d6b0a96fb1ef7b88e9a4ae010324f10dd9567e8", "time": 1568352514.7637894}
+{"_action": "EXCEPTION", "class": "ConanExceptionInUserConanfileMethod", "message": "SoulEngine/0.0.1@demo/testing: Error in build() method, line 54\n\tcmake = self.configureCMake()\nwhile calling 'configureCMake', line 48\n\tcmake.configure()\n\tConanException: Error 1 while executing cd C:\\Users\\asher\\.conan\\data\\SoulEngine\\0.0.1\\demo\\testing\\build\\00d10a2b63478f79b5b77e4e55f1d68d44ba8c47 && cmake -G \"Visual Studio 16 2019\" -A \"x64\" -DCONAN_LINK_RUNTIME=\"/MD\" -DCONAN_EXPORTED=\"1\" -DCONAN_IN_LOCAL_CACHE=\"ON\" -DCONAN_COMPILER=\"Visual Studio\" -DCONAN_COMPILER_VERSION=\"16\" -DCONAN_CXX_FLAGS=\"/MP8\" -DCONAN_C_FLAGS=\"/MP8\" -DBUILD_SHARED_LIBS=\"OFF\" -DCMAKE_INSTALL_PREFIX=\"C:\\Users\\asher\\.conan\\data\\SoulEngine\\0.0.1\\demo\\testing\\package\\00d10a2b63478f79b5b77e4e55f1d68d44ba8c47\" -DCMAKE_INSTALL_BINDIR=\"bin\" -DCMAKE_INSTALL_SBINDIR=\"bin\" -DCMAKE_INSTALL_LIBEXECDIR=\"bin\" -DCMAKE_INSTALL_LIBDIR=\"lib\" -DCMAKE_INSTALL_INCLUDEDIR=\"include\" -DCMAKE_INSTALL_OLDINCLUDEDIR=\"include\" -DCMAKE_INSTALL_DATAROOTDIR=\"share\" -DCMAKE_MODULE_PATH=\"C:/Users/asher/.conan/data/SoulEngine/0.0.1/demo/testing/build/00d10a2b63478f79b5b77e4e55f1d68d44ba8c47\" -DCMAKE_EXPORT_NO_PACKAGE_REGISTRY=\"ON\" -Wno-dev C:\\Users\\asher\\.conan\\data\\SoulEngine\\0.0.1\\demo\\testing\\source", "time": 1568352530.10071}

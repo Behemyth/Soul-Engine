@@ -14,18 +14,30 @@ For more information, visit our [Wiki](https://github.com/Synodic-Software/Soul-
 
 # Introductory Development
 
-The simplest application to get up and running is `Soul Info` which will query your hardware and report information back to you.
+The simplest application to get up and running is `Soul Info` which will query your hardware and report information back to you
 
-1. Install the required dependencies.
-    * [Python 3.7](https://www.python.org/downloads/).
-    * [Poetry](https://pypi.org/project/poetry/).
+1. Install the required manual dependencies
+    * [Python 3.7](https://www.python.org/downloads/)
+    * [Poetry](https://poetry.eustace.io/docs/#installation) 
+        *  `curl -sSL https://raw.githubusercontent.com/sdispater/poetry/master/get-poetry.py | python
+`
 
-1. Clone `Soul Engine`.
+1. Clone `Soul Engine`
+    * `git clone https://github.com/Synodic-Software/Soul-Engine.git`
 
-1. Run `Setup.py`.
+1. Install the Python tooling 
+    * `poetry install`
 
-1. Build `Soul Info` via CMake.
+1. Prepare the development environment 
+    * `poetry run setup`
 
-1. Run `Soul Info`.
+1. Build the engine 
+    * `poetry run build`
 
-For a detailed installation process visit our Wiki's [Getting Started](https://github.com/Synodic-Software/Soul-Engine/wiki/Getting-Started).
+1. Run `Soul Info`
+    * *TODO*
+
+For a detailed installation process visit our Wiki's [Getting Started](https://github.com/Synodic-Software/Soul-Engine/wiki/Getting-Started)
+
+
+# TODO
