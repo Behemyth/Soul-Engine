@@ -2,14 +2,79 @@
 #Defines a module interface
 function(ModuleInterface)
 
+    #Parse the function arguments
+    set(Options)
+    set(OneValueArgs)
+    set(MultiValueArgs DEPENDENCIES)
+    cmake_parse_arguments(MODULE_INTERFACE "${Options}" "${OneValueArgs}" "${MultiValueArgs}" ${ARGN})
+
+    #Grab the directory information for the module name
+    get_filename_component(ModulePath "${CMAKE_CURRENT_SOURCE_DIR}" ABSOLUTE)
+    get_filename_component(ModuleName "${ModulePath}" NAME)
+
+    set(COMBINED_NAME ${ModuleName}Module)
+
     if (EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/Interface)
         
+        if (NOT EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/Interface/${ModuleName}Module.h)
+            
+            message(FATAL_ERROR "An engine module interface must have a file named \"${ModuleName}Module.h\"")
+
+        endif()
+
         file(GLOB_RECURSE INTERFACE_SOURCES CONFIGURE_DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/Interface/*)
 
-        target_sources(${PROJECT_NAME}
+        project(${COMBINED_NAME}
+            LANGUAGES CXX
+        )
+
+        add_library(${COMBINED_NAME} "")
+        add_library(synodic::${COMBINED_NAME} ALIAS ${COMBINED_NAME})
+
+        #Validate each dependancy
+        foreach(DEPENDENCY ${MODULE_INTERFACE_DEPENDENCIES})
+
+            if (NOT EXISTS ${DEPENDENCY})
+
+                message(FATAL_ERROR "The interface dependency \"${DEPENDENCY}\" doesn't exist.")
+
+            endif()
+
+        endforeach()
+
+        set_target_properties(${COMBINED_NAME}
+            PROPERTIES 
+                LINKER_LANGUAGE CXX
+                CXX_EXTENSIONS OFF	
+                CXX_STANDARD 20
+                CXX_STANDARD_REQUIRED ON
+                USE_FOLDERS ON
+        )
+
+        target_include_directories(${COMBINED_NAME}
+            PUBLIC 
+                ${ModulePath}/Interface
+        )
+
+        #Link the module dependencies
+        target_link_libraries(${COMBINED_NAME}
+            PRIVATE
+                ${MODULE_INTERFACE_DEPENDENCIES}
+        )
+
+        target_sources(${COMBINED_NAME}
             PRIVATE
                 ${INTERFACE_SOURCES}
         )
+
+        #Link to the engine
+        target_link_libraries(SoulEngine
+            PRIVATE
+                synodic::${COMBINED_NAME}
+        )
+
+        #Provides Visual Studio filter support
+        source_group(TREE ${CMAKE_CURRENT_SOURCE_DIR} FILES ${INTERFACE_SOURCES})
 
     else()
 
@@ -48,14 +113,80 @@ endfunction()
 #Defines a module implementation
 function(ModuleImplementation)
 
+    #Parse the function arguments
+    set(Options)
+    set(OneValueArgs)
+    set(MultiValueArgs DEPENDENCIES)
+    cmake_parse_arguments(MODULE_IMPLEMENTATION "${Options}" "${OneValueArgs}" "${MultiValueArgs}" ${ARGN})
+
+    #Grab the directory information for the module name
+    get_filename_component(ModulePath "${CMAKE_CURRENT_SOURCE_DIR}/../.." ABSOLUTE)
+    get_filename_component(ModuleName "${ModulePath}" NAME)
+
+    #Grab the directory information for the implementation name
+    get_filename_component(ImplementationPath "${CMAKE_CURRENT_SOURCE_DIR}" ABSOLUTE)
+    get_filename_component(ImplementationName "${ImplementationPath}" NAME)
+
+    set(MODULE_COMBINED_NAME ${ModuleName}Module)
+    set(COMBINED_NAME ${ImplementationName}${ModuleName}Backend)
+
     if (EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/Source)
 
-        file(GLOB_RECURSE MODULE_SOURCES CONFIGURE_DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/Source/*)
+        if (NOT EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/Source/${COMBINED_NAME}.h)
 
-        target_sources(${PROJECT_NAME}
-            PRIVATE
-                ${MODULE_SOURCES}
+            message(FATAL_ERROR "An engine module implementation must have a file named \"${COMBINED_NAME}.h\"")
+
+        endif()
+
+        file(GLOB_RECURSE IMPLEMENTATION_SOURCES CONFIGURE_DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/Source/*)
+
+
+        add_library(${COMBINED_NAME} "")
+        add_library(synodic::${COMBINED_NAME} ALIAS ${COMBINED_NAME})
+
+        #Validate each dependancy
+        foreach(DEPENDENCY ${MODULE_IMPLEMENTATION_DEPENDENCIES})
+
+            if (NOT EXISTS ${DEPENDENCY})
+
+                message(FATAL_ERROR "The implementation dependency \"${DEPENDENCY}\" doesn't exist.")
+
+            endif()
+
+        endforeach()
+
+        set_target_properties(${COMBINED_NAME}
+            PROPERTIES 
+                LINKER_LANGUAGE CXX
+                CXX_EXTENSIONS OFF	
+                CXX_STANDARD 20
+                CXX_STANDARD_REQUIRED ON
         )
+
+        target_include_directories(${COMBINED_NAME}
+            PRIVATE 
+                ${CMAKE_CURRENT_SOURCE_DIR}/Source
+        )
+
+        target_link_libraries(${COMBINED_NAME}
+            PRIVATE
+                synodic::${MODULE_COMBINED_NAME}
+                ${MODULE_IMPLEMENTATION_DEPENDENCIES}
+        )
+
+        target_sources(${COMBINED_NAME}
+            PRIVATE
+                ${IMPLEMENTATION_SOURCES}
+        )
+
+        #Link to the module library
+        target_link_libraries(${COMBINED_NAME}
+            PRIVATE
+                synodic::${MODULE_COMBINED_NAME}
+        )
+
+        #Provides Visual Studio filter support
+        source_group(TREE ${CMAKE_CURRENT_SOURCE_DIR} FILES ${IMPLEMENTATION_SOURCES})
 
     else()
 

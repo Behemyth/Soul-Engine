@@ -7,6 +7,7 @@ list(APPEND CMAKE_PREFIX_PATH ${CMAKE_BINARY_DIR}) #TODO: remove with new Conan 
 
 #Global Options
 set(CMAKE_FIND_PACKAGE_PREFER_CONFIG ON) # Opposite module/PCF order for `find_package`
+set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 
 include(Module)
 
@@ -49,7 +50,6 @@ set_target_properties(${PROJECT_NAME}
 	   	CXX_EXTENSIONS OFF	
         CXX_STANDARD 20
         CXX_STANDARD_REQUIRED ON
-		USE_FOLDERS ON
 )
 
 target_include_directories(${PROJECT_NAME}

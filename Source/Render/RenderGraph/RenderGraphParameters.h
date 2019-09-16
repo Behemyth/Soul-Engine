@@ -1,6 +1,6 @@
 #pragma once
 
-#include "Core/Composition/Entity/Entity.h"
+#include "Composition/Entity/Interface/Entity.h"
 #include "Render/Raster/RenderTypes.h"
 
 #include <string>

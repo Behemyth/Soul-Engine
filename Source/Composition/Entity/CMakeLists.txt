@@ -1,5 +1,2 @@
 
-##############################################
-#Composition/Entity
-
 ModuleInterface()
