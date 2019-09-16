@@ -31,17 +31,6 @@ function(ModuleInterface)
         add_library(${COMBINED_NAME} "")
         add_library(synodic::${COMBINED_NAME} ALIAS ${COMBINED_NAME})
 
-        #Validate each dependancy
-        foreach(DEPENDENCY ${MODULE_INTERFACE_DEPENDENCIES})
-
-            if (NOT EXISTS ${DEPENDENCY})
-
-                message(FATAL_ERROR "The interface dependency \"${DEPENDENCY}\" doesn't exist.")
-
-            endif()
-
-        endforeach()
-
         set_target_properties(${COMBINED_NAME}
             PROPERTIES 
                 LINKER_LANGUAGE CXX
@@ -143,17 +132,6 @@ function(ModuleImplementation)
 
         add_library(${COMBINED_NAME} "")
         add_library(synodic::${COMBINED_NAME} ALIAS ${COMBINED_NAME})
-
-        #Validate each dependancy
-        foreach(DEPENDENCY ${MODULE_IMPLEMENTATION_DEPENDENCIES})
-
-            if (NOT EXISTS ${DEPENDENCY})
-
-                message(FATAL_ERROR "The implementation dependency \"${DEPENDENCY}\" doesn't exist.")
-
-            endif()
-
-        endforeach()
 
         set_target_properties(${COMBINED_NAME}
             PROPERTIES 

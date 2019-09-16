@@ -11,21 +11,21 @@
 #include <cassert>
 #include <unordered_map>
 
-class EntityRegistry{
+class EntityModule{
 
 	template<typename Comp>
 	using storage_type = SparseHashMap<Entity, std::decay_t<Comp>>;
 
 public:
 
-	EntityRegistry();
-	~EntityRegistry() = default;
+	EntityModule();
+	~EntityModule() = default;
 
-	EntityRegistry(const EntityRegistry&) = delete;
-	EntityRegistry(EntityRegistry&& o) = delete;
+	EntityModule(const EntityModule&) = delete;
+	EntityModule(EntityModule&& o) = delete;
 
-	EntityRegistry& operator=(const EntityRegistry&) = delete;
-	EntityRegistry& operator=(EntityRegistry&& other) = delete;
+	EntityModule& operator=(const EntityModule&) = delete;
+	EntityModule& operator=(EntityModule&& other) = delete;
 
 
 	bool IsValid(Entity) const noexcept;
@@ -67,7 +67,7 @@ private:
 };
 
 template<typename Comp>
-Comp& EntityRegistry::GetComponent(Entity entity) const noexcept
+Comp& EntityModule::GetComponent(Entity entity) const noexcept
 {
 
 	// TODO: C++20 Concepts
@@ -84,7 +84,7 @@ Comp& EntityRegistry::GetComponent(Entity entity) const noexcept
 }
 
 template<typename... Comp>
-std::enable_if_t<bool(sizeof...(Comp) > 1), std::tuple<Comp&...>> EntityRegistry::GetComponent(
+std::enable_if_t<bool(sizeof...(Comp) > 1), std::tuple<Comp&...>> EntityModule::GetComponent(
 	Entity entity) const noexcept
 {
 
@@ -93,7 +93,7 @@ std::enable_if_t<bool(sizeof...(Comp) > 1), std::tuple<Comp&...>> EntityRegistry
 }
 
 template<typename Comp, typename... Args>
-void EntityRegistry::AttachComponent(
+void EntityModule::AttachComponent(
 	Entity entity,
 	Args&&... args)
 {
@@ -118,7 +118,7 @@ void EntityRegistry::AttachComponent(
 }
 
 template<typename Comp>
-void EntityRegistry::RemoveComponent()
+void EntityModule::RemoveComponent()
 {
 	// TODO: C++20 Concepts
 	static_assert(std::is_base_of<Component, Comp>::value,
@@ -132,7 +132,7 @@ void EntityRegistry::RemoveComponent()
 }
 
 template<typename Comp>
-void EntityRegistry::RemoveComponent(Entity entity)
+void EntityModule::RemoveComponent(Entity entity)
 {
 
 	throw NotImplemented();
@@ -140,7 +140,7 @@ void EntityRegistry::RemoveComponent(Entity entity)
 }
 
 template<typename Comp>
-nonstd::span<Comp> EntityRegistry::View()
+nonstd::span<Comp> EntityModule::View()
 {
 	
 	const auto componentId = ClassID::ID<Comp>();

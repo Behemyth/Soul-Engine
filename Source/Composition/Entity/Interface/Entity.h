@@ -2,13 +2,13 @@
 
 #include "Types.h"
 
-class EntityRegistry;
+class EntityModule;
 
 class Entity 
 {
 
 	//TODO: Replace with badge/attorney -client
-	friend class EntityRegistry;
+	friend class EntityModule;
 	friend struct std::hash<Entity>; 
 
 	using value_type = uint64;

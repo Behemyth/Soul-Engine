@@ -1,16 +1,16 @@
-#include "EntityRegistry.h"
+#include "EntityModule.h"
 
-EntityRegistry::EntityRegistry(): availableEntities_(0), nextAvailable_(0)
+EntityModule::EntityModule(): availableEntities_(0), nextAvailable_(0)
 {
 }
 
-bool EntityRegistry::IsValid(Entity entity) const noexcept
+bool EntityModule::IsValid(Entity entity) const noexcept
 {
 	const auto id = entity.GetId();
 	return id < entities_.size() && entities_[id].entity_ == entity.entity_;
 }
 
-Entity EntityRegistry::CreateEntity()
+Entity EntityModule::CreateEntity()
 {
 
 	Entity entityID;
@@ -39,7 +39,7 @@ Entity EntityRegistry::CreateEntity()
 }
 
 //TODO: Reimplement without type info?
-//void EntityRegistry::RemoveEntity(Entity entity)
+//void EntityModule::RemoveEntity(Entity entity)
 //{
 //
 //	assert(IsValid(entity));
