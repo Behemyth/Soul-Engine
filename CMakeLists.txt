@@ -7,7 +7,7 @@ list(APPEND CMAKE_PREFIX_PATH ${CMAKE_BINARY_DIR}) #TODO: remove with new Conan 
 
 #Global Options
 set(CMAKE_FIND_PACKAGE_PREFER_CONFIG ON) # Opposite module/PCF order for `find_package`
-set_property(GLOBAL PROPERTY USE_FOLDERS ON)
+set_property(GLOBAL PROPERTY USE_FOLDERS ON) # Group the default targets in a folder
 
 include(Module)
 
@@ -41,10 +41,10 @@ option(BUILD_SHARED_LIBS "Build shared library" OFF)#TODO: Implement use of this
 ##############################################
 #Project Target
 
-add_library(${PROJECT_NAME} "")
-add_library(synodic::${PROJECT_NAME} ALIAS ${PROJECT_NAME})
+add_library(SoulEngine "")
+add_library(synodic::SoulEngine ALIAS SoulEngine)
 
-set_target_properties(${PROJECT_NAME}
+set_target_properties(SoulEngine
 	PROPERTIES 
         LINKER_LANGUAGE CXX
 	   	CXX_EXTENSIONS OFF	
@@ -52,7 +52,7 @@ set_target_properties(${PROJECT_NAME}
         CXX_STANDARD_REQUIRED ON
 )
 
-target_include_directories(${PROJECT_NAME}
+target_include_directories(SoulEngine
     PUBLIC 
         $<INSTALL_INTERFACE:Includes>
         $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/Includes>
@@ -60,7 +60,7 @@ target_include_directories(${PROJECT_NAME}
         ${CMAKE_CURRENT_SOURCE_DIR}/Source
 )
 
-target_link_libraries(${PROJECT_NAME}
+target_link_libraries(SoulEngine
     PUBLIC
         glm::glm
 
@@ -74,16 +74,6 @@ target_link_libraries(${PROJECT_NAME}
 ##############################################
 #Sources
 
-#TODO: Includes should exist in their own modules
-#Public Includes
-file(GLOB_RECURSE PUBLIC_SOURCES CONFIGURE_DEPENDS Includes/*)
-
-target_sources(${PROJECT_NAME}
-    PUBLIC
-        ${PUBLIC_SOURCES}
-)
-
-
 #Search for all modules
 FindModules(MODULES ${CMAKE_CURRENT_SOURCE_DIR}/Source)
 
@@ -92,11 +82,6 @@ foreach(MODULE ${MODULES})
     add_subdirectory(${MODULE})
 
 endforeach()
-
-
-#Provides Visual Studio filter support
-get_target_property(PROJECT_SOURCES ${PROJECT_NAME} SOURCES)
-source_group(TREE ${CMAKE_CURRENT_SOURCE_DIR} FILES ${PROJECT_SOURCES})
 
 
 ##############################################
