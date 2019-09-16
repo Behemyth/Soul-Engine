@@ -104,7 +104,7 @@ function(ModuleImplementation)
 
     #Parse the function arguments
     set(Options)
-    set(OneValueArgs)
+    set(OneValueArgs TARGET)
     set(MultiValueArgs DEPENDENCIES)
     cmake_parse_arguments(MODULE_IMPLEMENTATION "${Options}" "${OneValueArgs}" "${MultiValueArgs}" ${ARGN})
 
@@ -132,6 +132,9 @@ function(ModuleImplementation)
 
         add_library(${COMBINED_NAME} "")
         add_library(synodic::${COMBINED_NAME} ALIAS ${COMBINED_NAME})
+
+        #Set the user target name
+        set(${MODULE_IMPLEMENTATION_TARGET} ${COMBINED_NAME} PARENT_SCOPE)
 
         set_target_properties(${COMBINED_NAME}
             PROPERTIES 

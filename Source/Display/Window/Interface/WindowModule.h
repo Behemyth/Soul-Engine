@@ -1,9 +1,9 @@
 #pragma once
 
-#include "Core/Interface/Module/Module.h"
+#include "Interface/Module/Module.h"
 #include "WindowParameters.h"
 #include "Display/GUI/GUIModule.h"
-#include <Core/Structure/Span.h>
+#include <Structure/Span.h>
 
 #include <vector>
 #include <memory>

@@ -1,6 +1,8 @@
 ##############################################
 #CUDA Compute
 
+include(CheckLanguage)
+
 check_language(CUDA)
 
 #`CMAKE_CUDA_COMPILER` will point to nvcc or be `NOTFOUND`
@@ -15,23 +17,25 @@ else()
 
 endif()
 
+
 ##############################################
 #Options
 
-option(BUILD_CUDA_COMPUTE "Build the CUDA Compute backend" ${CUDA_FOUND})#TODO: Implement use of this option
+option(BUILD_CUDA_COMPUTE "Build the CUDA Compute backend" ${CUDA_FOUND})
 
 
-target_sources(${PROJECT_NAME}
-    PRIVATE
-        CUDABackend.cpp
-        CUDABackend.h
-        CUDABuffer.cpp
-        CUDABuffer.h
-        CUDADevice.cpp
-        CUDADevice.h
-)
+##############################################
+#Module
 
-set_target_properties(${PROJECT_NAME}
-	PROPERTIES 
-		CUDA_SEPARABLE_COMPILATION ON
-)
+if(${BUILD_CUDA_COMPUTE})
+
+	ModuleImplementation(
+		TARGET CUDA_MODULE
+	)
+
+	set_target_properties(${CUDA_MODULE}
+		PROPERTIES 
+			CUDA_SEPARABLE_COMPILATION ON
+	)
+
+endif()

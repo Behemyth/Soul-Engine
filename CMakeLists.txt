@@ -28,7 +28,7 @@ project(SoulEngine
 find_package(glm REQUIRED)
 find_package(boost REQUIRED)
 find_package(stb REQUIRED)
-find_package(imgui REQUIRED)
+
 
 ##############################################
 #Options
@@ -67,7 +67,6 @@ target_link_libraries(SoulEngine
     PRIVATE	
         boost::boost
         stb::stb
-        imgui::imgui
 )
 
 

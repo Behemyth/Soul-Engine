@@ -1,20 +1,27 @@
 
 ##############################################
-#Window
+#GLFW Window
 
-option(BUILD_GLFW_DISPLAY "Build the GLFW Display backend" ON)#TODO: Implement use of this option
+find_package(glfw)
 
-target_sources(${PROJECT_NAME}
-    PRIVATE
-        GLFWWindowBackend.cpp
-        GLFWWindowBackend.h
-        GLFWWindow.cpp
-        GLFWWindow.h
-	GLFWMonitor.cpp
-	GLFWMonitor.h
-)
+##############################################
+#Options
 
-target_link_libraries(${PROJECT_NAME}
-    PRIVATE	
-        $<$<BOOL:${BUILD_GLFW_DISPLAY}>:CONAN_PKG::glfw
-)
+option(BUILD_GLFW_DISPLAY "Build the GLFW Display backend" ${glfw_FOUND})#TODO: Implement use of this option
+
+
+##############################################
+#Module
+
+if(${BUILD_GLFW_DISPLAY})
+
+    ModuleImplementation(
+        TARGET GLFW_MODULE
+    )
+
+    target_link_libraries(${GLFW_MODULE}
+        PRIVATE	
+            glfw::glfw
+    )
+
+endif()

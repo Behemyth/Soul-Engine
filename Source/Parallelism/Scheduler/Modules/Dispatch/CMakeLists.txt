@@ -1,17 +1,19 @@
 
 ##############################################
-#Parallelism
+#Dispatch Scheduler
+
+
+##############################################
+#Options
 
 option(BUILD_DISPATCH_SCHEDULER "Build the Dispatch Scheduler backend" ON)
 
 
-target_sources(${PROJECT_NAME}
-    PRIVATE
-        DispatchSchedulerBackend.cpp
-        DispatchSchedulerBackend.h
-)
+##############################################
+#Module
 
-target_compile_definitions(${PROJECT_NAME} 
-    PRIVATE
-        DISPATCH_SCHEDULER=BUILD_DISPATCH_SCHEDULER
-)
+if(${BUILD_DISPATCH_SCHEDULER})
+
+    ModuleImplementation()
+
+endif()

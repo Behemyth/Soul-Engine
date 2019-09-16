@@ -1,20 +1,28 @@
 
 ##############################################
-#GUI
+#Imgui GUI
 
-option(BUILD_IMGUI_GUI "Build the Imgui GUI backend" ON)#TODO: Implement use of this option
+find_package(imgui)
 
 
-target_sources(${PROJECT_NAME}
-    PRIVATE
-        EmptyWidget.h
-        ImguiBackend.cpp
-        ImguiBackend.h
-        ImguiConfig.h
-        ImguiLayout.cpp
-        ImguiLayout.h
-        ImguiWidget.cpp
-        ImguiWidget.h
-        RenderWidget.h
-        SingleLayout.h
-)
+##############################################
+#Options
+
+option(BUILD_IMGUI_GUI "Build the Imgui GUI backend" ${imgui_FOUND})
+
+
+##############################################
+#Module
+
+if(${BUILD_IMGUI_GUI})
+
+    ModuleImplementation(
+        TARGET IMGUI_MODULE
+    )
+
+    target_link_libraries(${IMGUI_MODULE}
+        PRIVATE	
+            imgui::imgui
+    )
+
+endif()

@@ -1,21 +1,19 @@
 
 ##############################################
-#Parallelism
+#Fiber Scheduler
+
+
+##############################################
+#Options
 
 option(BUILD_FIBER_SCHEDULER "Build the Fiber Scheduler backend" ON)
 
 
-target_sources(${PROJECT_NAME}
-    PRIVATE
-        FiberProperties.cpp
-        FiberProperties.h
-        FiberSchedulerAlgorithm.cpp
-        FiberSchedulerAlgorithm.h
-        FiberSchedulerBackend.cpp
-        FiberSchedulerBackend.h
-)
+##############################################
+#Module
 
-target_compile_definitions(${PROJECT_NAME} 
-    PRIVATE
-        FIBER_SCHEDULER=BUILD_FIBER_SCHEDULER
-)
+if(${BUILD_FIBER_SCHEDULER})
+
+    ModuleImplementation()
+    
+endif()

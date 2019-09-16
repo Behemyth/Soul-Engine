@@ -1,14 +1,18 @@
 ##############################################
-#Compute/CPU
+#CPU Compute
 
-option(BUILD_CPU_COMPUTE "Build the OpenCL Compute backend" ON)#TODO: Implement use of this option
 
-target_sources(${PROJECT_NAME}
-    PRIVATE
-        CPUBackend.cpp
-        CPUBackend.h
-        CPUBuffer.cpp
-        CPUBuffer.h
-        CPUDevice.cpp
-        CPUDevice.h
-)
+##############################################
+#Options
+
+option(BUILD_CPU_COMPUTE "Build the CPU Compute backend" ON)
+
+
+##############################################
+#Module
+
+if(${BUILD_CPU_COMPUTE})
+
+    ModuleImplementation()
+
+endif()

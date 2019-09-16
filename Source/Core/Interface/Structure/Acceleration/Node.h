@@ -1,6 +1,6 @@
 #pragma once
 
-#include "Core/Geometry/BoundingBox.h"
+#include "Geometry/BoundingBox.h"
 #include "Types.h"
 
 class Node
