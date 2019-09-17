@@ -56,12 +56,6 @@ function(ModuleInterface)
                 ${INTERFACE_SOURCES}
         )
 
-        #Link to the engine
-        target_link_libraries(SoulEngine
-            PRIVATE
-                synodic::${COMBINED_NAME}
-        )
-
         #Provides Visual Studio filter support
         source_group(TREE ${CMAKE_CURRENT_SOURCE_DIR} FILES ${INTERFACE_SOURCES})
 
@@ -127,8 +121,7 @@ function(ModuleImplementation)
 
         endif()
 
-        file(GLOB_RECURSE IMPLEMENTATION_SOURCES CONFIGURE_DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/Source/*)
-
+        FindModules(MODULES ${CMAKE_CURRENT_SOURCE_DIR}/Source IMPLEMENTATION_SOURCES)
 
         add_library(${COMBINED_NAME} "")
         add_library(synodic::${COMBINED_NAME} ALIAS ${COMBINED_NAME})
@@ -153,6 +146,7 @@ function(ModuleImplementation)
             PRIVATE
                 synodic::${MODULE_COMBINED_NAME}
                 ${MODULE_IMPLEMENTATION_DEPENDENCIES}
+                ${MODULES}
         )
 
         target_sources(${COMBINED_NAME}
@@ -191,18 +185,22 @@ endfunction()
 
 
 #Sets the input variable to true/false if the given directory is an Engine Module
-function(IsModule VAR_NAME DIRECTORY)
+function(IsModule VAR_NAME DIRECTORY MODULE_NAME)
 
     #TODO: Make the IsModule check better than looking for a CMakeLists
     file(GLOB IS_MODULE CONFIGURE_DEPENDS ${DIRECTORY}/CMakeLists.txt)
 
     if(IS_MODULE)
 
+        get_filename_component(ModuleName "${DIRECTORY}" NAME)
+
         set(${VAR_NAME} 1 PARENT_SCOPE)
+        set(${MODULE_NAME} ${ModuleName}Module PARENT_SCOPE)
 
     else()
 
         set(${VAR_NAME} 0 PARENT_SCOPE)
+        set(${MODULE_NAME} PARENT_SCOPE)
 
     endif()
 
@@ -212,7 +210,7 @@ endfunction()
 
 #Searches the given directory recursively for the first module it comes across.
 #The breadth of all subdirectories are searched
-function(FindModules VAR_NAME DIRECTORY)
+function(FindModules VAR_NAME DIRECTORY SOURCES)
 
     #Validate the input
     if(NOT IS_DIRECTORY ${DIRECTORY})
@@ -222,12 +220,13 @@ function(FindModules VAR_NAME DIRECTORY)
     endif()
 
 
-    IsModule(IS_MODULE ${DIRECTORY})
+    IsModule(IS_MODULE ${DIRECTORY} MODULE_NAME)
 
     #If the current directory is a module, append it to the list of modules
     if(${IS_MODULE})
 
-        set(${VAR_NAME} ${DIRECTORY} PARENT_SCOPE)
+        add_subdirectory(${DIRECTORY})
+        set(${VAR_NAME} ${MODULE_NAME} PARENT_SCOPE)
         return()
 
     endif()
@@ -236,14 +235,20 @@ function(FindModules VAR_NAME DIRECTORY)
     file(GLOB SUB_DIRECTORIES CONFIGURE_DEPENDS ${DIRECTORY}/*)
 
     set(SUB_LIST)
-    foreach(SUB_DIRECTORY ${SUB_DIRECTORIES})
+    set(SUB_SOURCES)
+    foreach(SUB_ITEM ${SUB_DIRECTORIES})
 
-        if(IS_DIRECTORY ${SUB_DIRECTORY})
+        if(IS_DIRECTORY ${SUB_ITEM})
            
-            FindModules(INNER_LIST ${SUB_DIRECTORY})
+            FindModules(INNER_LIST ${SUB_ITEM} INNER_SOURCES)
 
             #Append the inner list into this function's list
             list(APPEND SUB_LIST ${INNER_LIST})
+            list(APPEND SUB_SOURCES ${INNER_SOURCES})
+
+        else()
+
+            list(APPEND SUB_SOURCES ${SUB_ITEM})
 
         endif()
 
@@ -251,5 +256,6 @@ function(FindModules VAR_NAME DIRECTORY)
 
     #Set the parent once
     set(${VAR_NAME} ${SUB_LIST} PARENT_SCOPE)
+    set(${SOURCES} ${SUB_SOURCES} PARENT_SCOPE)
 
 endfunction()

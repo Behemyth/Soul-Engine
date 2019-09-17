@@ -33,15 +33,15 @@ find_package(stb REQUIRED)
 ##############################################
 #Options
 
-option(BUILD_TESTS "Build test projects" OFF)#TODO: Implement testing framework. Once that is done, this option can be defaulted to ON
+option(BUILD_TESTS "Build test projects" OFF)
 option(BUILD_EXAMPLES "Build example projects" ON)
-option(BUILD_SHARED_LIBS "Build shared library" OFF)#TODO: Implement use of this option
+option(BUILD_SHARED_LIBS "Build shared library" OFF)
 
 
 ##############################################
 #Project Target
 
-add_library(SoulEngine "")
+add_library(SoulEngine)
 add_library(synodic::SoulEngine ALIAS SoulEngine)
 
 set_target_properties(SoulEngine
@@ -74,13 +74,21 @@ target_link_libraries(SoulEngine
 #Sources
 
 #Search for all modules
-FindModules(MODULES ${CMAKE_CURRENT_SOURCE_DIR}/Source)
+FindModules(MODULES ${CMAKE_CURRENT_SOURCE_DIR}/Source PROJECT_SOURCES)
 
-foreach(MODULE ${MODULES})
+target_sources(SoulEngine
+    PRIVATE
+        ${PROJECT_SOURCES}
+)
 
-    add_subdirectory(${MODULE})
+#Provides Visual Studio filter support
+source_group(TREE ${CMAKE_CURRENT_SOURCE_DIR} FILES ${PROJECT_SOURCES})
 
-endforeach()
+#Link modules to the engine
+target_link_libraries(SoulEngine
+PRIVATE
+    ${MODULES}
+)
 
 
 ##############################################
