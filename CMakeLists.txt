@@ -54,10 +54,8 @@ set_target_properties(SoulEngine
 
 target_include_directories(SoulEngine
     PUBLIC 
-        $<INSTALL_INTERFACE:Includes>
-        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/Includes>
-    PRIVATE
-        ${CMAKE_CURRENT_SOURCE_DIR}/Source
+        $<INSTALL_INTERFACE:Include>
+        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/Include>
 )
 
 target_link_libraries(SoulEngine
