@@ -76,7 +76,7 @@ FindModules(MODULES ${CMAKE_CURRENT_SOURCE_DIR}/Source PROJECT_SOURCES)
 
 target_sources(SoulEngine
     PRIVATE
-        ${PROJECT_SOURCES}
+        ${CMAKE_CURRENT_SOURCE_DIR}/Include/Soul.h
 )
 
 #Provides Visual Studio filter support

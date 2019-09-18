@@ -1,5 +1,5 @@
 
 ##############################################
-#RayScheduler Interface
+#Sensor Interface
 
 ModuleInterface()
