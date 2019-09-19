@@ -23,14 +23,6 @@ project(SoulEngine
 
 
 ##############################################
-#Dependencies
-
-find_package(glm REQUIRED)
-find_package(boost REQUIRED)
-find_package(stb REQUIRED)
-
-
-##############################################
 #Options
 
 option(BUILD_TESTS "Build test projects" OFF)
@@ -58,15 +50,6 @@ target_include_directories(SoulEngine
         $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/Include>
 )
 
-target_link_libraries(SoulEngine
-    PUBLIC
-        glm::glm
-
-    PRIVATE	
-        boost::boost
-        stb::stb
-)
-
 
 ##############################################
 #Sources
@@ -79,14 +62,14 @@ target_sources(SoulEngine
         ${CMAKE_CURRENT_SOURCE_DIR}/Include/Soul.h
 )
 
-#Provides Visual Studio filter support
-source_group(TREE ${CMAKE_CURRENT_SOURCE_DIR} FILES ${PROJECT_SOURCES})
-
 #Link modules to the engine
 target_link_libraries(SoulEngine
-PRIVATE
-    ${MODULES}
+    PRIVATE
+        ${MODULES}
 )
+
+#Provides Visual Studio filter support
+source_group(TREE ${CMAKE_CURRENT_SOURCE_DIR} FILES ${PROJECT_SOURCES})
 
 
 ##############################################

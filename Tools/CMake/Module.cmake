@@ -4,8 +4,8 @@ function(ModuleInterface)
 
     #Parse the function arguments
     set(Options)
-    set(OneValueArgs)
-    set(MultiValueArgs DEPENDENCIES)
+    set(OneValueArgs TARGET)
+    set(MultiValueArgs)
     cmake_parse_arguments(MODULE_INTERFACE "${Options}" "${OneValueArgs}" "${MultiValueArgs}" ${ARGN})
 
     #Grab the directory information for the module name
@@ -31,6 +31,9 @@ function(ModuleInterface)
         add_library(${COMBINED_NAME} "")
         add_library(synodic::${COMBINED_NAME} ALIAS ${COMBINED_NAME})
 
+        #Set the user target name
+        set(${MODULE_INTERFACE_TARGET} ${COMBINED_NAME} PARENT_SCOPE)
+
         set_target_properties(${COMBINED_NAME}
             PROPERTIES 
                 LINKER_LANGUAGE CXX
@@ -43,12 +46,6 @@ function(ModuleInterface)
         target_include_directories(${COMBINED_NAME}
             PUBLIC 
                 ${ModulePath}/Interface
-        )
-
-        #Link the module dependencies
-        target_link_libraries(${COMBINED_NAME}
-            PRIVATE
-                ${MODULE_INTERFACE_DEPENDENCIES}
         )
 
         target_sources(${COMBINED_NAME}
@@ -99,7 +96,7 @@ function(ModuleImplementation)
     #Parse the function arguments
     set(Options)
     set(OneValueArgs TARGET)
-    set(MultiValueArgs DEPENDENCIES)
+    set(MultiValueArgs)
     cmake_parse_arguments(MODULE_IMPLEMENTATION "${Options}" "${OneValueArgs}" "${MultiValueArgs}" ${ARGN})
 
     #Grab the directory information for the module name
@@ -145,7 +142,6 @@ function(ModuleImplementation)
         target_link_libraries(${COMBINED_NAME}
             PRIVATE
                 synodic::${MODULE_COMBINED_NAME}
-                ${MODULE_IMPLEMENTATION_DEPENDENCIES}
                 ${MODULES}
         )
 

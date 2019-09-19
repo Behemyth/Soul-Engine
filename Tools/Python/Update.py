@@ -17,5 +17,5 @@ def Update():
     conanFilePathString = str(conanFilePath)
 
     #update conan dependencies
-    Task("Conan: Install Debug Dependencies", "conan", "install", conanFilePathString, "-if", buildPathString,"-l", conanFilePathString, "-s", "build_type=Debug")
-    Task("Conan: Install Release Dependencies", "conan", "install", conanFilePathString, "-if", buildPathString,"-l", conanFilePathString, "-s", "build_type=Release")
+    Task("Conan: Install Debug Dependencies", "conan", "install", conanFilePathString, "-if", buildPathString,"-l", conanLockPathDebugString, "-s", "build_type=Debug")
+    Task("Conan: Install Release Dependencies", "conan", "install", conanFilePathString, "-if", buildPathString,"-l", conanLockPathReleaseString, "-s", "build_type=Release")
