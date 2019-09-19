@@ -15,8 +15,8 @@
 
 
 //TODO: unlink the windows headers from the project/cmake https://github.com/Synodic-Software/Soul-Engine/issues/62
-//#undef CreateWindow
-//#undef Yield
+#undef CreateWindow
+#undef Yield
 
 
 class FiberSchedulerBackend {

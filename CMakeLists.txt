@@ -48,6 +48,8 @@ target_include_directories(SoulEngine
     PUBLIC 
         $<INSTALL_INTERFACE:Include>
         $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/Include>
+    PRIVATE
+        ${CMAKE_CURRENT_SOURCE_DIR}/Source
 )
 
 
