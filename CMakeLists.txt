@@ -56,8 +56,19 @@ target_include_directories(SoulEngine
 ##############################################
 #Sources
 
-#Search for all modules
-FindModules(MODULES ${CMAKE_CURRENT_SOURCE_DIR}/Source PROJECT_SOURCES)
+#Search for all CMakeLists in the project
+file(GLOB_RECURSE MODULES CONFIGURE_DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/Source/*/CMakeLists.txt)
+
+set(MODULE_LIST)
+foreach(MODULE ${MODULES})
+
+    get_filename_component(MODULE_DIRECTORY ${MODULE} DIRECTORY)
+    get_filename_component(MODULE_NAME ${MODULE_DIRECTORY} NAME)
+    add_subdirectory(${MODULE_DIRECTORY})
+
+    list(APPEND MODULE_LIST ${MODULE_NAME}MODULE)
+
+endforeach()
 
 target_sources(SoulEngine
     PRIVATE
@@ -67,7 +78,7 @@ target_sources(SoulEngine
 #Link modules to the engine
 target_link_libraries(SoulEngine
     PRIVATE
-        ${MODULES}
+        ${MODULE_LIST}
 )
 
 #Provides Visual Studio filter support
