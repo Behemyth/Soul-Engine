@@ -25,7 +25,7 @@ python  = "3.7.*"
 
 [tool.poetry.dev-dependencies]
 colorama = "^0.4"
-conan   = "^1.18.*"
+conan   = "^1.19.*"
 
 
 [tool.poetry.scripts]

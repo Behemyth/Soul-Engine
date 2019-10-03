@@ -1,177 +1,356 @@
 
 #Defines a module interface
-function(ModuleInterface)
+function(ModuleInterface DIRECTORY)
 
-    #Parse the function arguments
-    set(Options)
-    set(OneValueArgs TARGET)
-    set(MultiValueArgs)
-    cmake_parse_arguments(MODULE_INTERFACE "${Options}" "${OneValueArgs}" "${MultiValueArgs}" ${ARGN})
+    IsModuleInterface(IS_MODULE ${DIRECTORY} VALIDATE)
+
+    file(GLOB_RECURSE INTERFACE_SOURCES CONFIGURE_DEPENDS ${DIRECTORY}/Interface/*)
 
     #Grab the directory information for the module name
-    get_filename_component(ModulePath "${CMAKE_CURRENT_SOURCE_DIR}" ABSOLUTE)
-    get_filename_component(ModuleName "${ModulePath}" NAME)
+    ModuleName(MODULE_NAME ${DIRECTORY})  
 
-    set(COMBINED_NAME ${ModuleName}Module)
+    project(${MODULE_NAME}
+        LANGUAGES CXX
+    )
 
-    if (EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/Interface)
-        
-        if (NOT EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/Interface/${ModuleName}Module.h)
-            
-            message(FATAL_ERROR "An engine module interface must have a file named \"${ModuleName}Module.h\"")
+    add_library(${MODULE_NAME})
+    add_library(synodic::${MODULE_NAME} ALIAS ${MODULE_NAME})
 
-        endif()
+    #Set the user target name
+    set(${MODULE_INTERFACE_TARGET} ${MODULE_NAME} PARENT_SCOPE)
 
-        file(GLOB_RECURSE INTERFACE_SOURCES CONFIGURE_DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/Interface/*)
+    set_target_properties(${MODULE_NAME}
+        PROPERTIES 
+            LINKER_LANGUAGE CXX
+            CXX_EXTENSIONS OFF	
+            CXX_STANDARD 20
+            CXX_STANDARD_REQUIRED ON
+            USE_FOLDERS ON
+    )
 
-        project(${COMBINED_NAME}
-            LANGUAGES CXX
-        )
+    target_include_directories(${MODULE_NAME}
+        PUBLIC 
+            ${DIRECTORY}/Interface
+    )
 
-        add_library(${COMBINED_NAME} "")
-        add_library(synodic::${COMBINED_NAME} ALIAS ${COMBINED_NAME})
+    target_sources(${MODULE_NAME}
+        PRIVATE
+            ${INTERFACE_SOURCES}
+    )
 
-        #Set the user target name
-        set(${MODULE_INTERFACE_TARGET} ${COMBINED_NAME} PARENT_SCOPE)
+    #Provides Visual Studio filter support
+    source_group(TREE ${CMAKE_CURRENT_SOURCE_DIR} FILES ${INTERFACE_SOURCES})
 
-        set_target_properties(${COMBINED_NAME}
-            PROPERTIES 
-                LINKER_LANGUAGE CXX
-                CXX_EXTENSIONS OFF	
-                CXX_STANDARD 20
-                CXX_STANDARD_REQUIRED ON
-                USE_FOLDERS ON
-        )
-
-        target_include_directories(${COMBINED_NAME}
-            PUBLIC 
-                ${ModulePath}/Interface
-        )
-
-        target_sources(${COMBINED_NAME}
-            PRIVATE
-                ${INTERFACE_SOURCES}
-        )
-
-        #Provides Visual Studio filter support
-        source_group(TREE ${CMAKE_CURRENT_SOURCE_DIR} FILES ${INTERFACE_SOURCES})
-
-    else()
-
-        message(FATAL_ERROR "An engine module interface must have an \"Interface\" directory.")
-
-    endif()
-
-    if (EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/Modules)
-        
-        #Grab all the subdirectories and add them to the build
-        file(GLOB MODULE_ITEMS CONFIGURE_DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/Modules/*)
-
-        foreach(MODULE_ITEM ${MODULE_ITEMS})
-        
-            if(NOT IS_DIRECTORY ${MODULE_ITEM})
-
-                message(FATAL_ERROR "Only module implementations are allowed in the \"Modules\" directory.")
-
-            endif()
-
-        endforeach()
-
-    else()
-
-        message(FATAL_ERROR "An engine module interface must have a \"Modules\" directory.")
-
-    endif()
 
 endfunction()
 
 
 #Defines a module implementation
-function(ModuleImplementation)
-
-    #Parse the function arguments
-    set(Options)
-    set(OneValueArgs TARGET)
-    set(MultiValueArgs)
-    cmake_parse_arguments(MODULE_IMPLEMENTATION "${Options}" "${OneValueArgs}" "${MultiValueArgs}" ${ARGN})
-
-    #Grab the directory information for the module name
-    get_filename_component(ModulePath "${CMAKE_CURRENT_SOURCE_DIR}/../.." ABSOLUTE)
-    get_filename_component(ModuleName "${ModulePath}" NAME)
+function(ModuleImplementation DIRECTORY)
 
     #Grab the directory information for the implementation name
-    get_filename_component(ImplementationPath "${CMAKE_CURRENT_SOURCE_DIR}" ABSOLUTE)
-    get_filename_component(ImplementationName "${ImplementationPath}" NAME)
+    ModuleImplementationName(IMPLEMENTATION_NAME MODULE_NAME ${DIRECTORY})
 
-    set(MODULE_COMBINED_NAME ${ModuleName}Module)
-    set(COMBINED_NAME ${ImplementationName}${ModuleName}Backend)
+    #Grab all the subdirectories and add them to the build
+    file(GLOB_RECURSE IMPLEMENTATION_SOURCES CONFIGURE_DEPENDS ${DIRECTORY}/Source/*)
 
-    if (EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/Source)
+    add_library(${IMPLEMENTATION_NAME})
+    add_library(synodic::${IMPLEMENTATION_NAME} ALIAS ${IMPLEMENTATION_NAME})
 
-        if (NOT EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/Source/${COMBINED_NAME}.h)
+    #Set the user target name
+    set(${MODULE_IMPLEMENTATION_TARGET} ${IMPLEMENTATION_NAME} PARENT_SCOPE)
 
-            message(FATAL_ERROR "An engine module implementation must have a file named \"${COMBINED_NAME}.h\"")
+    set_target_properties(${IMPLEMENTATION_NAME}
+        PROPERTIES 
+            LINKER_LANGUAGE CXX
+            CXX_EXTENSIONS OFF	
+            CXX_STANDARD 20
+            CXX_STANDARD_REQUIRED ON
+    )
+
+    target_include_directories(${IMPLEMENTATION_NAME}
+        PRIVATE 
+            ${DIRECTORY}/Source
+    )
+
+    target_link_libraries(${IMPLEMENTATION_NAME}
+        PRIVATE
+            synodic::${MODULE_NAME}
+            ${MODULES}
+    )
+
+    target_sources(${IMPLEMENTATION_NAME}
+        PRIVATE
+            ${IMPLEMENTATION_SOURCES}
+    )
+
+    #Provides Visual Studio filter support
+    source_group(TREE ${DIRECTORY} FILES ${IMPLEMENTATION_SOURCES})
+
+
+
+endfunction()
+
+#Sets the input variable to true/false if the given directory is an Engine Module Interface
+#If 'VALIDATE' is set an error will be triggered if the directory is not an interface
+function(IsModuleInterface VAR_NAME DIRECTORY)
+
+    set(Options VALIDATE)
+    set(OneValueArgs)
+    set(MultiValueArgs)
+    cmake_parse_arguments(IS_MODULE "${Options}" "${OneValueArgs}" "${MultiValueArgs}" ${ARGN})
+    
+    #Grab the directory information for the module name
+    ModuleName(MODULE_NAME ${DIRECTORY})
+
+    if(NOT EXISTS ${DIRECTORY}/README.rst)
+
+        if(${IS_MODULE_VALIDATE})
+
+            message(FATAL_ERROR "${MODULE_NAME}: An engine module interface must have a README.rst")
 
         endif()
 
-        #Grab all the subdirectories and add them to the build
-        file(GLOB_RECURSE IMPLEMENTATION_SOURCES CONFIGURE_DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/Source/*)
-
-        add_library(${COMBINED_NAME} "")
-        add_library(synodic::${COMBINED_NAME} ALIAS ${COMBINED_NAME})
-
-        #Set the user target name
-        set(${MODULE_IMPLEMENTATION_TARGET} ${COMBINED_NAME} PARENT_SCOPE)
-
-        set_target_properties(${COMBINED_NAME}
-            PROPERTIES 
-                LINKER_LANGUAGE CXX
-                CXX_EXTENSIONS OFF	
-                CXX_STANDARD 20
-                CXX_STANDARD_REQUIRED ON
-        )
-
-        target_include_directories(${COMBINED_NAME}
-            PRIVATE 
-                ${CMAKE_CURRENT_SOURCE_DIR}/Source
-        )
-
-        target_link_libraries(${COMBINED_NAME}
-            PRIVATE
-                synodic::${MODULE_COMBINED_NAME}
-                ${MODULES}
-        )
-
-        target_sources(${COMBINED_NAME}
-            PRIVATE
-                ${IMPLEMENTATION_SOURCES}
-        )
-
-        #Link to the module library
-        target_link_libraries(${COMBINED_NAME}
-            PRIVATE
-                synodic::${MODULE_COMBINED_NAME}
-        )
-
-        #Provides Visual Studio filter support
-        source_group(TREE ${CMAKE_CURRENT_SOURCE_DIR} FILES ${IMPLEMENTATION_SOURCES})
-
-    else()
-
-        message(FATAL_ERROR "An engine module implementation must have a \"Source\" directory.")
+        set(${VAR_NAME} 0 PARENT_SCOPE)
+        return()
 
     endif()
 
-    if (EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/Tests)
+    if(NOT EXISTS ${DIRECTORY}/CMakeLists.txt)
+
+        if(${IS_MODULE_VALIDATE})
+
+            message(FATAL_ERROR "${MODULE_NAME}: An engine module interface must have a CMakeLists.txt")
+
+        endif()
+
+        set(${VAR_NAME} 0 PARENT_SCOPE)
+        return()
+
+    endif()
+
+    if(NOT EXISTS ${DIRECTORY}/Interface)
+
+        if(${IS_MODULE_VALIDATE})
+
+            message(FATAL_ERROR "${MODULE_NAME}: An engine module interface must have a \"Interface\" directory.")
+
+        endif()
+
+        set(${VAR_NAME} 0 PARENT_SCOPE)
+        return()
+
+    endif()
+
+
+
+    if (NOT EXISTS ${DIRECTORY}/Interface/${MODULE_NAME}.h)
+
+        if(${IS_MODULE_VALIDATE})
+
+            message(FATAL_ERROR "${MODULE_NAME}: An engine module interface must have a file named \"${MODULE_NAME}.h\"")
+
+        endif()
+
+        set(${VAR_NAME} 0 PARENT_SCOPE)
+        return()
+
+    endif()
+
+    if(NOT EXISTS ${DIRECTORY}/Modules)
+
+        if(${IS_MODULE_VALIDATE})
+
+            message(FATAL_ERROR "${MODULE_NAME}: An engine module interface must have a \"Modules\" directory.")
+
+        endif()
+
+        set(${VAR_NAME} 0 PARENT_SCOPE)
+        return()
+
+    endif()
+
+    #Validate the Modules directory
+    file(GLOB MODULE_ITEMS CONFIGURE_DEPENDS ${DIRECTORY}/Modules/*)
+
+    foreach(MODULE_ITEM ${MODULE_ITEMS})
+    
+        if(NOT IS_DIRECTORY ${MODULE_ITEM})
+
+            if(${IS_MODULE_VALIDATE})
+
+                message(FATAL_ERROR "${MODULE_NAME}: Only module implementations are allowed in the \"Modules\" directory.")
+
+            endif()
+            
+            set(${VAR_NAME} 0 PARENT_SCOPE)
+            return()
+
+        endif()
+
+        if(${IS_MODULE_VALIDATE})
+
+            IsModuleImplementation(IS_IMPLEMENTATION ${MODULE_ITEM} VALIDATE)
+
+        else()
+
+            IsModuleImplementation(IS_IMPLEMENTATION ${MODULE_ITEM})
+
+            if(NOT ${IS_IMPLEMENTATION})
+                
+                set(${VAR_NAME} 0 PARENT_SCOPE)
+                return()
+
+            endif()
+
+        endif()
+
+    endforeach()
+
+    #Everything has been validated, return true
+    set(${VAR_NAME} 1 PARENT_SCOPE)
+
+endfunction()
+
+#Sets the input variable to true/false if the given directory is an Engine Module Interface
+#If 'VALIDATE' is set an error will be triggered if the directory is not an implementation
+function(IsModuleImplementation VAR_NAME DIRECTORY)
+
+    set(Options VALIDATE)
+    set(OneValueArgs)
+    set(MultiValueArgs)
+    cmake_parse_arguments(IS_MODULE "${Options}" "${OneValueArgs}" "${MultiValueArgs}" ${ARGN})
+
+    ModuleImplementationName(IMPLEMENTATION_NAME MODULE_NAME ${DIRECTORY})
+
+    if(NOT EXISTS ${DIRECTORY}/README.rst)
+
+        if(${IS_MODULE_VALIDATE})
+
+            message(FATAL_ERROR "${IMPLEMENTATION_NAME}: An engine module implementation must have a README.rst")
+
+        endif()
+
+        set(${VAR_NAME} 0 PARENT_SCOPE)
+        return()
+
+    endif()
+
+    if(NOT EXISTS ${DIRECTORY}/CMakeLists.txt)
+
+        if(${IS_MODULE_VALIDATE})
+
+            message(FATAL_ERROR "${IMPLEMENTATION_NAME}: An engine module implementation must have a CMakeLists.txt")
+
+        endif()
+
+        set(${VAR_NAME} 0 PARENT_SCOPE)
+        return()
+
+    endif()
+
+    if (NOT EXISTS ${DIRECTORY}/Source)
         
-        #TODO: Do something with Tests
+        if(${IS_MODULE_VALIDATE})
+
+            message(FATAL_ERROR "${IMPLEMENTATION_NAME}: An engine module implementation must have a \"Source\" directory")
+
+        endif()
+
+        set(${VAR_NAME} 0 PARENT_SCOPE)
+        return()
 
     endif()
 
-    if (EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/Resources)
+    if (NOT EXISTS ${DIRECTORY}/Tests)
+        
+        if(${IS_MODULE_VALIDATE})
 
-        #TODO: Do something with Resources
+            message(FATAL_ERROR "${IMPLEMENTATION_NAME}: An engine module implementation must have a \"Tests\" directory")
+
+        endif()
+
+        set(${VAR_NAME} 0 PARENT_SCOPE)
+        return()
 
     endif()
+
+    if (NOT EXISTS ${DIRECTORY}/Tests/README.rst)
+        
+        if(${IS_MODULE_VALIDATE})
+
+            message(FATAL_ERROR "${IMPLEMENTATION_NAME}: An engine module implementation must have a \"README.rst\" inside the \"Tests\" directory")
+
+        endif()
+
+        set(${VAR_NAME} 0 PARENT_SCOPE)
+        return()
+
+    endif()
+
+    if (NOT EXISTS ${DIRECTORY}/Source/${IMPLEMENTATION_NAME}.h)
+
+        if(${IS_MODULE_VALIDATE})
+
+            message(FATAL_ERROR "${IMPLEMENTATION_NAME}: An engine module implementation must have a file named \"${IMPLEMENTATION_NAME}.h\"")
+
+        endif()
+
+        set(${VAR_NAME} 0 PARENT_SCOPE)
+        return()
+
+    endif()
+
+    #Everything has been validated, return true
+    set(${VAR_NAME} 1 PARENT_SCOPE)
+
+endfunction()
+
+function(ModuleName NAME_VAR DIRECTORY)
+
+    get_filename_component(MODULE_NAME ${DIRECTORY} NAME)
+    set(${NAME_VAR} ${MODULE_NAME}Module PARENT_SCOPE)
+
+endfunction()
+
+
+function(ModuleImplementationName NAME_VAR MODULE_NAME_VAR DIRECTORY)
+
+    get_filename_component(MODULE_DIRECTORY ${DIRECTORY}/../.. ABSOLUTE)
+    get_filename_component(MODULE_NAME ${MODULE_DIRECTORY} NAME)
+    get_filename_component(IMPLEMENTATION_NAME ${DIRECTORY} NAME)
+
+    set(${MODULE_NAME_VAR} ${MODULE_NAME}Module PARENT_SCOPE)
+    set(${NAME_VAR} ${IMPLEMENTATION_NAME}${MODULE_NAME}Backend PARENT_SCOPE)
+
+endfunction()
+
+#An extension of `add_subdirectory`
+function(ProcessModules PARENT_TARGET DIRECTORY)
+
+    file(GLOB MODULES CONFIGURE_DEPENDS ${DIRECTORY}/*)
+
+    foreach(MODULE ${MODULES})
+
+
+        if(IS_DIRECTORY ${MODULE})
+
+            if(EXISTS ${MODULE}/CMakeLists.txt)
+
+                ModuleInterface(${MODULE})
+
+            else()
+
+                ProcessModules(${PARENT_TARGET} ${MODULE})
+
+            endif()
+
+        else()
+
+            message(FATAL_ERROR "The item \"${MODULE}\" must belong to a module")
+
+        endif()    
+
+    endforeach()
 
 endfunction()

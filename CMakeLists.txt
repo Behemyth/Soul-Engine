@@ -33,56 +33,15 @@ option(BUILD_SHARED_LIBS "Build shared library" OFF)
 ##############################################
 #Project Target
 
-add_library(SoulEngine)
+add_library(SoulEngine INTERFACE)
 add_library(synodic::SoulEngine ALIAS SoulEngine)
-
-set_target_properties(SoulEngine
-	PROPERTIES 
-        LINKER_LANGUAGE CXX
-	   	CXX_EXTENSIONS OFF	
-        CXX_STANDARD 20
-        CXX_STANDARD_REQUIRED ON
-)
-
-target_include_directories(SoulEngine
-    PUBLIC 
-        $<INSTALL_INTERFACE:Include>
-        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/Include>
-    PRIVATE
-        ${CMAKE_CURRENT_SOURCE_DIR}/Source
-)
 
 
 ##############################################
 #Sources
 
 #Search for all CMakeLists in the project
-file(GLOB_RECURSE MODULES CONFIGURE_DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/Source/*/CMakeLists.txt)
-
-set(MODULE_LIST)
-foreach(MODULE ${MODULES})
-
-    get_filename_component(MODULE_DIRECTORY ${MODULE} DIRECTORY)
-    get_filename_component(MODULE_NAME ${MODULE_DIRECTORY} NAME)
-    add_subdirectory(${MODULE_DIRECTORY})
-
-    list(APPEND MODULE_LIST ${MODULE_NAME}MODULE)
-
-endforeach()
-
-target_sources(SoulEngine
-    PRIVATE
-        ${CMAKE_CURRENT_SOURCE_DIR}/Include/Soul.h
-)
-
-#Link modules to the engine
-target_link_libraries(SoulEngine
-    PRIVATE
-        ${MODULE_LIST}
-)
-
-#Provides Visual Studio filter support
-source_group(TREE ${CMAKE_CURRENT_SOURCE_DIR} FILES ${PROJECT_SOURCES})
+ProcessModules(SoulEngine ${CMAKE_CURRENT_SOURCE_DIR}/Source)
 
 
 ##############################################
