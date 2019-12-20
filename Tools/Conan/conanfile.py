@@ -36,12 +36,16 @@ class SoulEngine(ConanFile):
     no_copy_source = True
 
     requires = (
-        "glfw/3.3@bincrafters/stable",    
-        "boost/1.71.0@conan/stable",
-        "glm/0.9.9.5@g-truc/stable",
-        "stb/20190512@conan/stable",
-	    "flatbuffers/1.11.0@google/stable",     
-	    "imgui/1.69@bincrafters/stable"    
+        "glfw/3.3",    
+        "boost/1.71.0",
+        "glm/0.9.9.5",
+        "stb/20190512",
+	    "flatbuffers/1.11.0",     
+	    "imgui/1.69"    
+    )
+
+    build_requires = (
+        "cmake_installer/3.15.3"
     )
 
     def build(self):

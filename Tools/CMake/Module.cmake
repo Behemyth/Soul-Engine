@@ -49,7 +49,8 @@ endfunction()
 function(ModuleImplementation DIRECTORY)
 
     #Grab the directory information for the implementation name
-    ModuleImplementationName(IMPLEMENTATION_NAME MODULE_NAME ${DIRECTORY})
+    ModuleName(MODULE_NAME ${DIRECTORY}/../..)
+    ModuleImplementationName(IMPLEMENTATION_NAME ${DIRECTORY})
 
     #Grab all the subdirectories and add them to the build
     file(GLOB_RECURSE IMPLEMENTATION_SOURCES CONFIGURE_DEPENDS ${DIRECTORY}/Source/*)
@@ -220,8 +221,9 @@ function(IsModuleImplementation VAR_NAME DIRECTORY)
     set(OneValueArgs)
     set(MultiValueArgs)
     cmake_parse_arguments(IS_MODULE "${Options}" "${OneValueArgs}" "${MultiValueArgs}" ${ARGN})
-
-    ModuleImplementationName(IMPLEMENTATION_NAME MODULE_NAME ${DIRECTORY})
+    
+    ModuleName(MODULE_NAME ${DIRECTORY}/../..)
+    ModuleImplementationName(IMPLEMENTATION_NAME ${DIRECTORY})
 
     if(NOT EXISTS ${DIRECTORY}/README.rst)
 
@@ -308,19 +310,19 @@ endfunction()
 
 function(ModuleName NAME_VAR DIRECTORY)
 
-    get_filename_component(MODULE_NAME ${DIRECTORY} NAME)
+    get_filename_component(MODULE_DIRECTORY ${DIRECTORY} ABSOLUTE)
+    get_filename_component(MODULE_NAME ${MODULE_DIRECTORY} NAME)
     set(${NAME_VAR} ${MODULE_NAME}Module PARENT_SCOPE)
 
 endfunction()
 
 
-function(ModuleImplementationName NAME_VAR MODULE_NAME_VAR DIRECTORY)
+function(ModuleImplementationName NAME_VAR DIRECTORY)
 
     get_filename_component(MODULE_DIRECTORY ${DIRECTORY}/../.. ABSOLUTE)
     get_filename_component(MODULE_NAME ${MODULE_DIRECTORY} NAME)
     get_filename_component(IMPLEMENTATION_NAME ${DIRECTORY} NAME)
 
-    set(${MODULE_NAME_VAR} ${MODULE_NAME}Module PARENT_SCOPE)
     set(${NAME_VAR} ${IMPLEMENTATION_NAME}${MODULE_NAME}Backend PARENT_SCOPE)
 
 endfunction()
