@@ -1,5 +1,0 @@
-
-##############################################
-#Scheduler Interface
-
-ModuleInterface()
