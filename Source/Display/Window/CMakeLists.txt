@@ -1,5 +1,0 @@
-
-##############################################
-#Window Interface
-
-ModuleInterface()

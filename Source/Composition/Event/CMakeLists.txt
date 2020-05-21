@@ -1,5 +1,0 @@
-
-##############################################
-#Composition/Event
-
-ModuleInterface()

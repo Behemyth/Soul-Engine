@@ -1,5 +1,0 @@
-
-##############################################
-#Compute Interface
-
-ModuleInterface()

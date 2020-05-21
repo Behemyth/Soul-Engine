@@ -1,5 +1,0 @@
-
-##############################################
-#Raster Interface
-
-ModuleInterface()

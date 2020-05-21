@@ -1,5 +1,0 @@
-
-ModuleInterface(
-    DEPENDENCIES
-        EntityModule
-)

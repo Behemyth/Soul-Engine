@@ -1,5 +1,0 @@
-
-##############################################
-#Memory Interface
-
-ModuleInterface()

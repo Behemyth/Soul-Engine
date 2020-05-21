@@ -1,6 +1,0 @@
-
-##############################################
-#SPIRV Shader
-
-ModuleImplementation()
-

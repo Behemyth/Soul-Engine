@@ -1,5 +1,0 @@
-
-##############################################
-#Shader Resource
-
-ModuleInterface()

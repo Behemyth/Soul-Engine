@@ -1,5 +1,0 @@
-
-##############################################
-#RenderGraph Interface
-
-ModuleInterface()

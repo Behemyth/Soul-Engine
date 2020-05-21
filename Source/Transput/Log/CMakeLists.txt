@@ -1,5 +1,0 @@
-
-##############################################
-#Resource Interface
-
-ModuleInterface()

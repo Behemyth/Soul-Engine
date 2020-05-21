@@ -1,5 +1,0 @@
-
-##############################################
-#Composition/Entity
-
-ModuleImplementation()

@@ -1,5 +1,0 @@
-
-##############################################
-#Sensor Interface
-
-ModuleInterface()
