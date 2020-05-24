@@ -1,8 +1,8 @@
 #pragma once
 
-#include "SoulApplication.h"
+#include "Application.h"
 
-class SoulInfo : public SoulApplication {
+class SoulInfo : public Application {
 
 public:
 	SoulInfo(SoulParameters = SoulParameters());
