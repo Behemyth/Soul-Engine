@@ -1,11 +1,43 @@
 cmake_minimum_required(VERSION 3.17.2 FATAL_ERROR)
 
+list(APPEND CMAKE_MODULE_PATH ${CMAKE_BINARY_DIR}) #TODO: remove with new Conan generator
+list(APPEND CMAKE_PREFIX_PATH ${CMAKE_BINARY_DIR}) #TODO: remove with new Conan generator
 
-##############################################
-#Project 
+# Global Options
+set(CMAKE_FIND_PACKAGE_PREFER_CONFIG ON) # Opposite module/PCF order for `find_package`
+set_property(GLOBAL PROPERTY USE_FOLDERS ON) # Group the default targets in a folder
 
-project(test
-	VERSION 0.1.0
-	DESCRIPTION "Real-time simulation and rendering engine."
+
+project(tests 
+	DESCRIPTION "Test project for ${CMAKE_PROJECT_NAME}"
 	LANGUAGES CXX
 )
+
+
+add_executable(tests)
+
+set_target_properties(tests
+	PROPERTIES 
+		LINKER_LANGUAGE CXX
+		CXX_STANDARD 20
+		CXX_STANDARD_REQUIRED ON
+		CXX_EXTENSIONS NO
+)
+
+find_package(doctest 2.4.0 REQUIRED)
+
+target_link_libraries(tests
+PUBLIC
+	${CMAKE_PROJECT_NAME}
+    doctest::doctest
+)
+
+
+file(GLOB_RECURSE SOURCES CONFIGURE_DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/src/*)
+
+target_sources(tests
+	PRIVATE
+		${SOURCES}
+)
+
+doctest_discover_tests(tests)

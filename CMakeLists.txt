@@ -13,7 +13,7 @@ set_property(GLOBAL PROPERTY USE_FOLDERS ON) # Group the default targets in a fo
 ##############################################
 #Project 
 
-project(SoulEngine 
+project(soul-engine 
 	VERSION 0.1.0
 	DESCRIPTION "Real-time simulation and rendering engine."
 	LANGUAGES CXX
