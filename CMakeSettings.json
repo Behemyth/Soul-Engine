@@ -1,13 +1,11 @@
 ﻿{
-  "environments": [
-    { "BuildDir": "${projectDir}\\Build" }
-  ],
+  "environments": [ { "BuildDir": "${projectDir}\\build" } ],
   "configurations": [
     {
       "name": "Release",
       "generator": "Ninja",
       "configurationType": "Release",
-      "buildRoot": "${env.BuildDir}\\${name}",
+      "buildRoot": "${workspaceRoot}\\build",
       "installRoot": "${env.USERPROFILE}\\CMakeBuilds\\${workspaceHash}\\install\\${name}",
       "cmakeCommandArgs": "",
       "buildCommandArgs": "",
@@ -19,19 +17,7 @@
       "name": "Debug",
       "generator": "Ninja",
       "configurationType": "Debug",
-      "buildRoot": "${env.BuildDir}\\${name}",
-      "installRoot": "${env.USERPROFILE}\\CMakeBuilds\\${workspaceHash}\\install\\${name}",
-      "cmakeCommandArgs": "",
-      "buildCommandArgs": "",
-      "ctestCommandArgs": "",
-      "inheritEnvironments": [ "msvc_x64_x64" ],
-      "variables": []
-    },
-    {
-      "name": "RelWithDebInfo",
-      "generator": "Ninja",
-      "configurationType": "RelWithDebInfo",
-      "buildRoot": "${env.BuildDir}\\${name}",
+      "buildRoot": "${workspaceRoot}\\build",
       "installRoot": "${env.USERPROFILE}\\CMakeBuilds\\${workspaceHash}\\install\\${name}",
       "cmakeCommandArgs": "",
       "buildCommandArgs": "",

@@ -1,68 +1,44 @@
-from conans import ConanFile, CMake, tools
-from pathlib import Path
-import subprocess
-import os
-from os import walk
+from conans import ConanFile, CMake
 
 class SoulEngine(ConanFile):
 
-    name = "SoulEngine"
-    version = "0.0.1"
-    author = "Synodic Software"
-    license = "GPLv3"
-    url = "https://github.com/Synodic-Software/Soul-Engine"
-    description = "Soul Engine is a real-time visualization and simulation engine built on the back of CUDA, OpenCL, and Vulkan."
+	name = "soul-engine"
+	version = "0.1.0"
+	author = "Synodic Software"
+	license = "GPLv3"
+	url = "https://github.com/Synodic-Software/Soul-Engine"
+	description = "Soul Engine is a real-time visualization and simulation engine built on the back of CUDA, OpenCL, and Vulkan."
 
-    settings = "os", "compiler", "build_type", "arch"
-    options = {"shared": [True, False]}
-    default_options = {"shared": False}
+	settings = "os", "compiler", "build_type", "arch"
+	options = {"shared": [True, False]}
+	default_options = {"shared": False}
 
-    generators = "cmake_find_package_multi"
-    build_policy = "missing"
+	requires = "doctest/2.4.0", "cppaste/0.1.0", "tracer/0.1.0"
+	generators = "cmake_find_package"
 
-    # Project Structure
-    projectRoot = Path('.') / ".." / ".."
-    projectRootString = str(projectRoot)
+	scm = {
+         "type": "git",
+         "url": "auto",
+         "revision": "auto",
+	}
 
-    projectBuild = projectRoot / "Build"
-    projectBuildString = str(projectBuild)
+	def build(self):
+		cmake = CMake(self)
+		cmake.configure()
+		cmake.build()
 
-    scm = {
-        "type" : "git",
-        "url" : "auto",
-        "revision" : "auto"
-    }
+	def package(self):
+		self.copy("*.h", src="src", dst="include")
+		self.copy("*.lib", dst="lib", keep_path=False)
+		self.copy("*.dll", dst="bin", keep_path=False)
+		self.copy("*.so", dst="lib", keep_path=False)
+		self.copy("*.dylib", dst="lib", keep_path=False)
+		self.copy("*.a", dst="lib", keep_path=False)
 
-    no_copy_source = True
+	def package_info(self):
+		self.cpp_info.libs = ["soul-engine"]
 
-    requires = (
-        "glfw/3.3",    
-        "boost/1.71.0",
-        "glm/0.9.9.5",
-        "stb/20190512",
-	    "flatbuffers/1.11.0",     
-	    "imgui/1.69"    
-    )
-
-    build_requires = (
-        "cmake_installer/3.17.2"
-    )
-
-    def build(self):
-
-        cmake = CMake(self)
-        cmake.configure()
-        cmake.build()
-
-
-    def package(self):
-
-        pass
-
-
-    def package_info(self):
-
-        self.cpp_info.libs.append("SoulEngine")
-
-        self.cpp_info.includedirs = [str(self.projectRoot / "Includes")]
-        self.cpp_info.resdirs = [str(self.projectRoot / "Resources")]
+		# If the the package is in editable mode, forward the library path
+		if not self.in_local_cache:
+			self.cpp_info.includedirs = ["src"]
+			self.cpp_info.libdirs = ["build"]

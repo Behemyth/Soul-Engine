@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.15.2 FATAL_ERROR)
+cmake_minimum_required(VERSION 3.17.2 FATAL_ERROR)
 
 #Set CMake tools location
 list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/tools/CMake)
@@ -14,7 +14,7 @@ set_property(GLOBAL PROPERTY USE_FOLDERS ON) # Group the default targets in a fo
 #Project 
 
 project(SoulEngine 
-	VERSION 0.0.1
+	VERSION 0.1.0
 	DESCRIPTION "Real-time simulation and rendering engine."
 	LANGUAGES CXX
 )
@@ -31,10 +31,10 @@ option(BUILD_SHARED_LIBS "Build shared library" OFF)
 ##############################################
 #Project Target
 
-add_library(SoulEngine)
-add_library(synodic::SoulEngine ALIAS SoulEngine)
+add_library(${PROJECT_NAME})
+add_library(synodic::${PROJECT_NAME} ALIAS ${PROJECT_NAME})
 
-set_target_properties(SoulEngine
+set_target_properties(${PROJECT_NAME}
 PROPERTIES 
 	LINKER_LANGUAGE CXX
 	CXX_STANDARD 20
@@ -44,18 +44,30 @@ PROPERTIES
 
 
 ##############################################
+# Dependencies
+
+find_package(cppaste 0.1.0 REQUIRED)
+find_package(tracer 0.1.0 REQUIRED)
+
+##############################################
 #Sources
 
 file(GLOB_RECURSE SOURCES CONFIGURE_DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/src/*)
 
-target_include_directories(SoulEngine
+target_include_directories(${PROJECT_NAME}
 PUBLIC
 	${CMAKE_CURRENT_SOURCE_DIR}/src
 )
 
-target_sources(SoulEngine
+target_sources(${PROJECT_NAME}
 PRIVATE
 	${SOURCES}
+)
+
+target_link_libraries(${PROJECT_NAME}
+PRIVATE
+	cppaste::cppaste
+	tracer::tracer
 )
 
 #Provides Visual Studio filter support

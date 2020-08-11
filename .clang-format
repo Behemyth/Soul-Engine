@@ -1,4 +1,4 @@
-﻿---
+---
 BasedOnStyle: Google
 AccessModifierOffset: -4
 AlignAfterOpenBracket: AlwaysBreak
@@ -78,5 +78,3 @@ Standard: Cpp11
 TabWidth: 4
 # TODO: Clang11 - UseCRLF: false
 UseTab: Always
-
-...
