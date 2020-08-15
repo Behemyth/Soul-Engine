@@ -14,9 +14,9 @@ project(tests
 )
 
 
-add_executable(tests)
+add_executable(${PROJECT_NAME})
 
-set_target_properties(tests
+set_target_properties(${PROJECT_NAME}
 	PROPERTIES 
 		LINKER_LANGUAGE CXX
 		CXX_STANDARD 20
@@ -26,7 +26,7 @@ set_target_properties(tests
 
 find_package(doctest 2.4.0 REQUIRED)
 
-target_link_libraries(tests
+target_link_libraries(${PROJECT_NAME}
 PUBLIC
 	${CMAKE_PROJECT_NAME}
     doctest::doctest
@@ -35,7 +35,7 @@ PUBLIC
 
 file(GLOB_RECURSE SOURCES CONFIGURE_DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/src/*)
 
-target_sources(tests
+target_sources(${PROJECT_NAME}
 	PRIVATE
 		${SOURCES}
 )

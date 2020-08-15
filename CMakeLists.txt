@@ -23,7 +23,7 @@ project(soul-engine
 ##############################################
 #Options
 
-option(BUILD_TESTS "Build test projects" OFF)
+option(BUILD_TESTS "Build test projects" ON)
 option(BUILD_EXAMPLES "Build example projects" ON)
 option(BUILD_SHARED_LIBS "Build shared library" OFF)
 
@@ -65,9 +65,10 @@ PRIVATE
 )
 
 target_link_libraries(${PROJECT_NAME}
+PUBLIC
+	tracer::tracer
 PRIVATE
 	cppaste::cppaste
-	tracer::tracer
 )
 
 #Provides Visual Studio filter support
@@ -79,12 +80,12 @@ source_group(TREE ${CMAKE_CURRENT_SOURCE_DIR} FILES SOURCES)
 
 if(BUILD_TESTS)
 
-    add_subdirectory(Tests)
+    add_subdirectory(tests)
 
 endif()
 
 if(BUILD_EXAMPLES)
 
-    add_subdirectory(Examples)
+    add_subdirectory(examples)
 
 endif()

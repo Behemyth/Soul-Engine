@@ -1,10 +1,30 @@
 #pragma once
 
-class Soul final{
+#include "synodic/tracer.h"
 
-public:
 
-	Soul() = default;
-	~Soul() = default;
+namespace synodic
+{
+	
+	class Soul final
+	{
+				
+	public:
+		Soul();
+		~Soul() = default;
+		
+	private:
+		class Modules
+		{
+		public:
+			explicit Modules(std::unique_ptr<Tracer>);
+			~Modules() = default;
 
-};
+		};
+
+		[[nodiscard]] Modules InitModules() const;
+
+		Modules modules_;
+	};
+
+}

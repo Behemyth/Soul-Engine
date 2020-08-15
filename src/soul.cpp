@@ -1,17 +1,42 @@
 #include "soul.h"
 
+#include "synodic/composition/module.h"
+#include "synodic/composition/package.h"
+#include "synodic/cpu_tracer.h"
 
+namespace synodic
+{
 
-//Soul::Soul(SoulParameters& params) :
+	Soul::Soul() : modules_(InitModules())
+	{
+	}
+
+	Soul::Modules Soul::InitModules() const
+	{
+
+		const ModuleParameters params;
+		const auto tracerModule = synodic::CreateModule<TracerModule, CPUTracerModule>(params);
+
+		const auto package = Package(tracerModule);
+		return package.Create<Modules>();
+	}
+	
+	Soul::Modules::Modules(std::unique_ptr<Tracer> tracerIn)
+	{
+	}
+
+}
+
+// Soul::Soul(SoulParameters& params) :
 //	parameters_(params),
 //	frameTime_(),
 //	active_(true),
-//	entityRegistry_(new EntityRegistry()), 
+//	entityRegistry_(new EntityRegistry()),
 //	eventRegistry_(new EventRegistry()),
 //	schedulerModule_(SchedulerModule::CreateModule(parameters_.threadCount)),
 //	computeModule_(ComputeModule::CreateModule()),
-//	inputModule_(InputModule::CreateModule()), 
-//	windowModule_(WindowModule::CreateModule(inputModule_)), 
+//	inputModule_(InputModule::CreateModule()),
+//	windowModule_(WindowModule::CreateModule(inputModule_)),
 //	rasterModule_(RasterModule::CreateModule(schedulerModule_, entityRegistry_, windowModule_)),
 //	renderGraphModule_(
 //		RenderGraphModule::CreateModule(rasterModule_, schedulerModule_, entityRegistry_)),
@@ -19,7 +44,8 @@
 //{
 //	parameters_.engineRefreshRate.AddCallback([this](const int value)
 //	{
-//		frameTime_ = std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::seconds(1)) / value;
+//		frameTime_ = std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::seconds(1)) /
+// value;
 //	});
 //
 //	//flush parameters_ with new callbacks
@@ -29,13 +55,13 @@
 //
 ///////////////////////////Core/////////////////////////////////
 //
-//void Soul::Process(Frame& oldFrame, Frame& newFrame) {
+// void Soul::Process(Frame& oldFrame, Frame& newFrame) {
 //
 //	EarlyFrameUpdate(oldFrame, newFrame);
 //
 //}
 //
-//void Soul::Update(Frame& oldFrame, Frame& newFrame) {
+// void Soul::Update(Frame& oldFrame, Frame& newFrame) {
 //
 //	EarlyUpdate(oldFrame, newFrame);
 //
@@ -44,7 +70,7 @@
 //		//	for (auto& scene : scenes) {
 //		//		scene->Build(engineRefreshRate);
 //		//	}
-//		//	
+//		//
 //		//	for (auto const& scene : scenes){
 //		//		PhysicsEngine::Process(scene);
 //		//	}
@@ -55,7 +81,7 @@
 //
 //}
 //
-//void Soul::Render(Frame& oldFrame, Frame& newFrame) {
+// void Soul::Render(Frame& oldFrame, Frame& newFrame) {
 //
 //	LateFrameUpdate(oldFrame, newFrame);
 //
@@ -69,7 +95,7 @@
 //
 //}
 //
-//void Soul::Warmup() {
+// void Soul::Warmup() {
 //
 //	//for (auto& scene : scenes) {
 //	//	scene->Build(engineRefreshRate);
@@ -79,14 +105,14 @@
 //
 //}
 //
-//void Soul::EarlyFrameUpdate(Frame& oldFrame, Frame& newFrame)
+// void Soul::EarlyFrameUpdate(Frame& oldFrame, Frame& newFrame)
 //{
 //
 //	eventRegistry_->Emit("Update"_hashed, "EarlyFrame"_hashed);
 //
 //}
 //
-//void Soul::LateFrameUpdate(Frame& oldFrame, Frame& newFrame)
+// void Soul::LateFrameUpdate(Frame& oldFrame, Frame& newFrame)
 //{
 //
 //	eventRegistry_->Emit("Update"_hashed, "LateFrame"_hashed);
@@ -95,7 +121,7 @@
 //	inputModule_->Poll();
 //
 //	//TODO: Is Update even needed for windowModule_?
-//	//Update the window state as late as possible before rendering 
+//	//Update the window state as late as possible before rendering
 //	//windowModule_->Update();
 //
 //	if (windowModule_->Active()) {
@@ -106,7 +132,7 @@
 //
 //}
 //
-//void Soul::EarlyUpdate(Frame& oldFrame, Frame& newFrame)
+// void Soul::EarlyUpdate(Frame& oldFrame, Frame& newFrame)
 //{
 //
 //	eventRegistry_->Emit("Update"_hashed, "Early"_hashed);
@@ -123,7 +149,7 @@
 //
 //}
 //
-//void Soul::LateUpdate(Frame& oldFrame, Frame& newFrame)
+// void Soul::LateUpdate(Frame& oldFrame, Frame& newFrame)
 //{
 //
 //	eventRegistry_->Emit("Update"_hashed, "Late"_hashed);
@@ -131,9 +157,9 @@
 //
 //}
 //
-//void Soul::Init()
+// void Soul::Init()
 //{
-//	
+//
 //	Warmup();
 //
 //	//TODO: Remove as it is temporary
@@ -141,19 +167,20 @@
 //
 //}
 //
-//void Soul::CreateWindow(WindowParameters& params) {
+// void Soul::CreateWindow(WindowParameters& params) {
 //
 //	windowModule_->CreateWindow(params, rasterModule_);
 //
 //}
 //
 //
-//void Soul::Run()
+// void Soul::Run()
 //{
 //
 //	Warmup();
 //
-//	auto currentTime = std::chrono::time_point_cast<std::chrono::nanoseconds>(std::chrono::high_resolution_clock::now());
+//	auto currentTime =
+// std::chrono::time_point_cast<std::chrono::nanoseconds>(std::chrono::high_resolution_clock::now());
 //	auto nextTime = currentTime + frameTime_;
 //
 //	FramePipeline<3> framePipeline {
