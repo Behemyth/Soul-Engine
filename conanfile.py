@@ -13,7 +13,7 @@ class SoulEngine(ConanFile):
 	options = {"shared": [True, False]}
 	default_options = {"shared": False}
 
-	requires = "doctest/2.4.0", "cppaste/0.1.0", "tracer/0.1.0"
+	requires = "doctest/2.4.0", "cppaste/0.1.0", "tracer/0.1.0", "acceleration-structure/0.1.0", "glm/0.9.9.8"
 	generators = "cmake_find_package"
 
 	scm = {

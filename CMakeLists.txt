@@ -48,6 +48,9 @@ PROPERTIES
 
 find_package(cppaste 0.1.0 REQUIRED)
 find_package(tracer 0.1.0 REQUIRED)
+find_package(glm 0.9.9.8 REQUIRED)
+find_package(acceleration-structure 0.1.0 REQUIRED)
+
 
 ##############################################
 #Sources
@@ -67,8 +70,10 @@ PRIVATE
 target_link_libraries(${PROJECT_NAME}
 PUBLIC
 	tracer::tracer
+	glm::glm
 PRIVATE
 	cppaste::cppaste
+	acceleration-structure::acceleration-structure
 )
 
 #Provides Visual Studio filter support

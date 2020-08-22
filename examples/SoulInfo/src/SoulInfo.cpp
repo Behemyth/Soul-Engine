@@ -4,7 +4,8 @@
 
 int main()
 {
-	synodic::Soul soul;
+	const synodic::SoulParameters parameters;
+	synodic::Soul soul(parameters);
 	
 	return 0;
 }

@@ -6,7 +6,8 @@ TEST_SUITE("Soul")
 {
 	TEST_CASE("Initialization")
 	{
-		synodic::Soul soul;
+		const synodic::SoulParameters parameters;
+		synodic::Soul soul(parameters);
 	}
 
 }
