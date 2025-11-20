@@ -1,0 +1,45 @@
+target_sources(soul-engine
+	PUBLIC
+		FILE_SET CXX_MODULES FILES
+			vulkan.ixx
+			VulkanInstance.ixx
+			VulkanRasterBackend.ixx
+			VulkanFence.ixx
+			VulkanSemaphore.ixx
+			VulkanFramebuffer.ixx
+			VulkanRenderPass.ixx
+			VulkanShader.ixx
+			VulkanSubPass.ixx
+			device/VulkanPhysicalDevice.ixx
+			device/VulkanQueue.ixx
+			device/VulkanDevice.ixx
+			command/VulkanCommandPool.ixx
+			command/VulkanCommandBuffer.ixx
+			buffer/VulkanBuffer.ixx
+			pipeline/VulkanPipeline.ixx
+			pipeline/VulkanPipelineLayout.ixx
+			pipeline/VulkanPipelineCache.ixx
+			surface/VulkanSurface.ixx
+			surface/VulkanSwapChain.ixx
+			surface/VulkanFrame.ixx
+	PRIVATE
+		command/VulkanCommandBuffer.cpp
+		command/VulkanCommandPool.cpp
+		device/VulkanDevice.cpp
+		device/VulkanQueue.cpp
+		device/VulkanPhysicalDevice.cpp
+		VulkanFramebuffer.cpp
+		pipeline/VulkanPipeline.cpp
+		pipeline/VulkanPipelineLayout.cpp
+		pipeline/VulkanPipelineCache.cpp
+		VulkanInstance.cpp
+		VulkanRasterBackend.cpp
+		VulkanRenderPass.cpp
+		VulkanSubPass.cpp
+		VulkanSemaphore.cpp
+		VulkanFence.cpp
+		surface/VulkanFrame.cpp
+		VulkanShader.cpp
+		surface/VulkanSurface.cpp
+		surface/VulkanSwapChain.cpp
+)

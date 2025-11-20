@@ -1,0 +1,44 @@
+module;
+
+#include <vulkan/vulkan.hpp>
+
+export module render.raster.vulkan:command_buffer;
+
+import :command_pool;
+import :device;
+
+import <memory>;
+
+export class VulkanCommandBuffer final {
+
+public:
+
+	VulkanCommandBuffer(const vk::CommandPool&,
+		const vk::Device&,
+		vk::CommandBufferUsageFlagBits,
+		vk::CommandBufferLevel);
+	~VulkanCommandBuffer();
+
+	VulkanCommandBuffer(const VulkanCommandBuffer&) = delete;
+	VulkanCommandBuffer(VulkanCommandBuffer&&) noexcept = default;
+
+	VulkanCommandBuffer& operator=(const VulkanCommandBuffer&) = delete;
+	VulkanCommandBuffer& operator=(VulkanCommandBuffer&&) noexcept = default;
+
+	void Begin();
+	void End();
+
+	const vk::CommandBuffer& Handle() const;
+
+
+private:
+
+	vk::CommandPool commandPool_;
+
+	vk::Device device_;
+
+
+	vk::CommandBufferUsageFlagBits usage_;
+	vk::CommandBuffer commandBuffer_;
+
+};

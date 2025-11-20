@@ -1,0 +1,45 @@
+{
+	"version": 6,
+	"include": [
+		"../common/CMakePresets.json"
+	],
+	"configurePresets": [
+		{
+			"name": "macos-default",
+			"inherits": [
+				"default"
+			],
+			"hidden": true,
+			"description": "Base preset for MacOS configurations",
+			"condition": {
+				"type": "equals",
+				"lhs": "${hostSystemName}",
+				"rhs": "Darwin"
+			}
+		}
+	],
+	"buildPresets": [
+		{
+			"name": "macos-default",
+			"hidden": true,
+			"condition": {
+				"type": "equals",
+				"lhs": "${hostSystemName}",
+				"rhs": "Darwin"
+			}
+		}
+	],
+	"testPresets": [
+		{
+			"name": "macos-default",
+			"hidden": true,
+			"output": {
+				"outputOnFailure": true,
+				"shortProgress": true
+			},
+			"inherits": [
+				"default"
+			]
+		}
+	]
+}

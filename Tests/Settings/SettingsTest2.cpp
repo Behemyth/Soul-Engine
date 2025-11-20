@@ -75,7 +75,7 @@ namespace Settings {
 			assert(j == 9.9);
 		}
 
-		//Tests to make sure defaultValue used when an undefined 
+		//Tests to make sure defaultValue used when an undefined
 		//setting is retrived
 
 		void testGetUndefinedSettings() {
@@ -205,6 +205,6 @@ namespace Settings {
 	}
 }
 
-int main() {
+std::int32_t main() {
 	return 0;
 }

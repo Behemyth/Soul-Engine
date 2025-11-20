@@ -1,0 +1,34 @@
+export module synodic.soul.engine:compute.cuda.device;
+
+import :compute.compute_device;
+import synodic.soul.core;
+
+export class CUDADevice : public ComputeDevice<CUDADevice> {
+
+public:
+
+	CUDADevice() = default;
+	virtual ~CUDADevice() = default;
+
+	CUDADevice(const CUDADevice&) = delete;
+	CUDADevice(CUDADevice&&) noexcept = default;
+
+	CUDADevice& operator=(const CUDADevice&) = delete;
+	CUDADevice& operator=(CUDADevice&&) noexcept = default;
+
+
+	template <typename KernelFunction, typename... Args>
+	void Launch(const ComputePolicy&, const KernelFunction&, Args&&...);
+
+
+};
+
+
+template <typename KernelFunction, typename... Args>
+void CUDADevice::Launch(const ComputePolicy& policy,
+	const KernelFunction& kernel,
+	Args&&... parameters) {
+
+	throw NotImplemented();
+
+}

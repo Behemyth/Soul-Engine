@@ -14,3 +14,5 @@ Resources/Textures/*
 
 #Python
 Pipfile.lock
+/out
+vc140.pdb

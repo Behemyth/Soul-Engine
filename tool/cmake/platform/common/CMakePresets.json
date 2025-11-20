@@ -1,0 +1,77 @@
+{
+    "version": 9,
+    "include": [
+        "../../../cppython/cppython.json"
+    ],
+    "configurePresets": [
+        {
+            "name": "default",
+            "description": "Base preset for configurations",
+            "hidden": true,
+            "inherits": "cppython",
+            "binaryDir": "${sourceDir}/build/${presetName}",
+            "cacheVariables": {
+                "CMAKE_CONFIGURATION_TYPES": {
+                    "type": "STRING",
+                    "value": "Debug;Development;Release"
+                }
+            }
+        },
+        {
+            "name": "default-release",
+            "description": "All single-configuration generators should inherit from this preset",
+            "inherits": [
+                "cppython",
+                "default"
+            ],
+            "binaryDir": "${sourceDir}/../../../../build",
+            "cacheVariables": {
+                "CMAKE_BUILD_TYPE": "Release"
+            }
+        },
+        {
+            "name": "default-debug",
+            "description": "All single-configuration generators should inherit from this preset",
+            "inherits": [
+                "cppython",
+                "default"
+            ],
+            "binaryDir": "${sourceDir}/../../../../build",
+            "cacheVariables": {
+                "CMAKE_BUILD_TYPE": "Debug"
+            }
+        }
+    ],
+    "buildPresets": [
+        {
+            "name": "default",
+            "hidden": true
+        },
+        {
+            "name": "default-release",
+            "description": "An example build preset for release",
+            "configurePreset": "default-release"
+        },
+        {
+            "name": "default-debug",
+            "description": "An example build preset for debug",
+            "configurePreset": "default-debug"
+        }
+    ],
+    "testPresets": [
+        {
+            "name": "default",
+            "hidden": true,
+            "output": {
+                "outputOnFailure": true,
+                "shortProgress": true,
+                "debug": true,
+                "verbosity": "verbose"
+            },
+            "execution": {
+                "noTestsAction": "error",
+                "stopOnFailure": true
+            }
+        }
+    ]
+}

@@ -5,16 +5,16 @@
 
 using namespace Microsoft::VisualStudio::CppUnitTestFramework;
 
-void mult(int x, int y) {
-	int z = x*y;
+void mult(std::int32_t x, std::int32_t y) {
+	std::int32_t z = x*y;
 }
 
 namespace Multithreadingtest
-{		
+{
 	TEST_CLASS(unittest1)
 	{
 	public:
-		
+
 		TEST_METHOD(basic_fiber_spawning)
 		{
 			//tests intitializing, adding a simple task and terminating the scheduler
@@ -65,7 +65,7 @@ namespace Multithreadingtest
 					mult(1, 1);
 				});
 			}
-			
+
 
 			Assert::IsTrue(Scheduler::Running());
 
@@ -81,7 +81,7 @@ namespace Multithreadingtest
 			Scheduler::Initialize();
 
 			//due to block each task runs sequentially so a is in order
-			std::vector<int> a;
+			std::vector<std::int32_t> a;
 			for (size_t i = 0; i < 100; i++)
 			{
 				Scheduler::AddTask(LAUNCH_IMMEDIATE, FIBER_HIGH, false, [&i, &a]() {
@@ -94,7 +94,7 @@ namespace Multithreadingtest
 			Scheduler::Terminate();
 			for (size_t i = 0; i < 100; i++)
 			{
-				Assert::AreEqual(int(i), a[i]);
+				Assert::AreEqual(std::int32_t(i), a[i]);
 			}
 
 
