@@ -1,5 +1,7 @@
 export module synodic.soul.window.backend.mock;
 
+import std;
+
 import synodic.soul.window;
 
 // Mock window implementation (no actual windowing)

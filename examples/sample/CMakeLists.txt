@@ -25,6 +25,9 @@ target_link_libraries(sample
         synodic::soul-engine
 )
 
+if(WIN32)
+    set_target_properties(sample PROPERTIES LINK_FLAGS "/SUBSYSTEM:WINDOWS /ENTRY:mainCRTStartup")
+endif()
 
 add_subdirectory(src)
 
