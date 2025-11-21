@@ -1,11 +1,11 @@
 module render.raster.vulkan;
 
-import synodic.soul.engine;
+// Using static dispatcher - no dynamic loader needed with C++20 modules
 
 
 VulkanInstance::VulkanInstance(const vk::ApplicationInfo& appInfo,
-	nonstd::span<std::string> validationLayers,
-	nonstd::span<std::string> requiredExtensions)
+	std::span<std::string> validationLayers,
+	std::span<std::string> requiredExtensions)
 {
 
 	std::vector<const char*> cValidationLayers;
@@ -42,9 +42,11 @@ VulkanInstance::VulkanInstance(const vk::ApplicationInfo& appInfo,
 	instanceCreationInfo.ppEnabledLayerNames = cValidationLayers.data();
 
 	instance_ = createInstance(instanceCreationInfo);
-	dispatcher_ = vk::DispatchLoaderDynamic(instance_);
 
-	if constexpr (Compiler::Debug()) {
+	// Note: Debug messenger requires dynamic dispatch or macro configuration
+	// Static dispatcher doesn't support VK_EXT_debug_utils extension functions
+	// For validation, check standard output or use a dynamic dispatcher
+	if constexpr (false && Compiler::Debug()) {
 
 
 		vk::DebugUtilsMessengerCreateInfoEXT messengerCreateInfo;
@@ -54,11 +56,12 @@ VulkanInstance::VulkanInstance(const vk::ApplicationInfo& appInfo,
 		messengerCreateInfo.messageType = vk::DebugUtilsMessageTypeFlagBitsEXT::eGeneral |
 										  vk::DebugUtilsMessageTypeFlagBitsEXT::eValidation |
 										  vk::DebugUtilsMessageTypeFlagBitsEXT::ePerformance;
-		messengerCreateInfo.pfnUserCallback = DebugCallback;
+		// TODO: Fix DebugCallback with proper C API types for C++20 modules
+		// messengerCreateInfo.pfnUserCallback = DebugCallback;
 		messengerCreateInfo.pUserData = nullptr;
 
 		debugMessenger_ =
-			instance_.createDebugUtilsMessengerEXT(messengerCreateInfo, nullptr, dispatcher_);
+			instance_.createDebugUtilsMessengerEXT(messengerCreateInfo);
 
 	}
 
@@ -67,9 +70,9 @@ VulkanInstance::VulkanInstance(const vk::ApplicationInfo& appInfo,
 VulkanInstance::~VulkanInstance()
 {
 
-	if constexpr (Compiler::Debug()) {
+	if constexpr (false && Compiler::Debug()) {
 
-		instance_.destroyDebugUtilsMessengerEXT(debugMessenger_, nullptr, dispatcher_);
+		instance_.destroyDebugUtilsMessengerEXT(debugMessenger_);
 
 	}
 
@@ -100,12 +103,11 @@ std::vector<VulkanPhysicalDevice> VulkanInstance::EnumeratePhysicalDevices()
 
 }
 
-VkBool32 VulkanInstance::DebugCallback(VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity,
-	VkDebugUtilsMessageTypeFlagsEXT messageType,
-	const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData,
-	void* pUserData)
-{
-
-	throw NotImplemented();
-
-}
+// TODO: Uncomment and fix when C API types are available in modules
+// VkBool32 VulkanInstance::DebugCallback(VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity,
+// 	VkDebugUtilsMessageTypeFlagsEXT messageType,
+// 	const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData,
+// 	void* pUserData)
+// {
+// 	throw NotImplemented();
+// }

@@ -81,6 +81,8 @@
         "set": "cpp",
         "span": "cpp",
         "unordered_set": "cpp",
-        "variant": "cpp"
+        "variant": "cpp",
+        "expected": "cpp",
+        "shared_mutex": "cpp"
     }
 }

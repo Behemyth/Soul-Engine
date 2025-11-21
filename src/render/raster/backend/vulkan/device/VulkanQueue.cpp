@@ -15,12 +15,15 @@ bool VulkanQueue::Submit()
 }
 
 bool VulkanQueue::Present(
-	nonstd::span<vk::Semaphore> semaphores,
-	nonstd::span<vk::SwapchainKHR> swapChains,
-	nonstd::span<std::uint32_t> imageIndices) const
+	std::span<vk::Semaphore> semaphores,
+	std::span<vk::SwapchainKHR> swapChains,
+	std::span<std::uint32_t> imageIndices) const
 {
 
-	assert(swapChains.size() == imageIndices.size());
+	// Verify sizes match
+	if (swapChains.size() != imageIndices.size()) {
+		throw std::runtime_error("SwapChain and imageIndices size mismatch");
+	}
 
 	//TODO: Reduce allocation calls
 	std::vector<vk::Result> swapChainResults(swapChains.size());

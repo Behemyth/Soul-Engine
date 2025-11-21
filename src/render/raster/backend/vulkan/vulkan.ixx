@@ -1,5 +1,7 @@
 export module render.raster.vulkan;
 
+export import :error;
+export import :allocator;
 export import :physical_device;
 export import :queue;
 export import :device;

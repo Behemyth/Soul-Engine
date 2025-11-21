@@ -1,8 +1,7 @@
-module;
-
-#include <vulkan/vulkan.hpp>
-
 export module render.raster.vulkan:physical_device;
+
+import std;
+import vulkan_hpp;
 
 export class VulkanPhysicalDevice {
 

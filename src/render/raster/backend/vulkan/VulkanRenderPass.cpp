@@ -1,13 +1,13 @@
 module render.raster.vulkan;
 
 VulkanRenderPass::VulkanRenderPass(const VulkanDevice& device,
-	nonstd::span<vk::AttachmentDescription2KHR> subPassAttachments,
-	nonstd::span<vk::SubpassDescription2KHR> subPassDescriptions,
-	nonstd::span<vk::SubpassDependency2KHR> subPassDependencies):
+	std::span<vk::AttachmentDescription2> subPassAttachments,
+	std::span<vk::SubpassDescription2> subPassDescriptions,
+	std::span<vk::SubpassDependency2> subPassDependencies):
 	device_(device.Logical())
 {
 
-	vk::RenderPassCreateInfo2KHR renderPassInfo;
+	vk::RenderPassCreateInfo2 renderPassInfo;
 	renderPassInfo.flags = vk::RenderPassCreateFlags();
 	renderPassInfo.attachmentCount = static_cast<std::uint32_t>(subPassAttachments.size());
 	renderPassInfo.pAttachments = subPassAttachments.data();
@@ -18,7 +18,7 @@ VulkanRenderPass::VulkanRenderPass(const VulkanDevice& device,
 	renderPassInfo.correlatedViewMaskCount = 0;
 	renderPassInfo.pCorrelatedViewMasks = nullptr;
 
-	renderPass_ = device_.createRenderPass2KHR(renderPassInfo, nullptr, device.DispatchLoader());
+	renderPass_ = device_.createRenderPass2(renderPassInfo);
 
 }
 

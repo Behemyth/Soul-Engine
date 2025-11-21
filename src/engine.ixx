@@ -4,6 +4,8 @@ import std;
 
 import synodic.cppaste;
 export import synodic.soul.core;
+export import :core.system;
+export import :core.geometry;
 
 import synodic.soul.window;
 import synodic.soul.input;

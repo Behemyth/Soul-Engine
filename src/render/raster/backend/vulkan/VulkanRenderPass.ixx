@@ -1,10 +1,7 @@
-module;
-
-#include <vulkan/vulkan.hpp>
 
 export module render.raster.vulkan:render_pass;
-
-import synodic.soul.engine;
+import std;
+import vulkan_hpp;
 import :device;
 
 export class VulkanRenderPass
@@ -13,9 +10,9 @@ export class VulkanRenderPass
 public:
 
 	VulkanRenderPass(const VulkanDevice&,
-		nonstd::span<vk::AttachmentDescription2KHR> subPassAttachments,
-		nonstd::span<vk::SubpassDescription2KHR> subPassDescriptions,
-		nonstd::span<vk::SubpassDependency2KHR> subPassDependencies);
+		std::span<vk::AttachmentDescription2> subPassAttachments,
+		std::span<vk::SubpassDescription2> subPassDescriptions,
+		std::span<vk::SubpassDependency2> subPassDependencies);
 	~VulkanRenderPass();
 
 	VulkanRenderPass(const VulkanRenderPass&) = delete;

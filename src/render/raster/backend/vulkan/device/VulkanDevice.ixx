@@ -1,24 +1,28 @@
-module;
-
-#include <vulkan/vulkan.hpp>
-
 export module render.raster.vulkan:device;
 
-import synodic.soul.engine;
+import std;
+import vulkan_hpp;
+
 import :queue;
+import :allocator;
+import :error;
+import synodic.soul.scheduler;
+import synodic.soul.engine;
 
-using std::uint32_t = std::uint32_t;
-
-export class VulkanDevice final: public RasterDevice {
+// TODO: VulkanDevice should inherit from RasterDevice but this causes
+// MSVC Internal Compiler Error when importing synodic.soul.raster
+// For now, VulkanDevice just implements the same interface
+export class VulkanDevice final {
 
 public:
 
 	VulkanDevice(std::shared_ptr<SchedulerModule>&,
 		const vk::Instance&,
 		const vk::PhysicalDevice&,
-		nonstd::span<std::string>,
-		nonstd::span<std::string>);
-	~VulkanDevice() override;
+		std::span<std::string>,
+		std::span<std::string>,
+		std::uint32_t vulkanApiVersion);
+	~VulkanDevice();
 
 	VulkanDevice(const VulkanDevice &) = delete;
 	VulkanDevice(VulkanDevice &&) noexcept = default;
@@ -26,17 +30,18 @@ public:
 	VulkanDevice& operator=(const VulkanDevice &) = delete;
 	VulkanDevice& operator=(VulkanDevice&&) noexcept = default;
 
-	void Synchronize() override;
+	void Synchronize();
 
 	const vk::Device& Logical() const;
 	const vk::PhysicalDevice& Physical() const;
-	const vk::DispatchLoaderDynamic& DispatchLoader() const;
+	VulkanAllocator& Allocator() noexcept { return allocator_; }
+	const VulkanAllocator& Allocator() const noexcept { return allocator_; }
 
 	bool SurfaceSupported(vk::SurfaceKHR&);
-	std::uint32_t HighFamilyIndex() const;
-	nonstd::span<VulkanQueue> GraphicsQueues();
-	nonstd::span<VulkanQueue> ComputeQueues();
-	nonstd::span<VulkanQueue> TransferQueues();
+	VulkanResult<std::uint32_t> HighFamilyIndex() const;
+	std::span<VulkanQueue> GraphicsQueues();
+	std::span<VulkanQueue> ComputeQueues();
+	std::span<VulkanQueue> TransferQueues();
 
 private:
 
@@ -49,8 +54,6 @@ private:
 	std::vector<VulkanQueue> computeQueues_;
 	std::vector<VulkanQueue> transferQueues_;
 
-	// Dynamic dispatcher for extensions
-	vk::DispatchLoaderDynamic dispatcher_;
-
+	VulkanAllocator allocator_;
 
 };

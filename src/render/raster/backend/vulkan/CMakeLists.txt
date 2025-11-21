@@ -2,6 +2,8 @@ target_sources(soul-engine
 	PUBLIC
 		FILE_SET CXX_MODULES FILES
 			vulkan.ixx
+			VulkanError.ixx
+			VulkanAllocator.ixx
 			VulkanInstance.ixx
 			VulkanRasterBackend.ixx
 			VulkanFence.ixx
@@ -23,6 +25,8 @@ target_sources(soul-engine
 			surface/VulkanSwapChain.ixx
 			surface/VulkanFrame.ixx
 	PRIVATE
+		VulkanAllocator.cpp
+		buffer/VulkanBuffer.cpp
 		command/VulkanCommandBuffer.cpp
 		command/VulkanCommandPool.cpp
 		device/VulkanDevice.cpp

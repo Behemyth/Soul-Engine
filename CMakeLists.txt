@@ -25,6 +25,38 @@ find_package(honesty REQUIRED)
 find_package(synodic-template-library REQUIRED)
 find_package(cppaste REQUIRED)
 find_package(SDL3 REQUIRED)
+find_package(VulkanMemoryAllocator REQUIRED)
+find_package(Vulkan REQUIRED)
+
+# Slang is bundled with Vulkan SDK but doesn't provide CMake config
+# Set up manually using Vulkan SDK paths
+if(NOT TARGET slang::slang)
+	# Get Vulkan SDK root by going up from include directory
+	get_filename_component(VULKAN_SDK_ROOT "${Vulkan_INCLUDE_DIR}" DIRECTORY)
+
+	find_path(SLANG_INCLUDE_DIR
+		NAMES slang.h
+		PATHS "${VULKAN_SDK_ROOT}/Include/slang"
+		NO_DEFAULT_PATH
+	)
+
+	find_library(SLANG_LIBRARY
+		NAMES slang
+		PATHS "${VULKAN_SDK_ROOT}/Lib"
+		NO_DEFAULT_PATH
+	)
+
+	if(SLANG_INCLUDE_DIR AND SLANG_LIBRARY)
+		add_library(slang::slang UNKNOWN IMPORTED)
+		set_target_properties(slang::slang PROPERTIES
+			IMPORTED_LOCATION "${SLANG_LIBRARY}"
+			INTERFACE_INCLUDE_DIRECTORIES "${SLANG_INCLUDE_DIR}"
+		)
+		message(STATUS "Found Slang: ${SLANG_LIBRARY}")
+	else()
+		message(FATAL_ERROR "Slang not found in Vulkan SDK at ${VULKAN_SDK_ROOT}")
+	endif()
+endif()
 
 ##############################################
 #Options
@@ -33,15 +65,25 @@ option(BUILD_TESTING "Build the tests verifying functionality" ${PROJECT_IS_TOP_
 option(BUILD_EXAMPLES "Build example projects" ${PROJECT_IS_TOP_LEVEL})
 
 option(BUILD_SHARED_LIBS "Build shared library" OFF)#TODO: Implement use of this option
+option(SOUL_ENABLE_SHADER_HOT_RELOAD "Enable shader hot-reload support with file watching" ${PROJECT_IS_TOP_LEVEL})
 option(BUILD_CPU_COMPUTE "Build the OpenCL Compute backend" ON)#TODO: Implement use of this option
 option(BUILD_CUDA_COMPUTE "Build the CUDA Compute backend" ${CUDA_FOUND})#TODO: Implement use of this option
 option(BUILD_OPENCL_COMPUTE "Build the OpenCL Compute backend" ${OpenCL_FOUND})#TODO: Implement use of this option
-option(BUILD_VULKAN_RASTER "Build the Vulkan Raster backend" OFF)#TODO: Implement use of this option
+option(BUILD_VULKAN_RASTER "Build the Vulkan Raster backend" ON)#TODO: Implement use of this option
 option(BUILD_FIBER_SCHEDULER "Build the Fiber Scheduler backend" OFF)
 option(BUILD_ENTITY_GRAPH "Build the Entity Graph backend" ON)
 
 ##############################################
 #Project Target
+
+add_library(VulkanHppModule)
+target_sources(VulkanHppModule PUBLIC
+  FILE_SET CXX_MODULES
+  BASE_DIRS ${Vulkan_INCLUDE_DIR}
+  FILES ${Vulkan_INCLUDE_DIR}/vulkan/vulkan.cppm
+)
+target_compile_features(VulkanHppModule PUBLIC cxx_std_23)
+target_link_libraries(VulkanHppModule PUBLIC Vulkan::Vulkan)
 
 add_library(soul-engine)
 add_library(synodic::soul-engine ALIAS soul-engine)
@@ -65,7 +107,15 @@ target_link_libraries(soul-engine
 		synodic::honesty
 		synodic::synodic-template-library
 		SDL3::SDL3
+		GPUOpen::VulkanMemoryAllocator
+		VulkanHppModule
+		slang::slang
 )
+
+# Conditionally define SOUL_ENABLE_SHADER_HOT_RELOAD macro
+if(SOUL_ENABLE_SHADER_HOT_RELOAD)
+	target_compile_definitions(soul-engine PRIVATE SOUL_ENABLE_SHADER_HOT_RELOAD)
+endif()
 
 # Create file set for C++20 modules
 target_sources(soul-engine
@@ -122,7 +172,7 @@ configure_package_config_file(
 	INSTALL_DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/soul-engine
 )
 
-install(TARGETS soul-engine
+install(TARGETS soul-engine VulkanHppModule ${VULKAN_MODULE_EXPORT_TARGET}
 	EXPORT soul-engineTargets
 	ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
 	LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}

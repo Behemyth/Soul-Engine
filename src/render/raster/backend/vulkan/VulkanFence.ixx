@@ -1,8 +1,7 @@
-module;
-
-#include <vulkan/vulkan.hpp>
 
 export module render.raster.vulkan:fence;
+import std;
+import vulkan_hpp;
 
 export class VulkanFence
 {

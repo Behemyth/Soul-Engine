@@ -30,7 +30,7 @@ vk::SurfaceFormatKHR VulkanSurface::UpdateFormat(const VulkanDevice& device)
 	surfaceInfo.surface = surface_;
 
 	const auto formats =
-		physicalDevice.getSurfaceFormats2KHR(surfaceInfo, device.DispatchLoader());
+		physicalDevice.getSurfaceFormats2KHR(surfaceInfo);
 
 	// TODO: pick formats better
 	if (!formats.empty() && formats.front().surfaceFormat.format == vk::Format::eUndefined) {

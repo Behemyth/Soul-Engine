@@ -1,39 +1,34 @@
-module;
-
-#include <vulkan/vulkan.hpp>
-
 export module render.raster.vulkan:swapchain;
 
-import synodic.soul.engine;
-import :pipeline;
+
+import std;
+import vulkan_hpp;
 import :device;
 import :surface;
+import :error;
 
-import <vector>;
-
-using std::uint32_t = std::uint32_t;
-
-export class VulkanSwapChain : Component {
+export class VulkanSwapChain {
 
 public:
 
-	VulkanSwapChain(VulkanDevice&,
+	// Factory method that returns expected for proper error handling
+	static VulkanResult<VulkanSwapChain> Create(VulkanDevice&,
 		VulkanSurface&,
 		bool,
 		VulkanSwapChain* = nullptr);
+
+	VulkanSwapChain(VulkanSwapChain&& o) noexcept = default;
+	VulkanSwapChain& operator=(VulkanSwapChain&& other) noexcept = default;
 	~VulkanSwapChain();
 
 	VulkanSwapChain(const VulkanSwapChain&) = delete;
-	VulkanSwapChain(VulkanSwapChain&& o) noexcept = default;
-
 	VulkanSwapChain& operator=(const VulkanSwapChain&) = delete;
-	VulkanSwapChain& operator=(VulkanSwapChain&& other) noexcept = default;
 
-	nonstd::span<vk::Image> Images();
-	nonstd::span<vk::ImageView> ImageViews();
+	std::span<vk::Image> Images();
+	std::span<vk::ImageView> ImageViews();
 	[[nodiscard]] std::uint32_t ActiveImageIndex() const;
 
-	void AcquireImage(const vk::Semaphore&);
+	VulkanResult<std::uint32_t> AcquireImage(const vk::Semaphore&);
 
 	[[nodiscard]] const vk::Device& Device() const;
 	[[nodiscard]] vk::Extent2D Size() const;
@@ -41,6 +36,9 @@ public:
 
 
 private:
+
+	// Private constructor for factory method
+	VulkanSwapChain() = default;
 
 	vk::Device device_;
 

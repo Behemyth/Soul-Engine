@@ -1,13 +1,10 @@
-module;
-
-#include <vulkan/vulkan.hpp>
-
 export module render.raster.vulkan:command_buffer;
+
+import std;
+import vulkan_hpp;
 
 import :command_pool;
 import :device;
-
-import <memory>;
 
 export class VulkanCommandBuffer final {
 

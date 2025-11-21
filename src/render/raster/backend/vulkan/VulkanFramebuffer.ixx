@@ -1,11 +1,8 @@
-module;
-
-#include <vulkan/vulkan.hpp>
-#include <glm/vec2.hpp>
 
 export module render.raster.vulkan:framebuffer;
-
-import synodic.soul.engine;
+import std;
+import vulkan_hpp;
+import std;
 import :render_pass;
 
 export class VulkanFrameBuffer{
@@ -13,7 +10,7 @@ export class VulkanFrameBuffer{
 public:
 
 	VulkanFrameBuffer(const vk::Device& device,
-		nonstd::span<vk::ImageView>,
+		std::span<vk::ImageView>,
 		VulkanRenderPass&,
 		vk::Extent2D&);
 	~VulkanFrameBuffer();

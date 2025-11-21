@@ -1,22 +1,18 @@
-module;
 
-#include <vulkan/vulkan.hpp>
 
 export module render.raster.vulkan:instance;
-
-import synodic.soul.engine;
+import std;
+import vulkan_hpp;
 import :physical_device;
-
-import <string>;
-import <vector>;
+import synodic.soul.engine;
 
 export class VulkanInstance {
 
 public:
 
 	VulkanInstance(const vk::ApplicationInfo&,
-		nonstd::span<std::string>,
-		nonstd::span<std::string>);
+		std::span<std::string>,
+		std::span<std::string>);
 	~VulkanInstance();
 
 	VulkanInstance(const VulkanInstance&) = default;
@@ -33,17 +29,14 @@ private:
 
 	vk::Instance instance_;
 
-
-	// Dynamic dispatcher for extensions
-	vk::DispatchLoaderDynamic dispatcher_;
-
 	// Debug state
 	// TODO: Should be conditionally included when the class is only debug mode.
+	// TODO: Fix callback signature to work with C++20 modules (needs C Vulkan types)
 
-	static VkBool32 DebugCallback(VkDebugUtilsMessageSeverityFlagBitsEXT,
-		VkDebugUtilsMessageTypeFlagsEXT,
-		const VkDebugUtilsMessengerCallbackDataEXT*,
-		void*);
+	// static VkBool32 DebugCallback(VkDebugUtilsMessageSeverityFlagBitsEXT,
+	// 	VkDebugUtilsMessageTypeFlagsEXT,
+	// 	const VkDebugUtilsMessengerCallbackDataEXT*,
+	// 	void*);
 	 
 	vk::DebugUtilsMessengerEXT debugMessenger_;
 

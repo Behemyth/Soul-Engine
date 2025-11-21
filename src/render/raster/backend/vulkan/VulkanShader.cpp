@@ -1,7 +1,7 @@
 module render.raster.vulkan;
 
-import synodic.soul.engine;
-import std;
+import synodic.soul.core;
+import synodic.soul.transput;
 
 VulkanShader::VulkanShader(const vk::Device& device,
 	const vk::ShaderStageFlagBits& shaderType,

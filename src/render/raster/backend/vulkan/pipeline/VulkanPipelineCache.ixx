@@ -1,8 +1,7 @@
-module;
-
-#include <vulkan/vulkan.hpp>
-
 export module render.raster.vulkan:pipeline_cache;
+
+import std;
+import vulkan_hpp;
 
 export class VulkanPipelineCache {
 

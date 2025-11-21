@@ -1,26 +1,24 @@
-module;
-
-#include <vulkan/vulkan.hpp>
-#include <glm/vec2.hpp>
-
 export module render.raster.vulkan:backend;
 
-import synodic.soul.engine;
+import std;
+import vulkan_hpp;
+
+import synodic.soul.core;
+import synodic.soul.raster;
+import synodic.soul.scheduler;
+import synodic.soul.window;
 import :swapchain;
 import :surface;
 import :command_pool;
 import :command_buffer;
 import :physical_device;
+import :device;
+import :queue;
 import :instance;
 import :frame;
 import :subpass;
-
-import <unordered_map>;
-import <memory>;
-import <functional>;
-import <any>;
-
-using std::uint32_t = std::uint32_t;
+import :pipeline;
+import :render_pass;
 
 export class VulkanRasterBackend final : public RasterModule {
 
@@ -28,9 +26,8 @@ public:
 
 	static constexpr std::uint32_t frameCount = 3;
 
-	VulkanRasterBackend(std::shared_ptr<SchedulerModule>&,
-		std::shared_ptr<EntityRegistry>&,
-		std::shared_ptr<WindowModule>&);
+	// TODO: Restore scheduler and other shared_ptr parameters once MSVC ICE is resolved
+	VulkanRasterBackend();
 	~VulkanRasterBackend() override = default;
 
 	VulkanRasterBackend(const VulkanRasterBackend &) = delete;
@@ -50,8 +47,8 @@ public:
 	void CreatePassInput(Entity, Entity, Format) override;
 	void CreatePassOutput(Entity, Entity, Format) override;
 
-	Entity CreateSurface(std::any, glm::uvec2) override;
-	void UpdateSurface(Entity, glm::uvec2) override;
+	Entity CreateSurface(std::any, uvec2) override;
+	void UpdateSurface(Entity, uvec2) override;
 	void RemoveSurface(Entity) override;
 	void AttachSurface(Entity, Entity) override;
 	void DetachSurface(Entity, Entity) override;
@@ -109,7 +106,7 @@ private:
 
 };
 
-class VulkanSurfaceResource : public Component
+export class VulkanSurfaceResource : public Component
 {
 
 public:

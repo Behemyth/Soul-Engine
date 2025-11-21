@@ -30,6 +30,7 @@ dependencies = [
 	'cppaste>=0.0.0.dev1',
 	'portability>=0.0.0.dev1',
 	'sdl>=3.2.20',
+	'vulkan-memory-allocator>=3.3.0',
 ]
 
 [tool.cppython.generators.cmake]

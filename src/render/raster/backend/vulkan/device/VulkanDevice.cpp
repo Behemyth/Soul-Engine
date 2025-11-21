@@ -1,15 +1,14 @@
 module render.raster.vulkan;
 
-import synodic.soul.engine;
-import std;
-
 VulkanDevice::VulkanDevice(std::shared_ptr<SchedulerModule>& scheduler,
 	const vk::Instance& instance,
 	const vk::PhysicalDevice& physicalDevice,
-	nonstd::span<std::string> validationLayers,
-	nonstd::span<std::string> requiredExtensions):
+	std::span<std::string> validationLayers,
+	std::span<std::string> requiredExtensions,
+	std::uint32_t vulkanApiVersion):
 	scheduler_(scheduler),
-	physicalDevice_(physicalDevice)
+	physicalDevice_(physicalDevice),
+	allocator_(instance, physicalDevice, vk::Device(), vulkanApiVersion)  // Temporary, will be updated
 {
 
 	// Convert strings to c-strings
@@ -139,8 +138,6 @@ VulkanDevice::VulkanDevice(std::shared_ptr<SchedulerModule>& scheduler,
 
 	device_ = physicalDevice.createDevice(deviceCreateInfo);
 
-	dispatcher_ = vk::DispatchLoaderDynamic(instance, device_);
-
 	//Device is created, queues can be retrieved
 	for (auto& indices : transferIndices) {
 		transferQueues_.emplace_back(device_, indices.first, indices.second);
@@ -153,6 +150,9 @@ VulkanDevice::VulkanDevice(std::shared_ptr<SchedulerModule>& scheduler,
 	for (auto& indices : graphicsIndices) {
 		graphicsQueues_.emplace_back(device_, indices.first, indices.second);
 	}
+
+	// Now initialize the allocator with the created device
+	allocator_ = VulkanAllocator(instance, physicalDevice_, device_, vulkanApiVersion);
 }
 
 VulkanDevice::~VulkanDevice()
@@ -183,13 +183,6 @@ const vk::PhysicalDevice& VulkanDevice::Physical() const
 
 }
 
-const vk::DispatchLoaderDynamic& VulkanDevice::DispatchLoader() const
-{
-
-	return dispatcher_;
-
-}
-
 bool VulkanDevice::SurfaceSupported(vk::SurfaceKHR& surface)
 {
 
@@ -210,7 +203,7 @@ bool VulkanDevice::SurfaceSupported(vk::SurfaceKHR& surface)
 
 }
 
-std::uint32_t VulkanDevice::HighFamilyIndex() const
+VulkanResult<std::uint32_t> VulkanDevice::HighFamilyIndex() const
 {
 
 	if (!graphicsQueues_.empty()) {
@@ -225,21 +218,21 @@ std::uint32_t VulkanDevice::HighFamilyIndex() const
 		return transferQueues_[0].FamilyIndex();
 	}
 
-	throw NotImplemented();
+	return std::unexpected(VulkanError::DeviceNotFound);
 
 }
 
-nonstd::span<VulkanQueue> VulkanDevice::GraphicsQueues()
+std::span<VulkanQueue> VulkanDevice::GraphicsQueues()
 {
 	return {graphicsQueues_};
 }
 
-nonstd::span<VulkanQueue> VulkanDevice::ComputeQueues()
+std::span<VulkanQueue> VulkanDevice::ComputeQueues()
 {
 	return {computeQueues_};
 }
 
-nonstd::span<VulkanQueue> VulkanDevice::TransferQueues()
+std::span<VulkanQueue> VulkanDevice::TransferQueues()
 {
 	return {transferQueues_};
 }

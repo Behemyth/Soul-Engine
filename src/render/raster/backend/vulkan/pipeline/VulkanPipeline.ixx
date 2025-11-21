@@ -1,24 +1,20 @@
-module;
-
-#include <vulkan/vulkan.hpp>
-
 export module render.raster.vulkan:pipeline;
 
-import synodic.soul.engine;
+import std;
+import vulkan_hpp;
+
 import :render_pass;
 import :shader;
 import :pipeline_cache;
 import :pipeline_layout;
 
-import <vector>;
-
-using std::uint32_t = std::uint32_t;
+import std;
 
 export class VulkanPipeline {
 
 public:
 
-	VulkanPipeline(const vk::Device&, nonstd::span<VulkanShader>,
+	VulkanPipeline(const vk::Device&, std::span<VulkanShader>,
 		const vk::RenderPass&,
 		std::uint32_t);
 	~VulkanPipeline();

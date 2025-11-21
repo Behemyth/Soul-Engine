@@ -1,6 +1,6 @@
 module render.raster.vulkan;
 
-VulkanSubPass::VulkanSubPass(const nonstd::span<vk::AttachmentReference2KHR> outputAttachmentReferences)
+VulkanSubPass::VulkanSubPass(const std::span<vk::AttachmentReference2KHR> outputAttachmentReferences)
 {
 
 	vk::SubpassDescription2KHR& subPass = description_;

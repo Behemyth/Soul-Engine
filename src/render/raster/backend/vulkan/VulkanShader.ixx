@@ -1,10 +1,8 @@
-module;
-
-#include <vulkan/vulkan.hpp>
 
 export module render.raster.vulkan:shader;
-
-import synodic.soul.engine;
+import std;
+import vulkan_hpp;
+import synodic.soul.transput;
 
 export class VulkanShader {
 

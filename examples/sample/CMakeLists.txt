@@ -25,7 +25,13 @@ target_link_libraries(sample
         synodic::soul-engine
 )
 
+# Ensure we're linking the C++ standard library
+if(MSVC)
+    target_compile_options(sample PRIVATE /MDd)
+endif()
+
 if(WIN32)
+    # Use WINDOWS subsystem but keep standard C++ entry point
     set_target_properties(sample PROPERTIES LINK_FLAGS "/SUBSYSTEM:WINDOWS /ENTRY:mainCRTStartup")
 endif()
 

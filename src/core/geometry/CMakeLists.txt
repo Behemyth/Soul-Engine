@@ -1,7 +1,3 @@
-
-##############################################
-#Geometry
-
 target_sources(soul-engine
     PUBLIC
 		FILE_SET CXX_MODULES FILES
@@ -10,6 +6,4 @@ target_sources(soul-engine
 			Vertex.ixx
 			Face.ixx
 			Tet.ixx
-    PRIVATE
-			BoundingBox.cpp
- "../../render/raster/backend/mock/mock.ixx")
+)

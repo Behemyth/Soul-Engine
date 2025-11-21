@@ -1,8 +1,6 @@
-module;
-
-#include <optional>
-
 export module render.raster.vulkan:frame;
+
+import std;
 
 import :framebuffer;
 import :semaphore;

@@ -1,7 +1,5 @@
 module render.raster.vulkan;
 
-import synodic.soul.engine;
-
 VulkanCommandPool::VulkanCommandPool(std::shared_ptr<SchedulerModule>& scheduler,
 	const VulkanDevice& device) :
 	scheduler_(scheduler),
@@ -11,7 +9,12 @@ VulkanCommandPool::VulkanCommandPool(std::shared_ptr<SchedulerModule>& scheduler
 	vk::CommandPoolCreateInfo poolInfo;
 	poolInfo.flags = vk::CommandPoolCreateFlagBits::eTransient |
 					 vk::CommandPoolCreateFlagBits::eResetCommandBuffer;
-	poolInfo.queueFamilyIndex = device.HighFamilyIndex();
+
+	auto familyIndexResult = device.HighFamilyIndex();
+	if (!familyIndexResult) {
+		throw std::runtime_error("Failed to get queue family index");
+	}
+	poolInfo.queueFamilyIndex = familyIndexResult.value();
 
 	scheduler_->ForEachThread(TaskPriority::UX, [&]() {
 		commandPool_ = device_.createCommandPool(poolInfo);

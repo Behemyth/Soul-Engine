@@ -1,7 +1,7 @@
 module render.raster.vulkan;
 
 VulkanFrameBuffer::VulkanFrameBuffer(const vk::Device& device,
-	nonstd::span<vk::ImageView> attachments,
+	std::span<vk::ImageView> attachments,
 	VulkanRenderPass& renderPass,
 	vk::Extent2D& size):
 	device_(device)

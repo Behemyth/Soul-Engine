@@ -1,15 +1,15 @@
 module render.raster.vulkan;
 
-import synodic.soul.engine;
 
-
-VulkanSwapChain::VulkanSwapChain(VulkanDevice& device,
+VulkanResult<VulkanSwapChain> VulkanSwapChain::Create(VulkanDevice& device,
 	VulkanSurface& surface,
 	bool vSync,
-	VulkanSwapChain* oldSwapChain):
-	device_(device.Logical()),
-	activeImageIndex_(0)
+	VulkanSwapChain* oldSwapChain)
 {
+	VulkanSwapChain swapChain;
+	swapChain.device_ = device.Logical();
+	swapChain.activeImageIndex_ = 0;
+
 	auto& logicalDevice = device.Logical();
 	const auto& physicalDevice = device.Physical();
 
@@ -18,17 +18,19 @@ VulkanSwapChain::VulkanSwapChain(VulkanDevice& device,
 	std::vector<vk::PresentModeKHR> presentModes =
 		physicalDevice.getSurfacePresentModesKHR(surface.Handle());
 
-	assert(!presentModes.empty());
+	if (presentModes.empty()) {
+		return std::unexpected(VulkanError::NoPresentModesAvailable);
+	}
 
 	vk::Extent2D swapChainSize;
 	if (surfaceCapabilities.currentExtent.width == std::numeric_limits<uint32_t>::max()) {
-		swapChainSize = size_;
+		swapChainSize = swapChain.size_;
 	}
 	else {
 		swapChainSize = surfaceCapabilities.currentExtent;
 	}
 
-	size_ = swapChainSize;
+	swapChain.size_ = swapChainSize;
 
 	vk::PresentModeKHR swapChainPresentMode = vk::PresentModeKHR::eFifo;
 
@@ -47,7 +49,7 @@ VulkanSwapChain::VulkanSwapChain(VulkanDevice& device,
 	}
 	else {
 
-		throw NotImplemented();
+		return std::unexpected(VulkanError::NotImplemented);
 
 	}
 
@@ -85,11 +87,13 @@ VulkanSwapChain::VulkanSwapChain(VulkanDevice& device,
 	swapChainCreateInfo.oldSwapchain = oldSwapChain ? oldSwapChain->swapChain_ : nullptr;
 
 	auto surfaceHandle = surface.Handle();
-	assert(device.SurfaceSupported(surfaceHandle));
+	if (!device.SurfaceSupported(surfaceHandle)) {
+		return std::unexpected(VulkanError::SurfaceNotSupported);
+	}
 
-	swapChain_ = device_.createSwapchainKHR(swapChainCreateInfo);
-	renderImages_ = device_.getSwapchainImagesKHR(swapChain_);
-	renderImageViews_.resize(renderImages_.size());
+	swapChain.swapChain_ = swapChain.device_.createSwapchainKHR(swapChainCreateInfo);
+	swapChain.renderImages_ = swapChain.device_.getSwapchainImagesKHR(swapChain.swapChain_);
+	swapChain.renderImageViews_.resize(swapChain.renderImages_.size());
 
 	// Set up synchronization primitives
 	vk::SemaphoreCreateInfo semaphoreInfo;
@@ -97,11 +101,11 @@ VulkanSwapChain::VulkanSwapChain(VulkanDevice& device,
 	vk::FenceCreateInfo fenceInfo;
 	fenceInfo.flags = vk::FenceCreateFlagBits::eSignaled;
 
-	for (auto i = 0; i < renderImages_.size(); ++i) {
+	for (auto i = 0; i < swapChain.renderImages_.size(); ++i) {
 
 		vk::ImageViewCreateInfo imageViewCreateInfo;
 		imageViewCreateInfo.flags = vk::ImageViewCreateFlags();
-		imageViewCreateInfo.image = renderImages_[i];
+		imageViewCreateInfo.image = swapChain.renderImages_[i];
 		imageViewCreateInfo.viewType = vk::ImageViewType::e2D;
 		imageViewCreateInfo.format = format.format;
 		imageViewCreateInfo.subresourceRange.aspectMask = vk::ImageAspectFlagBits::eColor;
@@ -110,10 +114,11 @@ VulkanSwapChain::VulkanSwapChain(VulkanDevice& device,
 		imageViewCreateInfo.subresourceRange.baseArrayLayer = 0;
 		imageViewCreateInfo.subresourceRange.layerCount = 1;
 
-		renderImageViews_[i] = logicalDevice.createImageView(imageViewCreateInfo);
+		swapChain.renderImageViews_[i] = logicalDevice.createImageView(imageViewCreateInfo);
 
 	}
 
+	return swapChain;
 }
 
 VulkanSwapChain::~VulkanSwapChain()
@@ -130,14 +135,14 @@ VulkanSwapChain::~VulkanSwapChain()
 
 }
 
-nonstd::span<vk::Image> VulkanSwapChain::Images()
+std::span<vk::Image> VulkanSwapChain::Images()
 {
 
 	return {renderImages_};
 
 }
 
-nonstd::span<vk::ImageView> VulkanSwapChain::ImageViews()
+std::span<vk::ImageView> VulkanSwapChain::ImageViews()
 {
 
 	return {renderImageViews_};
@@ -151,16 +156,17 @@ std::uint32_t VulkanSwapChain::ActiveImageIndex() const
 
 }
 
-void VulkanSwapChain::AcquireImage(const vk::Semaphore& presentSemaphore)
+VulkanResult<std::uint32_t> VulkanSwapChain::AcquireImage(const vk::Semaphore& presentSemaphore)
 {
 
-	auto [acquireResult, activeImageIndex_] = device_.acquireNextImageKHR(swapChain_, std::numeric_limits<uint64_t>::max(), presentSemaphore, nullptr);
+	auto [acquireResult, imageIndex] = device_.acquireNextImageKHR(swapChain_, std::numeric_limits<uint64_t>::max(), presentSemaphore, nullptr);
 
 	if (acquireResult != vk::Result::eSuccess) {
-
-		throw NotImplemented();
-
+		return std::unexpected(FromVkResult(acquireResult));
 	}
+
+	activeImageIndex_ = imageIndex;
+	return imageIndex;
 
 }
 

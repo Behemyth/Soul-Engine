@@ -1,9 +1,17 @@
 module render.raster.vulkan;
 
-import synodic.soul.engine;
+// Vertex type - hardcoded for now until C++23 reflection
+// TODO: Replace with proper reflection-based vertex description
+struct VertexLayout {
+	struct { float x, y, z; } position;
+	struct { float x, y, z; } normal;
+	struct { float x, y; } textureCoord;
+	struct { float x, y, z; } velocity;
+	std::uint32_t object;
+};
 
 VulkanPipeline::VulkanPipeline(const vk::Device& device,
-	const nonstd::span<VulkanShader> shaders,
+	const std::span<VulkanShader> shaders,
 	const vk::RenderPass& renderPass,
 	const std::uint32_t subPassIndex):
 	device_(device),
@@ -14,7 +22,7 @@ VulkanPipeline::VulkanPipeline(const vk::Device& device,
 	// TODO: Refactor and move vertex attribute and bindings.
 	vk::VertexInputBindingDescription bindingDescription;
 	bindingDescription.binding = 0;
-	bindingDescription.stride = sizeof(Vertex);
+	bindingDescription.stride = sizeof(VertexLayout);
 	bindingDescription.inputRate = vk::VertexInputRate::eVertex;
 
 	std::array<vk::VertexInputAttributeDescription, 1> attributeDescriptions;
@@ -22,7 +30,8 @@ VulkanPipeline::VulkanPipeline(const vk::Device& device,
 	attributeDescriptions[0].binding = 0;
 	attributeDescriptions[0].location = 0;
 	attributeDescriptions[0].format = vk::Format::eR32G32B32Sfloat;
-	attributeDescriptions[0].offset = offsetof(Vertex, position);  // TODO: C++23 Reflection
+	// TODO: C++23 Reflection - offsetof not properly available in modules yet
+	attributeDescriptions[0].offset = 0;  // position is first member
 
 	vk::PipelineVertexInputStateCreateInfo vertexInputInfo;
 	vertexInputInfo.vertexBindingDescriptionCount = 1;
@@ -32,29 +41,29 @@ VulkanPipeline::VulkanPipeline(const vk::Device& device,
 
 	vk::PipelineInputAssemblyStateCreateInfo inputAssembly;
 	inputAssembly.topology = vk::PrimitiveTopology::eTriangleList;
-	inputAssembly.primitiveRestartEnable = VK_FALSE;
+	inputAssembly.primitiveRestartEnable = vk::False;
 
 	vk::PipelineRasterizationStateCreateInfo rasterizer;
 	rasterizer.polygonMode = vk::PolygonMode::eFill;
 	rasterizer.lineWidth = 1.0f;
 	rasterizer.cullMode = vk::CullModeFlagBits::eBack;
 	rasterizer.frontFace = vk::FrontFace::eClockwise;
-	rasterizer.depthBiasEnable = VK_FALSE;
-	rasterizer.depthClampEnable = VK_FALSE;
-	rasterizer.rasterizerDiscardEnable = VK_FALSE;
+	rasterizer.depthBiasEnable = vk::False;
+	rasterizer.depthClampEnable = vk::False;
+	rasterizer.rasterizerDiscardEnable = vk::False;
 
 	vk::PipelineMultisampleStateCreateInfo multiSampling;
-	multiSampling.sampleShadingEnable = VK_FALSE;
+	multiSampling.sampleShadingEnable = vk::False;
 	multiSampling.rasterizationSamples = vk::SampleCountFlagBits::e1;
 
 	vk::PipelineColorBlendAttachmentState colorBlendAttachment;
 	colorBlendAttachment.colorWriteMask =
 		vk::ColorComponentFlagBits::eR | vk::ColorComponentFlagBits::eG |
 		vk::ColorComponentFlagBits::eB | vk::ColorComponentFlagBits::eA;
-	colorBlendAttachment.blendEnable = VK_FALSE;
+	colorBlendAttachment.blendEnable = vk::False;
 
 	vk::PipelineColorBlendStateCreateInfo colorBlending;
-	colorBlending.logicOpEnable = VK_FALSE;
+	colorBlending.logicOpEnable = vk::False;
 	colorBlending.logicOp = vk::LogicOp::eCopy;
 	colorBlending.attachmentCount = 1;
 	colorBlending.pAttachments = &colorBlendAttachment;
@@ -73,14 +82,14 @@ VulkanPipeline::VulkanPipeline(const vk::Device& device,
 	dynamicState.pDynamicStates = dynamicStates.data();
 
 	vk::PipelineDepthStencilStateCreateInfo depthStencil;
-	depthStencil.depthTestEnable = VK_TRUE;
-	depthStencil.depthWriteEnable = VK_TRUE;
+	depthStencil.depthTestEnable = vk::True;
+	depthStencil.depthWriteEnable = vk::True;
 	depthStencil.depthCompareOp = vk::CompareOp::eLessOrEqual;
-	depthStencil.depthBoundsTestEnable = VK_FALSE;
+	depthStencil.depthBoundsTestEnable = vk::False;
 	depthStencil.back.failOp = vk::StencilOp::eKeep;
 	depthStencil.back.passOp = vk::StencilOp::eKeep;
 	depthStencil.back.compareOp = vk::CompareOp::eAlways;
-	depthStencil.stencilTestEnable = VK_FALSE;
+	depthStencil.stencilTestEnable = vk::False;
 	depthStencil.front = depthStencil.back;
 
 
@@ -112,7 +121,7 @@ VulkanPipeline::VulkanPipeline(const vk::Device& device,
 	pipelineInfo.basePipelineHandle = nullptr;
 	pipelineInfo.basePipelineIndex = 0;
 
-	pipeline_ = device_.createGraphicsPipeline(pipelineCache_.Handle(), pipelineInfo);
+	pipeline_ = device_.createGraphicsPipeline(pipelineCache_.Handle(), pipelineInfo).value;
 }
 
 VulkanPipeline::~VulkanPipeline()

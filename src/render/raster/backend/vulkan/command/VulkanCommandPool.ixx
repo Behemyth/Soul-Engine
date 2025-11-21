@@ -1,19 +1,16 @@
-module;
-
-#include <vulkan/vulkan.hpp>
-
 export module render.raster.vulkan:command_pool;
 
-import synodic.soul.engine;
-import :device;
 
-import <memory>;
+import std;
+import vulkan_hpp;
+import :device;
+import synodic.soul.scheduler;
 
 export class VulkanCommandPool final {
 
 public:
 
-	VulkanCommandPool(std::shared_ptr<SchedulerModule>&, const VulkanDevice&);
+   VulkanCommandPool(std::shared_ptr<SchedulerModule>&, const VulkanDevice&);
 	~VulkanCommandPool();
 
 	VulkanCommandPool(const VulkanCommandPool&) = delete;
@@ -30,7 +27,7 @@ private:
 	std::shared_ptr<SchedulerModule> scheduler_;
 	vk::Device device_;
 
-	ThreadLocal<vk::CommandPool> commandPool_;
-
-
+	// TODO: Replace with actual thread-local storage when available
+	// ThreadLocal<vk::CommandPool> commandPool_;
+	vk::CommandPool commandPool_;
 };

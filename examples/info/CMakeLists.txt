@@ -26,5 +26,10 @@ target_link_libraries(info
         synodic::soul-engine
 )
 
+# Ensure we're linking the C++ standard library
+if(MSVC)
+    target_compile_options(info PRIVATE /MDd)
+endif()
+
 
 add_subdirectory(src)

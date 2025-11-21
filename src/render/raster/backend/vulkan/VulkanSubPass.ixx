@@ -1,10 +1,7 @@
-module;
-
-#include <vulkan/vulkan.hpp>
 
 export module render.raster.vulkan:subpass;
-
-import synodic.soul.engine;
+import std;
+import vulkan_hpp;
 import :shader;
 
 export class VulkanSubPass
@@ -12,7 +9,7 @@ export class VulkanSubPass
 
 public:
 
-	explicit VulkanSubPass(nonstd::span<vk::AttachmentReference2KHR>);
+	explicit VulkanSubPass(std::span<vk::AttachmentReference2KHR>);
 	~VulkanSubPass() = default;
 
 	VulkanSubPass(const VulkanSubPass&) = default;

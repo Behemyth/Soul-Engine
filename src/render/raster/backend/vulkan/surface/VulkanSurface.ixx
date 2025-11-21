@@ -1,8 +1,7 @@
-module;
-
-#include <vulkan/vulkan.hpp>
-
 export module render.raster.vulkan:surface;
+
+import std;
+import vulkan_hpp;
 
 import :device;
 

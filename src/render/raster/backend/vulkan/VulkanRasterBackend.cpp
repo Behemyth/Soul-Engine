@@ -1,104 +1,101 @@
 module render.raster.vulkan;
 
+import synodic.soul.core;
+import synodic.soul.raster;
 import synodic.soul.engine;
+import synodic.soul.window;
 
-VulkanRasterBackend::VulkanRasterBackend(std::shared_ptr<SchedulerModule>& scheduler,
-	std::shared_ptr<EntityRegistry>& entityRegistry,
-	std::shared_ptr<WindowModule>& windowModule_):
-	currentFrame_(0),
-	entityRegistry_(entityRegistry)
+// TODO: Restore scheduler and windowModule parameters once MSVC ICE is resolved
+VulkanRasterBackend::VulkanRasterBackend():
+currentFrame_(0)
 {
+
+	// TODO: Restore windowModule and entityRegistry initialization
+	// TODO: Get window extensions from windowModule
 
 	// setup Vulkan app info
 	vk::ApplicationInfo appInfo;
-	appInfo.apiVersion = VK_API_VERSION_1_1;
+	appInfo.apiVersion = vk::ApiVersion11;
 	appInfo.applicationVersion =
-		VK_MAKE_VERSION(1, 0, 0);  // TODO forward the application version here
+		vk::makeApiVersion(0, 1, 0, 0);  // TODO forward the application version here
 	appInfo.pApplicationName = "Soul Engine";  // TODO forward the application name here
-	appInfo.engineVersion = VK_MAKE_VERSION(1, 0, 0);  // TODO forward the engine version here
+	appInfo.engineVersion = vk::makeApiVersion(0, 1, 0, 0);  // TODO forward the engine version here
 	appInfo.pEngineName = "Soul Engine";  // TODO forward the engine name here
 
 
 	std::vector<std::string> validationLayers;
 	std::vector<std::string> instanceExtensions {
-		VK_KHR_GET_PHYSICAL_DEVICE_PROPERTIES_2_EXTENSION_NAME,
-		VK_KHR_GET_SURFACE_CAPABILITIES_2_EXTENSION_NAME};
+		"VK_KHR_get_physical_device_properties2",
+		"VK_KHR_get_surface_capabilities2"};
 
-	// The display will forward the extensions needed for Vulkan
-	const auto windowExtensions = windowModule_->GetRasterExtensions();
-
-	instanceExtensions.insert(
-		std::end(instanceExtensions), std::begin(windowExtensions), std::end(windowExtensions));
+	// TODO: The display will forward the extensions needed for Vulkan
+	// const auto windowExtensions = windowModule_->GetRasterExtensions();
+	// instanceExtensions.insert(
+	//	std::end(instanceExtensions), std::begin(windowExtensions), std::end(windowExtensions));
 
 	if constexpr (Compiler::Debug()) {
 
 		validationLayers.push_back("VK_LAYER_KHRONOS_validation");
-		instanceExtensions.push_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
+		instanceExtensions.push_back("VK_EXT_debug_utils");
 	}
 
 	instance_.reset(new VulkanInstance(appInfo, validationLayers, instanceExtensions));
 
-	std::vector<std::string> deviceExtensions {VK_KHR_SWAPCHAIN_EXTENSION_NAME,
-		VK_KHR_EXTERNAL_MEMORY_EXTENSION_NAME, VK_KHR_EXTERNAL_SEMAPHORE_EXTENSION_NAME,
-		VK_KHR_CREATE_RENDERPASS_2_EXTENSION_NAME};
+	std::vector<std::string> deviceExtensions {"VK_KHR_swapchain",
+		"VK_KHR_external_memory", "VK_KHR_external_semaphore",
+		"VK_KHR_create_renderpass2"};
 
 	// TODO: Device groups and multiple devices
 	physicalDevices_ = instance_->EnumeratePhysicalDevices();
-	devices_.emplace_back(scheduler, instance_->Handle(), physicalDevices_[0].Handle(),
-		validationLayers, deviceExtensions);
+	// TODO: Restore scheduler parameter
+	std::shared_ptr<SchedulerModule> nullScheduler;  // Temporary null placeholder
+	devices_.push_back(VulkanDevice(nullScheduler, instance_->Handle(), physicalDevices_[0].Handle(),
+		validationLayers, deviceExtensions, vk::ApiVersion11));
 
 	// TODO: One pool per device per render image set
 	commandPools_.reserve(devices_.size());
 
 	for (auto& vkDevice : devices_) {
-
-		commandPools_.emplace_back(scheduler, vkDevice);
+		// TODO: Restore scheduler parameter
+		commandPools_.push_back(VulkanCommandPool(nullScheduler, vkDevice));
 	}
 }
 
 void VulkanRasterBackend::Present()
 {
+	// TODO: Restore entityRegistry access
+	// const auto swapChains = entityRegistry_->View<VulkanSwapChain>();
+	// const auto surfaceResources = entityRegistry_->View<VulkanSurfaceResource>();
+	// assert(swapChains.size() == surfaceResources.size());
 
-	const auto swapChains = entityRegistry_->View<VulkanSwapChain>();
-	const auto surfaceResources = entityRegistry_->View<VulkanSurfaceResource>();
-
-	assert(swapChains.size() == surfaceResources.size());
-
-	for (auto& vkDevice : devices_) {
-
-		std::vector<vk::Semaphore> presentSemaphores;
-		std::vector<vk::SwapchainKHR> presentSwapChains;
-		std::vector<std::uint32_t> imageIndices;
-
-		for (auto i = 0; i < swapChains.size(); ++i) {
-
-			auto& swapChain = swapChains[i];
-
-			if (swapChain.Device() == vkDevice.Logical()) {
-
-				presentSemaphores.push_back(
-					surfaceResources[i].frames[currentFrame_].RenderSemaphore().Handle());
-				imageIndices.push_back(swapChain.ActiveImageIndex());
-				presentSwapChains.push_back(swapChain.Handle());
-
-			}
-		}
-
-		auto graphicsQueues = vkDevice.GraphicsQueues();
-
-		// TODO: Multiple present queues
-		bool result = graphicsQueues[0].Present(presentSemaphores, presentSwapChains, imageIndices);
-	}
+	// TODO: Restore swapchain presentation logic
+	// for (auto& vkDevice : devices_) {
+	//	std::vector<vk::Semaphore> presentSemaphores;
+	//	std::vector<vk::SwapchainKHR> presentSwapChains;
+	//	std::vector<std::uint32_t> imageIndices;
+	//	for (auto i = 0; i < swapChains.size(); ++i) {
+	//		auto& swapChain = swapChains[i];
+	//		if (swapChain.Device() == vkDevice.Logical()) {
+	//			presentSemaphores.push_back(
+	//				surfaceResources[i].frames[currentFrame_].RenderSemaphore().Handle());
+	//			imageIndices.push_back(swapChain.ActiveImageIndex());
+	//			presentSwapChains.push_back(swapChain.Handle());
+	//		}
+	//	}
+	//	auto graphicsQueues = vkDevice.GraphicsQueues();
+	//	bool result = graphicsQueues[0].Present(presentSemaphores, presentSwapChains, imageIndices);
+	// }
 }
 
 Entity VulkanRasterBackend::CreatePass(const ShaderSet& ShaderSet, std::function<void(Entity)> function)
 {
-
+	// TODO: Restore entityRegistry access
 	// Create new entity
-	const Entity renderPassID = entityRegistry_->CreateEntity();
-
+	// const Entity renderPassID = entityRegistry_->CreateEntity();
 	// TODO: real resource
-	const Entity resource = entityRegistry_->CreateEntity();
+	// const Entity resource = entityRegistry_->CreateEntity();
+	const Entity renderPassID = Entity();  // Placeholder
+	const Entity resource = Entity();  // Placeholder
 
 	// Create empty pass data
 	renderPassAttachments_.try_emplace(renderPassID);
@@ -141,12 +138,15 @@ Entity VulkanRasterBackend::CreatePass(const ShaderSet& ShaderSet, std::function
 	auto [pipelineArrayIterator, pipelineArrayInserted] = pipelines_.try_emplace(renderPassID);
 	pipelineArrayIterator->second.reserve(subPassArray.size());
 
+	// TODO: Add actual shaders
+	std::vector<VulkanShader> emptyShaders;
+	std::span<VulkanShader> shaderSpan(emptyShaders);
 
 	for (auto i = 0; i < subPassArray.size(); ++i)
 	{
 
-		pipelineArrayIterator->second.emplace_back(
-			devices_[0].Logical(), std::vector<VulkanShader>(), renderPass.Handle(), i);
+		pipelineArrayIterator->second.push_back(
+			VulkanPipeline(devices_[0].Logical(), shaderSpan, renderPass.Handle(), i));
 
 	}
 
@@ -157,8 +157,8 @@ Entity VulkanRasterBackend::CreateSubPass(Entity renderPassID,
 	const ShaderSet& ShaderSet,
 	std::function<void(Entity)> function)
 {
-
-	const Entity subPassID = entityRegistry_->CreateEntity();
+	// TODO: Restore entityRegistry access
+	const Entity subPassID = Entity();  // Placeholder
 
 	subPassAttachmentReferences_.try_emplace(subPassID);
 
@@ -178,72 +178,24 @@ void VulkanRasterBackend::ExecutePass(Entity renderPassID,
 	Entity surfaceID,
 	CommandList& commandList)
 {
+	// TODO: Restore entityRegistry access
+	return;  // Temporary stub
 
-	vk::ClearValue clearColor(vk::ClearColorValue(std::array<float, 4> {0.0f, 0.0f, 0.0f, 1.0f}));
-
-	auto& swapChain = entityRegistry_->GetComponent<VulkanSwapChain>(surfaceID);
-
-	auto& renderPass = renderPasses_.at(renderPassID);
-	auto& commandBuffer = renderPassCommandBuffers_.at(renderPassID);
-	auto& commandBufferHandle = commandBuffer.Handle();
-
-	auto swapChainSize = swapChain.Size();
-
-	auto& surfaceResources = entityRegistry_->GetComponent<VulkanSurfaceResource>(surfaceID);
-
-	for (auto i = 0; i < surfaceResources.frames.Size(); ++i) {
-
-		surfaceResources.frames[i].Framebuffer() = VulkanFrameBuffer(
-			devices_[0].Logical(), swapChain.ImageViews(), renderPass, swapChainSize);
-
-	}
-
-	vk::RenderPassBeginInfo renderPassInfo;
-	renderPassInfo.renderPass = renderPass.Handle();
-	renderPassInfo.framebuffer = surfaceResources.frames[currentFrame_].Framebuffer().Handle();
-	renderPassInfo.renderArea.offset = vk::Offset2D(0, 0);
-	renderPassInfo.renderArea.extent = swapChain.Size();
-	renderPassInfo.clearValueCount = 1;
-	renderPassInfo.pClearValues = &clearColor;
-
-	vk::SubpassBeginInfoKHR subPassInfo;
-	subPassInfo.contents = vk::SubpassContents::eInline;
-
-	commandBuffer.Begin();
-	commandBufferHandle.beginRenderPass2KHR(
-		renderPassInfo, subPassInfo, devices_[0].DispatchLoader());
-
-
-	commandBufferHandle.endRenderPass();
-	commandBuffer.End();
-
-
-	//	const auto& logicalDevice = vkDevice_->GetLogical();
-	//
-	//	logicalDevice.waitForFences(
-	//		frameFences_[currentFrame_], true, std::numeric_limits<uint64_t>::max());
-	//	logicalDevice.resetFences(frameFences_[currentFrame_]);
-	//
-	//	vk::SubmitInfo submitInfo;
-	//
-	//	vk::PipelineStageFlags waitStages[] = {vk::PipelineStageFlagBits::eColorAttachmentOutput};
-	//	submitInfo.waitSemaphoreCount = 1;
-	//	submitInfo.pWaitSemaphores = &presentSemaphores_[currentFrame_];
-	//	submitInfo.pWaitDstStageMask = waitStages;
-	//
-	//	submitInfo.commandBufferCount = 1;
-	//	submitInfo.pCommandBuffers = &commandBuffer_.Handle();
-	//
-	//	submitInfo.signalSemaphoreCount = 1;
-	//	submitInfo.pSignalSemaphores = &renderSemaphores_[currentFrame_];
-	//
-	//	vkDevice_->GetGraphicsQueue().submit(submitInfo, frameFences_[currentFrame_]);
+	// TODO: Restore all execution logic once entityRegistry is available
+	// vk::ClearValue clearColor(vk::ClearColorValue(std::array<float, 4> {0.0f, 0.0f, 0.0f, 1.0f}));
+	// auto& swapChain = entityRegistry_->GetComponent<VulkanSwapChain>(surfaceID);
+	// auto& renderPass = renderPasses_.at(renderPassID);
+	// auto& commandBuffer = renderPassCommandBuffers_.at(renderPassID);
+	// auto& commandBufferHandle = commandBuffer.Handle();
+	// auto swapChainSize = swapChain.Size();
+	// auto& surfaceResources = entityRegistry_->GetComponent<VulkanSurfaceResource>(surfaceID);
+	// ... etc
 }
 
 void VulkanRasterBackend::CreatePassInput(Entity passID, Entity resource, Format format)
 {
-
-	throw NotImplemented();
+	// TODO: Implement pass input creation
+	return;
 }
 
 void VulkanRasterBackend::CreatePassOutput(Entity passID, Entity resource, Format format)
@@ -271,11 +223,11 @@ void VulkanRasterBackend::CreatePassOutput(Entity passID, Entity resource, Forma
 	colorAttachmentRef.aspectMask = vk::ImageAspectFlags();
 }
 
-Entity VulkanRasterBackend::CreateSurface(std::any anySurface, glm::uvec2 size)
+Entity VulkanRasterBackend::CreateSurface(std::any anySurface, uvec2 size)
 {
-
+	// TODO: Restore entityRegistry access
 	auto surfaceHandle = std::any_cast<vk::SurfaceKHR>(anySurface);
-	const Entity surfaceID = entityRegistry_->CreateEntity();
+	const Entity surfaceID = Entity();  // Placeholder
 
 	auto [surfaceIterator, didInsert] =
 		surfaces_.try_emplace(surfaceID, instance_->Handle(), surfaceHandle);
@@ -284,31 +236,28 @@ Entity VulkanRasterBackend::CreateSurface(std::any anySurface, glm::uvec2 size)
 	VulkanSurface& surface = surfaceIterator->second;
 	const auto format = surface.UpdateFormat(devices_[0]);
 
-	entityRegistry_->AttachComponent<VulkanSwapChain>(surfaceID, devices_[0], surface, false);
-
-	// create the frame storage for the surface
-	entityRegistry_->AttachComponent<VulkanSurfaceResource>(surfaceID);
-
+	// TODO: Restore entityRegistry access
+	// entityRegistry_->AttachComponent<VulkanSwapChain>(surfaceID, devices_[0], surface, false);
+	// entityRegistry_->AttachComponent<VulkanSurfaceResource>(surfaceID);
 
 	return surfaceID;
 }
 
-void VulkanRasterBackend::UpdateSurface(Entity surfaceID, glm::uvec2 size)
+void VulkanRasterBackend::UpdateSurface(Entity surfaceID, uvec2 size)
 {
-
+	// TODO: Restore entityRegistry access
 	auto& surface = surfaces_.at(surfaceID);
 	const auto format = surface.UpdateFormat(devices_[0]);
 
-	auto& oldSwapChain = entityRegistry_->GetComponent<VulkanSwapChain>(surfaceID);
-	auto newSwapChain = VulkanSwapChain(devices_[0], surface, false, &oldSwapChain);
-
-	std::swap(oldSwapChain, newSwapChain);
+	// auto& oldSwapChain = entityRegistry_->GetComponent<VulkanSwapChain>(surfaceID);
+	// auto newSwapChain = VulkanSwapChain(devices_[0], surface, false, &oldSwapChain);
+	// std::swap(oldSwapChain, newSwapChain);
 }
 
 void VulkanRasterBackend::RemoveSurface(Entity surfaceID)
 {
-
-	entityRegistry_->RemoveComponent<VulkanSwapChain>(surfaceID);
+	// TODO: Restore entityRegistry access
+	// entityRegistry_->RemoveComponent<VulkanSwapChain>(surfaceID);
 	surfaces_.erase(surfaceID);
 }
 
@@ -361,26 +310,26 @@ void VulkanRasterBackend::Draw(DrawCommand& command, vk::CommandBuffer& commandB
 
 void VulkanRasterBackend::DrawIndirect(DrawIndirectCommand&, vk::CommandBuffer& commandBuffer)
 {
-
-	throw NotImplemented();
+	// TODO: Implement indirect drawing
+	return;
 }
 void VulkanRasterBackend::UpdateBuffer(UpdateBufferCommand&, vk::CommandBuffer& commandBuffer)
 {
 }
 void VulkanRasterBackend::UpdateTexture(UpdateTextureCommand&, vk::CommandBuffer& commandBuffer)
 {
-
-	throw NotImplemented();
+	// TODO: Implement texture update
+	return;
 }
 void VulkanRasterBackend::CopyBuffer(CopyBufferCommand&, vk::CommandBuffer& commandBuffer)
 {
-
-	throw NotImplemented();
+	// TODO: Implement buffer copy
+	return;
 }
 void VulkanRasterBackend::CopyTexture(CopyTextureCommand&, vk::CommandBuffer& commandBuffer)
 {
-
-	throw NotImplemented();
+	// TODO: Implement texture copy
+	return;
 }
 
 
@@ -390,7 +339,7 @@ vk::Format VulkanRasterBackend::ConvertFormat(Format format)
 		case Format::RGBA:
 			return vk::Format::eR8G8B8A8Srgb;
 		default:
-			throw NotImplemented();
+			// TODO: Implement all format conversions
 			return vk::Format::eUndefined;
 	}
 }

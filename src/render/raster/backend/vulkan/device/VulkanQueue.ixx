@@ -1,14 +1,9 @@
-module;
-
-#include <vulkan/vulkan.hpp>
-
 export module render.raster.vulkan:queue;
 
-import synodic.soul.engine;
+import std;
+import vulkan_hpp;
 
-using std::uint32_t = std::uint32_t;
-
-export class VulkanQueue {
+class VulkanQueue {
 
 public:
 
@@ -22,9 +17,9 @@ public:
 	VulkanQueue& operator=(VulkanQueue&&) noexcept = default;
 
 	bool Submit();
-	bool Present(nonstd::span<vk::Semaphore> semaphores,
-		nonstd::span<vk::SwapchainKHR> swapChains,
-		nonstd::span<std::uint32_t> imageIndices) const;
+	bool Present(std::span<vk::Semaphore> semaphores,
+		std::span<vk::SwapchainKHR> swapChains,
+		std::span<std::uint32_t> imageIndices) const;
 
 	[[nodiscard]]  const vk::Queue& Handle() const;
 	[[nodiscard]] std::uint32_t FamilyIndex() const;
