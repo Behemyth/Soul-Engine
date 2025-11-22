@@ -1,5 +1,5 @@
 
-export module render.raster.vulkan:semaphore;
+export module synodic.soul.raster.backend.vulkan:semaphore;
 import std;
 import vulkan_hpp;
 

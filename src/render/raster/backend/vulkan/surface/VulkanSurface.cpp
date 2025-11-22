@@ -1,4 +1,4 @@
-module render.raster.vulkan;
+module synodic.soul.raster.backend.vulkan;
 
 VulkanSurface::VulkanSurface(const vk::Instance& instance, const vk::SurfaceKHR& surface):
 	instance_(instance),

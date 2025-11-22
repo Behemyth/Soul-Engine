@@ -1,4 +1,4 @@
-module render.raster.vulkan;
+module synodic.soul.raster.backend.vulkan;
 
 VulkanSubPass::VulkanSubPass(const std::span<vk::AttachmentReference2KHR> outputAttachmentReferences)
 {

@@ -1,5 +1,5 @@
 
-export module render.raster.vulkan:shader;
+export module synodic.soul.raster.backend.vulkan:shader;
 import std;
 import vulkan_hpp;
 import synodic.soul.transput;

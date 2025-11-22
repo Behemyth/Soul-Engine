@@ -1,4 +1,4 @@
-module render.raster.vulkan;
+module synodic.soul.raster.backend.vulkan;
 
 // Vertex type - hardcoded for now until C++23 reflection
 // TODO: Replace with proper reflection-based vertex description

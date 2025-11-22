@@ -1,4 +1,4 @@
-export module render.raster.vulkan:allocator;
+export module synodic.soul.raster.backend.vulkan:allocator;
 
 import std;
 import vulkan_hpp;

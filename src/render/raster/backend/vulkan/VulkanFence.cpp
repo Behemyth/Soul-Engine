@@ -1,4 +1,4 @@
-module render.raster.vulkan;
+module synodic.soul.raster.backend.vulkan;
 
 VulkanFence::VulkanFence(vk::Device device):
 	device_(device)

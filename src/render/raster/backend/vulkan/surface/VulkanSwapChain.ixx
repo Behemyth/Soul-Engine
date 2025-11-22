@@ -1,4 +1,4 @@
-export module render.raster.vulkan:swapchain;
+export module synodic.soul.raster.backend.vulkan:swapchain;
 
 
 import std;

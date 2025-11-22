@@ -5,7 +5,7 @@ module;
 #define VMA_DYNAMIC_VULKAN_FUNCTIONS 0
 #include <vk_mem_alloc.h>
 
-module render.raster.vulkan;
+module synodic.soul.raster.backend.vulkan;
 
 VulkanAllocator::VulkanAllocator(vk::Instance instance, vk::PhysicalDevice physicalDevice,
 	vk::Device device, std::uint32_t vulkanApiVersion)

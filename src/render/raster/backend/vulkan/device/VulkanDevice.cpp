@@ -1,4 +1,4 @@
-module render.raster.vulkan;
+module synodic.soul.raster.backend.vulkan;
 
 VulkanDevice::VulkanDevice(std::shared_ptr<SchedulerModule>& scheduler,
 	const vk::Instance& instance,

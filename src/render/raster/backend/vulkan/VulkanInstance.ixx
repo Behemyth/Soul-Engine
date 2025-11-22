@@ -1,6 +1,6 @@
 
 
-export module render.raster.vulkan:instance;
+export module synodic.soul.raster.backend.vulkan:instance;
 import std;
 import vulkan_hpp;
 import :physical_device;

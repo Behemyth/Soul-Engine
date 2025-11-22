@@ -1,4 +1,4 @@
-module render.raster.vulkan;
+module synodic.soul.raster.backend.vulkan;
 
 import synodic.soul.core;
 import synodic.soul.transput;

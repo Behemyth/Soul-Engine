@@ -1,4 +1,4 @@
-module render.raster.vulkan;
+module synodic.soul.raster.backend.vulkan;
 
 VulkanFrameBuffer::VulkanFrameBuffer(const vk::Device& device,
 	std::span<vk::ImageView> attachments,

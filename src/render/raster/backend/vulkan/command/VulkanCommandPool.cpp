@@ -1,4 +1,4 @@
-module render.raster.vulkan;
+module synodic.soul.raster.backend.vulkan;
 
 VulkanCommandPool::VulkanCommandPool(std::shared_ptr<SchedulerModule>& scheduler,
 	const VulkanDevice& device) :

@@ -1,4 +1,4 @@
-export module render.raster.vulkan;
+export module synodic.soul.raster.backend.vulkan;
 
 export import :error;
 export import :allocator;

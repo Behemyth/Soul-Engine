@@ -1,4 +1,4 @@
-module render.raster.vulkan;
+module synodic.soul.raster.backend.vulkan;
 
 // Using static dispatcher - no dynamic loader needed with C++20 modules
 

@@ -1,5 +1,5 @@
 
-export module render.raster.vulkan:subpass;
+export module synodic.soul.raster.backend.vulkan:subpass;
 import std;
 import vulkan_hpp;
 import :shader;

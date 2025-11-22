@@ -1,4 +1,4 @@
-module render.raster.vulkan;
+module synodic.soul.raster.backend.vulkan;
 
 VulkanPhysicalDevice::VulkanPhysicalDevice(vk::Instance instance, vk::PhysicalDevice device):
 	instance_(instance), device_(device)

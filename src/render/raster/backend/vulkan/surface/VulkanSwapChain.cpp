@@ -1,4 +1,4 @@
-module render.raster.vulkan;
+module synodic.soul.raster.backend.vulkan;
 
 
 VulkanResult<VulkanSwapChain> VulkanSwapChain::Create(VulkanDevice& device,

@@ -1,4 +1,4 @@
-export module render.raster.vulkan:pipeline;
+export module synodic.soul.raster.backend.vulkan:pipeline;
 
 import std;
 import vulkan_hpp;

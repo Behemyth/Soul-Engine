@@ -1,5 +1,5 @@
 
-export module render.raster.vulkan:fence;
+export module synodic.soul.raster.backend.vulkan:fence;
 import std;
 import vulkan_hpp;
 

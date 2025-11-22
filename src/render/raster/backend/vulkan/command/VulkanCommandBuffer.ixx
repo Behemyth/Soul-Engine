@@ -1,4 +1,4 @@
-export module render.raster.vulkan:command_buffer;
+export module synodic.soul.raster.backend.vulkan:command_buffer;
 
 import std;
 import vulkan_hpp;

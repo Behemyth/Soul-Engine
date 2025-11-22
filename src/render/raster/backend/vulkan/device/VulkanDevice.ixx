@@ -1,4 +1,4 @@
-export module render.raster.vulkan:device;
+export module synodic.soul.raster.backend.vulkan:device;
 
 import std;
 import vulkan_hpp;

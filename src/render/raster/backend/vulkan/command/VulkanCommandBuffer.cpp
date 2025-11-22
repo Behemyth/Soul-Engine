@@ -1,4 +1,4 @@
-module render.raster.vulkan;
+module synodic.soul.raster.backend.vulkan;
 
 VulkanCommandBuffer::VulkanCommandBuffer(const vk::CommandPool& commandPool,
 	const vk::Device& vulkanDevice,

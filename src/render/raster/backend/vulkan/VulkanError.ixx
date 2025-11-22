@@ -1,4 +1,4 @@
-export module render.raster.vulkan:error;
+export module synodic.soul.raster.backend.vulkan:error;
 
 import std;
 import vulkan_hpp;

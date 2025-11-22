@@ -1,4 +1,4 @@
-export module render.raster.vulkan:queue;
+export module synodic.soul.raster.backend.vulkan:queue;
 
 import std;
 import vulkan_hpp;

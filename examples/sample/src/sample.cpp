@@ -3,6 +3,7 @@ import synodic.soul.core;
 import synodic.soul.engine;
 import synodic.soul.scheduler;
 
+import synodic.soul.raster.backend.vulkan;
 import synodic.soul.window.backend.sdl;
 import synodic.soul.input.backend.sdl;
 import synodic.soul.raster.backend.mock;
@@ -16,7 +17,7 @@ using SampleApp = synodic::soul::App<
 	SchedulerModule,
 	MockBackend,
 	SDLInputBackend,
-	MockRasterBackend,
+	VulkanRasterBackend,
 	StandardRenderGraphBackend,
 	SDLWindowBackend,
 	StandardGUIBackend>;

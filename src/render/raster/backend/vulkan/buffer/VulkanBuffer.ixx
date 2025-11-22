@@ -1,4 +1,4 @@
-export module render.raster.vulkan:buffer;
+export module synodic.soul.raster.backend.vulkan:buffer;
 
 import :device;
 import :allocator;

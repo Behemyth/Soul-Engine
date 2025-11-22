@@ -1,5 +1,5 @@
 
-export module render.raster.vulkan:framebuffer;
+export module synodic.soul.raster.backend.vulkan:framebuffer;
 import std;
 import vulkan_hpp;
 import std;

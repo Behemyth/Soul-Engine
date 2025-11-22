@@ -1,5 +1,5 @@
 
-export module render.raster.vulkan:render_pass;
+export module synodic.soul.raster.backend.vulkan:render_pass;
 import std;
 import vulkan_hpp;
 import :device;

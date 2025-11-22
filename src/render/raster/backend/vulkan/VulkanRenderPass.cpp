@@ -1,4 +1,4 @@
-module render.raster.vulkan;
+module synodic.soul.raster.backend.vulkan;
 
 VulkanRenderPass::VulkanRenderPass(const VulkanDevice& device,
 	std::span<vk::AttachmentDescription2> subPassAttachments,

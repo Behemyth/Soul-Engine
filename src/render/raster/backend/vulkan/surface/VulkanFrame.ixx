@@ -1,4 +1,4 @@
-export module render.raster.vulkan:frame;
+export module synodic.soul.raster.backend.vulkan:frame;
 
 import std;
 

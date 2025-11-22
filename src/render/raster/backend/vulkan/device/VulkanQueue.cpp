@@ -1,4 +1,4 @@
-module render.raster.vulkan;
+module synodic.soul.raster.backend.vulkan;
 
 VulkanQueue::VulkanQueue(const vk::Device& device, std::uint32_t familyIndex, std::uint32_t index):
 	device_(device), familyIndex_(familyIndex), index_(index)
