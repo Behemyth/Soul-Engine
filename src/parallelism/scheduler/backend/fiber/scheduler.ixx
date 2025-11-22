@@ -4,15 +4,10 @@ module;
 #include <boost/fiber/condition_variable.hpp>
 #include <boost/fiber/fiber.hpp>
 #include <boost/fiber/mutex.hpp>
-#include <vector>
-#include <thread>
-#include <mutex>
-#include <forward_list>
-#include <functional>
-#include <chrono>
 
 export module synodic.soul.engine.fiber:backend;
 
+import std;
 import synodic.soul.engine;
 import :properties;
 
@@ -20,18 +15,16 @@ import :properties;
 #undef CreateWindow
 #undef Yield
 
-using std::uint32_t = std::uint32_t;
 
-
-export class FiberSchedulerBackend {
+export class SchedulerBackend {
 
 public:
 
-	FiberSchedulerBackend(Property<std::uint32_t>&);
-	~FiberSchedulerBackend();
+	SchedulerBackend(Property<std::uint32_t>&);
+	~SchedulerBackend();
 
-	FiberSchedulerBackend(FiberSchedulerBackend const&) = delete;
-	void operator=(FiberSchedulerBackend const&) = delete;
+	SchedulerBackend(SchedulerBackend const&) = delete;
+	void operator=(SchedulerBackend const&) = delete;
 
 	template<typename Fn, typename ... Args>
 	void AddTask(TaskParameters, Fn &&, Args && ...);
@@ -70,7 +63,7 @@ private:
 };
 
 /*
- * Adds a task to the FiberSchedulerBackend to be executed on any available thread.
+ * Adds a task to the SchedulerBackend to be executed on any available thread.
  *
  * @tparam	Fn  	Type of the function.
  * @tparam	Args	Type of the arguments.
@@ -80,7 +73,7 @@ private:
  */
 
 template<typename Fn, typename ... Args>
-void FiberSchedulerBackend::AddTask(TaskParameters params, Fn && fn, Args && ... args) {
+void SchedulerBackend::AddTask(TaskParameters params, Fn && fn, Args && ... args) {
 
 	//increment the global fiber count
 	{
@@ -160,7 +153,7 @@ void FiberSchedulerBackend::AddTask(TaskParameters params, Fn && fn, Args && ...
 }
 
 template<typename Fn, typename ... Args>
-void FiberSchedulerBackend::ForEachThread(TaskPriority priority, Fn && fn, Args && ... args) {
+void SchedulerBackend::ForEachThread(TaskPriority priority, Fn && fn, Args && ... args) {
 
 	//immediately enter to provide block scope to the perthread tasks
 	TaskParameters subParams(false);
@@ -180,13 +173,13 @@ void FiberSchedulerBackend::ForEachThread(TaskPriority priority, Fn && fn, Args 
 }
 
 template< typename Fn >
-void FiberSchedulerBackend::LaunchFiber(TaskParameters& params, Fn && func) {
+void SchedulerBackend::LaunchFiber(TaskParameters& params, Fn && func) {
 
 	if (params.post_) {
 
 		boost::fibers::fiber fiber(boost::fibers::launch::post, func);
 
-		fiber.properties<FiberProperties>().SetProperties(params.priority_, params.requiredThread_); //fiber not pushed to shared queues until properties are set
+		fiber.properties<Properties>().SetProperties(params.priority_, params.requiredThread_); //fiber not pushed to shared queues until properties are set
 		fiber.detach();
 
 	}
@@ -203,7 +196,7 @@ void FiberSchedulerBackend::LaunchFiber(TaskParameters& params, Fn && func) {
 }
 
 template< typename Clock, typename Duration>
-void FiberSchedulerBackend::YieldUntil(std::chrono::time_point< Clock, Duration > const& timePoint) {
+void SchedulerBackend::YieldUntil(std::chrono::time_point< Clock, Duration > const& timePoint) {
 
 	boost::fibers::mutex mutex;
 	boost::fibers::condition_variable conditional;

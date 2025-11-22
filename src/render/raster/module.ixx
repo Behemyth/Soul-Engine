@@ -12,7 +12,7 @@ export import :command_list;
 
 // Note: Forward declarations used here to avoid circular dependencies
 // These types are only used in shared_ptr parameters in factory methods
-export class SchedulerModule;
+export class SchedulerBackend;
 export class EntityRegistry;
 export class WindowModule;
 

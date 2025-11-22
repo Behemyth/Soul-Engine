@@ -9,9 +9,6 @@ target_sources(soul-engine
 			modules/entity_graph/GraphNode.ixx
 			modules/entity_graph/GraphTask.ixx
 			modules/entity_graph/Graph.ixx
-    PRIVATE
-		modules/entity_graph/GraphTask.cpp
-		modules/entity_graph/Graph.cpp
 )
 
 target_compile_definitions(soul-engine

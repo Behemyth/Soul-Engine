@@ -3,21 +3,14 @@ module;
 #include <boost/fiber/algo/algorithm.hpp>
 #include <boost/fiber/scheduler.hpp>
 #include <boost/fiber/detail/context_spinlock_queue.hpp>
-#include <vector>
-#include <atomic>
-#include <chrono>
-#include <random>
-#include <mutex>
-#include <condition_variable>
 
 export module synodic.soul.engine.fiber:algorithm;
 
+import std;
 import :properties;
 
-using std::uint32_t = std::uint32_t;
-
-export class FiberSchedulerAlgorithm :
-	public boost::fibers::algo::algorithm_with_properties<FiberProperties> {
+export class SchedulerAlgorithm :
+	public boost::fibers::algo::algorithm_with_properties<Properties> {
 
 public:
 
@@ -27,23 +20,23 @@ public:
 
 	//Construction
 
-	FiberSchedulerAlgorithm(std::uint32_t, bool = false);
-	~FiberSchedulerAlgorithm() = default;
+	SchedulerAlgorithm(std::uint32_t, bool = false);
+	~SchedulerAlgorithm() = default;
 
-	FiberSchedulerAlgorithm(FiberSchedulerAlgorithm const&) = delete;
-	FiberSchedulerAlgorithm(FiberSchedulerAlgorithm &&) = delete;
+	SchedulerAlgorithm(SchedulerAlgorithm const&) = delete;
+	SchedulerAlgorithm(SchedulerAlgorithm &&) = delete;
 
-	FiberSchedulerAlgorithm& operator=(FiberSchedulerAlgorithm const&) = delete;
-	FiberSchedulerAlgorithm& operator=(FiberSchedulerAlgorithm &&) = delete;
+	SchedulerAlgorithm& operator=(SchedulerAlgorithm const&) = delete;
+	SchedulerAlgorithm& operator=(SchedulerAlgorithm &&) = delete;
 
 
 	//Implementation
-	void								awakened(boost::fibers::context*, FiberProperties&)			noexcept override;
+	void								awakened(boost::fibers::context*, Properties&)			noexcept override;
 	inline boost::fibers::context*		PickShared(std::uint32_t)											noexcept;
 	inline boost::fibers::context*		PickLocal(std::uint32_t)												noexcept;
 	boost::fibers::context*				pick_next()													noexcept override;
 	bool								has_ready_fibers()											const noexcept override;
-	void								property_change(boost::fibers::context*, FiberProperties&)  noexcept override;
+	void								property_change(boost::fibers::context*, Properties&)  noexcept override;
 	void								suspend_until(std::chrono::steady_clock::time_point const&) noexcept override;
 	void								notify()													noexcept override;
 
@@ -53,7 +46,7 @@ private:
 	static void InitializeSchedulers(std::uint32_t);
 
 	static std::atomic<std::uint32_t>										counter_;
-	static std::vector<boost::intrusive_ptr<FiberSchedulerAlgorithm>>    schedulers_;
+	static std::vector<boost::intrusive_ptr<SchedulerAlgorithm>>    schedulers_;
 
 	static thread_local std::minstd_rand generator_;
 	static std::uniform_int_distribution<std::uint32_t> distribution_;

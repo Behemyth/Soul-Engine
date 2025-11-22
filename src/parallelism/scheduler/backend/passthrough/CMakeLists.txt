@@ -1,8 +1,6 @@
 target_sources(soul-engine
-    PUBLIC
+	PUBLIC
 		FILE_SET CXX_MODULES FILES
+			passthrough.ixx
 			scheduler.ixx
-			task_parameters.ixx
 )
-
-add_subdirectory(backend)

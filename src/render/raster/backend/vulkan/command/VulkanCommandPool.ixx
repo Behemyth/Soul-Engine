@@ -6,12 +6,35 @@ import vulkan_hpp;
 import :device;
 import synodic.soul.scheduler;
 
-export class VulkanCommandPool final {
+export template<typename SchedulerType> requires SchedulerBackend<SchedulerType>
+class VulkanCommandPool final {
 
 public:
 
-   VulkanCommandPool(std::shared_ptr<SchedulerModule>&, const VulkanDevice&);
-	~VulkanCommandPool();
+   VulkanCommandPool(SchedulerType& scheduler, const VulkanDevice<SchedulerType>& device) :
+		scheduler_(scheduler),
+		device_(device.Logical())
+	{
+		vk::CommandPoolCreateInfo poolInfo;
+		poolInfo.flags = vk::CommandPoolCreateFlagBits::eTransient |
+						 vk::CommandPoolCreateFlagBits::eResetCommandBuffer;
+
+		auto familyIndexResult = device.HighFamilyIndex();
+		if (!familyIndexResult) {
+			throw std::runtime_error("Failed to get queue family index");
+		}
+		poolInfo.queueFamilyIndex = familyIndexResult.value();
+
+		scheduler_.ForEachThread(TaskPriority::UX, [&]() {
+			commandPool_ = device_.createCommandPool(poolInfo);
+		});
+	}
+
+	~VulkanCommandPool() {
+		scheduler_.ForEachThread(TaskPriority::UX, [&]() noexcept {
+			device_.destroyCommandPool(commandPool_);
+		});
+	}
 
 	VulkanCommandPool(const VulkanCommandPool&) = delete;
 	VulkanCommandPool(VulkanCommandPool&&) noexcept = default;
@@ -19,12 +42,14 @@ public:
 	VulkanCommandPool& operator=(const VulkanCommandPool&) = delete;
 	VulkanCommandPool& operator=(VulkanCommandPool&&) noexcept = default;
 
-	const vk::CommandPool& Handle() const;
+	const vk::CommandPool& Handle() const {
+		return commandPool_;
+	}
 
 
 private:
 
-	std::shared_ptr<SchedulerModule> scheduler_;
+	SchedulerType& scheduler_;
 	vk::Device device_;
 
 	// TODO: Replace with actual thread-local storage when available

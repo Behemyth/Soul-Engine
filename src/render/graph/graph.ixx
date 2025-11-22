@@ -11,9 +11,13 @@ import :parameter;
 import :builder;
 import std;
 
-export class RenderGraphModule {
+export template<SchedulerBackend SchedulerType>
+class RenderGraphModule {
 public:
-	RenderGraphModule(std::shared_ptr<RasterModule>&, std::shared_ptr<SchedulerModule>&);
+	RenderGraphModule(std::shared_ptr<RasterModule>&, SchedulerType& scheduler) :
+		renderGraph_(scheduler) {
+	}
+
 	virtual ~RenderGraphModule() = default;
 
 	RenderGraphModule(const RenderGraphModule&) = delete;
@@ -28,28 +32,16 @@ public:
 		std::function<std::function<void(const EntityRegistry&, CommandList&)>(RenderGraphBuilder&)>) = 0;
 
 	// Factory
-	static std::shared_ptr<RenderGraphModule> CreateModule(
-		std::shared_ptr<RasterModule>&,
-		std::shared_ptr<SchedulerModule>&,
-		std::shared_ptr<EntityRegistry>&);
+	static std::shared_ptr<RenderGraphModule<SchedulerType>> CreateModule(
+		std::shared_ptr<RasterModule>& rasterModule,
+		SchedulerType& scheduler,
+		std::shared_ptr<EntityRegistry>& entityRegistry) {
+
+		// TODO: Implement EntityRenderGraphBackend
+		// return std::make_unique<EntityRenderGraphBackend>(rasterModule, scheduler, entityRegistry);
+		return nullptr;
+	}
 
 protected:
-	Graph renderGraph_;
+	Graph<SchedulerType> renderGraph_;
 };
-
-// Implementation
-inline RenderGraphModule::RenderGraphModule(
-	std::shared_ptr<RasterModule>&,
-	std::shared_ptr<SchedulerModule>& scheduler) :
-	renderGraph_(scheduler) {
-}
-
-inline std::shared_ptr<RenderGraphModule> RenderGraphModule::CreateModule(
-	std::shared_ptr<RasterModule>& rasterModule,
-	std::shared_ptr<SchedulerModule>& scheduler,
-	std::shared_ptr<EntityRegistry>& entityRegistry) {
-
-	// TODO: Implement EntityRenderGraphBackend
-	// return std::make_unique<EntityRenderGraphBackend>(rasterModule, scheduler, entityRegistry);
-	return nullptr;
-}

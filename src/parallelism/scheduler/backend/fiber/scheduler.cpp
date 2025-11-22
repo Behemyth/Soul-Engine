@@ -4,15 +4,16 @@ module;
 
 module synodic.soul.engine.fiber;
 
+import std;
 import synodic.soul.engine;
 
-FiberSchedulerBackend::FiberSchedulerBackend(Property<std::uint32_t>& threadCount) :
+SchedulerBackend::SchedulerBackend(Property<std::uint32_t>& threadCount) :
 	shouldRun_(true),
 	fiberCount_(0),
 	threadCount_(threadCount)
 {
 
-	boost::fibers::use_scheduling_algorithm<FiberSchedulerAlgorithm>(threadCount_, true);
+	boost::fibers::use_scheduling_algorithm<SchedulerAlgorithm>(threadCount_, true);
 
 	//the main thread takes up one slot
 	childThreads_.resize(threadCount_ - 1);
@@ -32,11 +33,11 @@ FiberSchedulerBackend::FiberSchedulerBackend(Property<std::uint32_t>& threadCoun
 	}
 
 	//suprisingly, the main fiber does not need to run on main.
-	boost::this_fiber::properties<FiberProperties>().SetProperties(TaskPriority::UX, -1);
+	boost::this_fiber::properties<Properties>().SetProperties(TaskPriority::UX, -1);
 
 }
 
-FiberSchedulerBackend::~FiberSchedulerBackend() {
+SchedulerBackend::~SchedulerBackend() {
 
 	std::int32_t polledCount;
 	{
@@ -72,7 +73,7 @@ FiberSchedulerBackend::~FiberSchedulerBackend() {
 
 /* Initialize the fiber specific stuff. */
 //TODO use fiber specific allocator
-void FiberSchedulerBackend::InitPointers() {
+void SchedulerBackend::InitPointers() {
 
 	if (!blockMutex_.get()) {
 		blockMutex_.reset(new boost::fibers::mutex);
@@ -88,7 +89,7 @@ void FiberSchedulerBackend::InitPointers() {
 
 
 //block the current thread until all registered children complete
-void FiberSchedulerBackend::Block() const {
+void SchedulerBackend::Block() const {
 
 	//get the current fibers stats for blocking
 	std::uint32_t* holdSize = blockCount_.get();
@@ -102,7 +103,7 @@ void FiberSchedulerBackend::Block() const {
 }
 
 //Yield the current fiber, allowing for another to take its place.
-void FiberSchedulerBackend::Yield() {
+void SchedulerBackend::Yield() {
 
 	boost::this_fiber::yield();
 
@@ -113,10 +114,10 @@ void FiberSchedulerBackend::Yield() {
 *    while waiting for a notify release.
 */
 
-void FiberSchedulerBackend::ThreadRun() {
+void SchedulerBackend::ThreadRun() {
 
-	boost::fibers::use_scheduling_algorithm<FiberSchedulerAlgorithm>(threadCount_, true);
-	boost::this_fiber::properties<FiberProperties>().SetProperties(TaskPriority::LOW, -1);
+	boost::fibers::use_scheduling_algorithm<SchedulerAlgorithm>(threadCount_, true);
+	boost::this_fiber::properties<Properties>().SetProperties(TaskPriority::LOW, -1);
 
 	//continue processing until exit is called
 	{

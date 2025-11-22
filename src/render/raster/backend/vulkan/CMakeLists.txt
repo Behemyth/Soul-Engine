@@ -28,8 +28,6 @@ target_sources(soul-engine
 		VulkanAllocator.cpp
 		buffer/VulkanBuffer.cpp
 		command/VulkanCommandBuffer.cpp
-		command/VulkanCommandPool.cpp
-		device/VulkanDevice.cpp
 		device/VulkanQueue.cpp
 		device/VulkanPhysicalDevice.cpp
 		VulkanFramebuffer.cpp

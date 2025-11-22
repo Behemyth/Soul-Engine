@@ -5,9 +5,14 @@ import :graph_task;
 import synodic.soul.scheduler;
 import std;
 
-export class Graph : public GraphNode {
+export template<typename SchedulerType> requires SchedulerBackend<SchedulerType>
+class Graph : public GraphNode {
 public:
-	Graph(std::shared_ptr<SchedulerModule>&);
+	Graph(SchedulerType& scheduler):
+		scheduler_(scheduler)
+	{
+	}
+
 	~Graph() override = default;
 
 	Graph(const Graph&) = delete;
@@ -17,28 +22,34 @@ public:
 	Graph& operator=(Graph&&) noexcept = default;
 
 	template <typename Callable>
-	GraphTask& AddTask(Callable&&);
-	Graph& CreateGraph();
+	GraphTask<SchedulerType>& AddTask(Callable&& callable) {
+		if constexpr (!std::is_invocable_v<Callable>) {
+			static_assert(std::false_type::value, "The provided parameter is not callable");
+		}
 
-	void Execute(std::chrono::nanoseconds) override;
+		GraphTask<SchedulerType>& task = tasks_.emplace_front(scheduler_, std::forward<Callable>(callable));
 
-private:
-	std::shared_ptr<SchedulerModule> scheduler_;
-	std::forward_list<GraphTask> tasks_;
-	std::forward_list<Graph> graphs_;
-};
+		task.DependsOn(*this);
+		task.Root(true);
 
-// Template implementation must be in header/module interface
-template <typename Callable>
-GraphTask& Graph::AddTask(Callable&& callable) {
-	if constexpr (!std::is_invocable_v<Callable>) {
-		static_assert(std::false_type::value, "The provided parameter is not callable");
+		return task;
 	}
 
-	GraphTask& task = tasks_.emplace_front(scheduler_, std::forward<Callable>(callable));
+	Graph& CreateGraph()
+	{
+		return graphs_.emplace_front(scheduler_);
+	}
 
-	task.DependsOn(*this);
-	task.Root(true);
+	void Execute(std::chrono::nanoseconds targetDuration) override {
+		for (const auto& child : children_) {
+			if (child->Root()) {
+				child->Execute();
+			}
+		}
+	}
 
-	return task;
-}
+private:
+	SchedulerType& scheduler_;
+	std::forward_list<GraphTask<SchedulerType>> tasks_;
+	std::forward_list<Graph<SchedulerType>> graphs_;
+};

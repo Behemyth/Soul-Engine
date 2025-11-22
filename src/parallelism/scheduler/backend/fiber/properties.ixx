@@ -6,12 +6,12 @@ export module synodic.soul.engine.fiber:properties;
 
 import synodic.soul.engine;
 
-export class FiberProperties : public boost::fibers::fiber_properties {
+export class Properties : public boost::fibers::fiber_properties {
 
 public:
 
 	//Construction
-	FiberProperties(boost::fibers::context*);
+	Properties(boost::fibers::context*);
 
 	//Implementation
 	TaskPriority GetPriority() const;
