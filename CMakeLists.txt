@@ -25,15 +25,49 @@ find_package(honesty REQUIRED)
 find_package(synodic-template-library REQUIRED)
 find_package(cppaste REQUIRED)
 find_package(SDL3 REQUIRED)
+
+# Find Vulkan from system SDK (not from Conan)
+# Use VULKAN_SDK environment variable to locate the system Vulkan SDK
+if(DEFINED ENV{VULKAN_SDK})
+	set(VULKAN_SDK_ROOT "$ENV{VULKAN_SDK}")
+	message(STATUS "Using Vulkan SDK from environment: ${VULKAN_SDK_ROOT}")
+	
+	# Manually set up Vulkan target from system SDK
+	if(NOT TARGET Vulkan::Vulkan)
+		find_library(Vulkan_LIBRARY
+			NAMES vulkan-1 vulkan
+			PATHS "${VULKAN_SDK_ROOT}/Lib"
+			NO_DEFAULT_PATH
+			REQUIRED
+		)
+		
+		set(Vulkan_INCLUDE_DIR "${VULKAN_SDK_ROOT}/Include")
+		
+		add_library(Vulkan::Vulkan UNKNOWN IMPORTED)
+		set_target_properties(Vulkan::Vulkan PROPERTIES
+			IMPORTED_LOCATION "${Vulkan_LIBRARY}"
+			INTERFACE_INCLUDE_DIRECTORIES "${Vulkan_INCLUDE_DIR}"
+		)
+		message(STATUS "Found Vulkan: ${Vulkan_LIBRARY}")
+	endif()
+else()
+	# Fallback to find_package if VULKAN_SDK is not set
+	set(_ORIGINAL_PREFIX_PATH ${CMAKE_PREFIX_PATH})
+	set(CMAKE_PREFIX_PATH "")
+	set(CMAKE_FIND_PACKAGE_PREFER_CONFIG FALSE)
+	find_package(Vulkan REQUIRED MODULE)
+	set(CMAKE_PREFIX_PATH ${_ORIGINAL_PREFIX_PATH})
+	
+	# Get Vulkan SDK root by going up from include directory
+	get_filename_component(VULKAN_SDK_ROOT "${Vulkan_INCLUDE_DIR}" DIRECTORY)
+endif()
+
+# VulkanMemoryAllocator from Conan
 find_package(VulkanMemoryAllocator REQUIRED)
-find_package(Vulkan REQUIRED)
 
 # Slang is bundled with Vulkan SDK but doesn't provide CMake config
 # Set up manually using Vulkan SDK paths
 if(NOT TARGET slang::slang)
-	# Get Vulkan SDK root by going up from include directory
-	get_filename_component(VULKAN_SDK_ROOT "${Vulkan_INCLUDE_DIR}" DIRECTORY)
-
 	find_path(SLANG_INCLUDE_DIR
 		NAMES slang.h
 		PATHS "${VULKAN_SDK_ROOT}/Include/slang"
