@@ -3,9 +3,9 @@ export module synodic.soul.render.graph;
 export import :parameter;
 export import :builder;
 
+import synodic.soul.scheduler;
 import synodic.soul.core;
 import synodic.soul.raster;
-import synodic.soul.scheduler;
 import synodic.soul.graph;
 import :parameter;
 import :builder;

@@ -12,7 +12,7 @@ import synodic.soul.engine;
 // TODO: VulkanDevice should inherit from RasterDevice but this causes
 // MSVC Internal Compiler Error when importing synodic.soul.raster
 // For now, VulkanDevice just implements the same interface
-export template<typename SchedulerType> requires SchedulerBackend<SchedulerType>
+export template<SchedulerBackend SchedulerType>
 class VulkanDevice final {
 
 public:
@@ -80,7 +80,7 @@ private:
 };
 
 // Template implementation
-template<typename SchedulerType> requires SchedulerBackend<SchedulerType>
+template<SchedulerBackend SchedulerType>
 VulkanDevice<SchedulerType>::VulkanDevice(SchedulerType& scheduler,
 	const vk::Instance& instance,
 	const vk::PhysicalDevice& physicalDevice,
@@ -236,44 +236,7 @@ VulkanDevice<SchedulerType>::VulkanDevice(SchedulerType& scheduler,
 	allocator_ = VulkanAllocator(instance, physicalDevice_, device_, vulkanApiVersion);
 }
 
-template<typename SchedulerType>
-	requires SchedulerBackend<SchedulerType>
-VulkanDevice<SchedulerType>::~VulkanDevice()
-{
-
-	device_.destroy();
-
-}
-
-template<typename SchedulerType>
-	requires SchedulerBackend<SchedulerType>
-void VulkanDevice<SchedulerType>::Synchronize()
-{
-
-	device_.waitIdle();
-
-}
-
-template<typename SchedulerType>
-	requires SchedulerBackend<SchedulerType>
-const vk::Device& VulkanDevice<SchedulerType>::Logical() const
-{
-
-	return device_;
-
-}
-
-template<typename SchedulerType>
-	requires SchedulerBackend<SchedulerType>
-const vk::PhysicalDevice& VulkanDevice<SchedulerType>::Physical() const
-{
-
-	return physicalDevice_;
-
-}
-
-template<typename SchedulerType>
-	requires SchedulerBackend<SchedulerType>
+template<SchedulerBackend SchedulerType>
 bool VulkanDevice<SchedulerType>::SurfaceSupported(vk::SurfaceKHR& surface)
 {
 
@@ -294,8 +257,7 @@ bool VulkanDevice<SchedulerType>::SurfaceSupported(vk::SurfaceKHR& surface)
 
 }
 
-template<typename SchedulerType>
-	requires SchedulerBackend<SchedulerType>
+template<SchedulerBackend SchedulerType>
 VulkanResult<std::uint32_t> VulkanDevice<SchedulerType>::HighFamilyIndex() const
 {
 
@@ -315,24 +277,4 @@ VulkanResult<std::uint32_t> VulkanDevice<SchedulerType>::HighFamilyIndex() const
 
 }
 
-template<typename SchedulerType>
-	requires SchedulerBackend<SchedulerType>
-std::span<VulkanQueue> VulkanDevice<SchedulerType>::GraphicsQueues()
-{
-	return {graphicsQueues_};
-}
-
-template<typename SchedulerType>
-	requires SchedulerBackend<SchedulerType>
-std::span<VulkanQueue> VulkanDevice<SchedulerType>::ComputeQueues()
-{
-	return {computeQueues_};
-}
-
-template<typename SchedulerType>
-	requires SchedulerBackend<SchedulerType>
-std::span<VulkanQueue> VulkanDevice<SchedulerType>::TransferQueues()
-{
-	return {transferQueues_};
-}
 

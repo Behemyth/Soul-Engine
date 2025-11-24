@@ -4,7 +4,7 @@ import :graph_node;
 import synodic.soul.scheduler;
 import std;
 
-export template<typename SchedulerType> requires SchedulerBackend<SchedulerType>
+export template<SchedulerBackend SchedulerType>
 class GraphTask : public GraphNode {
 public:
 	GraphTask(SchedulerType& scheduler) noexcept:

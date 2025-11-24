@@ -25,14 +25,14 @@ namespace synodic
 		typename SchedulerModuleType,
 		typename ComputeModuleType,
 		typename InputBackendType,
-		typename RasterModuleType,
+		typename RasterBackendType,
 		typename RenderGraphModuleType,
 		typename WindowBackendType,
 		typename GUIModuleType>
 	class Soul final
 	{
 	public:
-		Soul(soul::Parameters& params, InputBackendType inputBackend, WindowBackendType windowBackend) :
+		Soul(soul::Parameters& params, InputBackendType inputBackend, WindowBackendType windowBackend, RasterBackendType rasterBackend) :
 			parameters_(params),
 			frameTime_(),
 			active_(true),
@@ -41,7 +41,7 @@ namespace synodic
 			schedulerModule_(parameters_.threadCount),
 			computeModule_(),
 			inputModule_(std::move(inputBackend)),
-			rasterModule_(),
+			rasterModule_(std::move(rasterBackend)),
 			renderGraphModule_(),
 			windowModule_(std::move(windowBackend))
 		{
@@ -77,7 +77,7 @@ namespace synodic
 			return inputModule_;
 		}
 
-		RasterModuleType& Raster()
+		RasterBackendType& Raster()
 		{
 			return rasterModule_;
 		}
@@ -137,7 +137,7 @@ namespace synodic
 		SchedulerModuleType schedulerModule_;
 		ComputeModuleType computeModule_;
 		InputBackendType inputModule_;
-		RasterModuleType rasterModule_;
+		RasterBackendType rasterModule_;
 		RenderGraphModuleType renderGraphModule_;
 
 		// Potentially empty modules
@@ -152,16 +152,19 @@ namespace synodic
 			typename SchedulerModuleType,
 			typename ComputeModuleType,
 			typename InputBackendType,
-			typename RasterModuleType,
+			typename RasterBackendType,
 			typename RenderGraphModuleType,
 			typename WindowBackendType,
 			typename GUIModuleType>
 		class App
 		{
 		public:
-			App(const Parameters& params, InputBackendType inputBackend, WindowBackendType windowBackend) :
+			App(const Parameters& params,
+				InputBackendType inputBackend,
+				WindowBackendType windowBackend,
+				RasterBackendType rasterBackend) :
 				parameters_(params),
-				soul_(parameters_, std::move(inputBackend), std::move(windowBackend)),
+				soul_(parameters_, std::move(inputBackend), std::move(windowBackend), std::move(rasterBackend)),
 				currentFrame_(),
 				previousFrame_()
 			{
@@ -212,7 +215,7 @@ namespace synodic
 				SchedulerModuleType,
 				ComputeModuleType,
 				InputBackendType,
-				RasterModuleType,
+				RasterBackendType,
 				RenderGraphModuleType,
 				WindowBackendType,
 				GUIModuleType>&
@@ -225,7 +228,7 @@ namespace synodic
 				SchedulerModuleType,
 				ComputeModuleType,
 				InputBackendType,
-				RasterModuleType,
+				RasterBackendType,
 				RenderGraphModuleType,
 				WindowBackendType,
 				GUIModuleType>&
@@ -260,7 +263,7 @@ namespace synodic
 				SchedulerModuleType,
 				ComputeModuleType,
 				InputBackendType,
-				RasterModuleType,
+				RasterBackendType,
 				RenderGraphModuleType,
 				WindowBackendType,
 				GUIModuleType>

@@ -6,7 +6,7 @@ import vulkan_hpp;
 import :device;
 import synodic.soul.scheduler;
 
-export template<typename SchedulerType> requires SchedulerBackend<SchedulerType>
+export template<SchedulerBackend SchedulerType>
 class VulkanCommandPool final {
 
 public:

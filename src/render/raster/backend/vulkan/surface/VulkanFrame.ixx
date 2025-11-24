@@ -5,8 +5,10 @@ import std;
 import :framebuffer;
 import :semaphore;
 import :fence;
+import synodic.soul.scheduler;
 
-export class VulkanFrame{
+export template<SchedulerBackend SchedulerType>
+class VulkanFrame{
 
 public:
 
@@ -19,12 +21,17 @@ public:
 	VulkanFrame& operator=(const VulkanFrame&) = delete;
 	VulkanFrame& operator=(VulkanFrame&&) noexcept = default;
 
-	VulkanFrameBuffer& Framebuffer();
-	VulkanSemaphore& RenderSemaphore();
+	VulkanFrameBuffer<SchedulerType>& Framebuffer() {
+		return framebuffer_.value();
+	}
+
+	VulkanSemaphore& RenderSemaphore() {
+		return renderSemaphore_.value();
+	}
 
 private:
 	
-	std::optional<VulkanFrameBuffer> framebuffer_;
+	std::optional<VulkanFrameBuffer<SchedulerType>> framebuffer_;
 	std::optional<VulkanSemaphore> presentSemaphore_;
 	std::optional<VulkanSemaphore> renderSemaphore_;
 	std::optional<VulkanFence> imageFence_;

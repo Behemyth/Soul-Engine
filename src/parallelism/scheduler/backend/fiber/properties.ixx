@@ -4,7 +4,8 @@ module;
 
 export module synodic.soul.engine.fiber:properties;
 
-import synodic.soul.engine;
+import synodic.soul.core;
+import synodic.soul.scheduler;
 
 export class Properties : public boost::fibers::fiber_properties {
 

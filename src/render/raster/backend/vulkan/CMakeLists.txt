@@ -30,18 +30,12 @@ target_sources(soul-engine
 		command/VulkanCommandBuffer.cpp
 		device/VulkanQueue.cpp
 		device/VulkanPhysicalDevice.cpp
-		VulkanFramebuffer.cpp
 		pipeline/VulkanPipeline.cpp
 		pipeline/VulkanPipelineLayout.cpp
 		pipeline/VulkanPipelineCache.cpp
 		VulkanInstance.cpp
-		VulkanRasterBackend.cpp
-		VulkanRenderPass.cpp
 		VulkanSubPass.cpp
 		VulkanSemaphore.cpp
 		VulkanFence.cpp
-		surface/VulkanFrame.cpp
 		VulkanShader.cpp
-		surface/VulkanSurface.cpp
-		surface/VulkanSwapChain.cpp
 )

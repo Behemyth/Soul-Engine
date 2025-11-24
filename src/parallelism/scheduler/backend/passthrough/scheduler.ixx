@@ -1,8 +1,8 @@
-export module synodic.soul.engine.scheduler.backend.passthrough:scheduler;
-
+export module synodic.soul.scheduler.backend.passthrough:scheduler;
 import std;
 
-import synodic.soul.engine;
+import synodic.soul.core;
+import synodic.soul.scheduler;
 
 export class PassthroughSchedulerBackend {
 

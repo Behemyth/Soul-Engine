@@ -1,3 +1,5 @@
-export module synodic.soul.engine.scheduler.backend.passthrough;
+export module synodic.soul.scheduler.backend.passthrough;
 
 export import :scheduler;
+
+

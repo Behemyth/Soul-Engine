@@ -8,7 +8,8 @@ module;
 export module synodic.soul.engine.fiber:backend;
 
 import std;
-import synodic.soul.engine;
+import synodic.soul.core;
+import synodic.soul.scheduler;
 import :properties;
 
 //TODO: unlink the windows headers from the project/cmake https://github.com/Synodic-Software/Soul-Engine/issues/62

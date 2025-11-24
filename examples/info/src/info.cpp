@@ -9,9 +9,10 @@ import synodic.soul.raster.backend.mock;
 import synodic.soul.gui.backend.standard;
 import synodic.soul.render.graph.backend.standard;
 import synodic.soul.compute.backend.mock;
+import synodic.soul.scheduler.backend.passthrough;
 
 using InfoApp = synodic::soul::App<
-	SchedulerModule,
+	PassthroughSchedulerBackend,
 	MockBackend,
 	MockInputBackend,
 	MockRasterBackend,
@@ -25,8 +26,9 @@ public:
 	explicit Info(
 		const synodic::soul::Parameters& params,
 		MockInputBackend inputBackend,
-		MockWindowBackend windowBackend) :
-		InfoApp(params, std::move(inputBackend), std::move(windowBackend))
+		MockWindowBackend windowBackend,
+		MockRasterBackend rasterBackend) :
+		InfoApp(params, std::move(inputBackend), std::move(windowBackend), std::move(rasterBackend))
 	{
 	}
 
@@ -76,7 +78,8 @@ std::int32_t main(std::int32_t, char*[])
 	const synodic::soul::Parameters appParams;
 	MockInputBackend inputBackend;
 	MockWindowBackend windowBackend;
-	Info app(appParams, std::move(inputBackend), std::move(windowBackend));
+	MockRasterBackend rasterBackend;
+	Info app(appParams, std::move(inputBackend), std::move(windowBackend), std::move(rasterBackend));
 
 	app.Run();
 
