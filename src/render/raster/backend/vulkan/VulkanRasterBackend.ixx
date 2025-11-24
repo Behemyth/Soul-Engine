@@ -47,7 +47,7 @@ public:
 	void CreatePassInput(Entity, Entity, Format) override;
 	void CreatePassOutput(Entity, Entity, Format) override;
 
-	Entity CreateSurface(std::any, uvec2) override;
+	Entity CreateSurface(NativeSurfaceHandle, uvec2) override;
 	void UpdateSurface(Entity, uvec2) override;
 	void RemoveSurface(Entity) override;
 	void AttachSurface(Entity, Entity) override;
@@ -342,10 +342,10 @@ void VulkanRasterBackend<SchedulerType>::CreatePassOutput(Entity passID, Entity 
 }
 
 template<SchedulerBackend SchedulerType>
-Entity VulkanRasterBackend<SchedulerType>::CreateSurface(std::any anySurface, uvec2 size)
+Entity VulkanRasterBackend<SchedulerType>::CreateSurface(NativeSurfaceHandle nativeSurface, uvec2 size)
 {
 	// TODO: Restore entityRegistry access
-	auto surfaceHandle = std::any_cast<vk::SurfaceKHR>(anySurface);
+	auto surfaceHandle = vk::SurfaceKHR(reinterpret_cast<VkSurfaceKHR>(nativeSurface));
 	const Entity surfaceID = Entity();  // Placeholder
 
 	auto [surfaceIterator, didInsert] =

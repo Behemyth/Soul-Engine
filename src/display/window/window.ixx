@@ -129,6 +129,14 @@ public:
 
 	virtual std::span<const char*> GetRasterExtensions() = 0;
 
+	// Generic surface creation: raster backend provides a callback that receives the native window handle
+	// This keeps the window module agnostic of specific graphics APIs
+	template<typename SurfaceCreator>
+	auto CreateSurface(WindowType& window, SurfaceCreator&& creator)
+	{
+		return creator(window.GetNativeHandle());
+	}
+
 protected:
 	// Override these for backend-specific window lifecycle
 	virtual void OnWindowCreated(WindowType& window)

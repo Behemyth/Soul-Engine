@@ -40,7 +40,7 @@ public:
 	{
 	}
 
-	Entity CreateSurface(std::any, uvec2) override
+	Entity CreateSurface(NativeSurfaceHandle, uvec2) override
 	{
 		return Entity();
 	}

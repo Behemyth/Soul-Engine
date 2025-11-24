@@ -1,6 +1,7 @@
 module;
 
 #include <SDL3/SDL.h>
+#include <SDL3/SDL_vulkan.h>
 
 export module synodic.soul.window.backend.sdl;
 
@@ -132,8 +133,16 @@ public:
 
 	std::span<const char*> GetRasterExtensions() override
 	{
-		// TODO: Get Vulkan extensions from SDL
-		return {};
+		if (vulkanExtensions_.empty())
+		{
+			std::uint32_t count = 0;
+			const char* const* extensions = SDL_Vulkan_GetInstanceExtensions(&count);
+			if (extensions && count > 0)
+			{
+				vulkanExtensions_.assign(extensions, extensions + count);
+			}
+		}
+		return vulkanExtensions_;
 	}
 
 protected:
@@ -185,4 +194,5 @@ private:
 	}
 
 	SDLBackend& sdlBackend_;
+	std::vector<const char*> vulkanExtensions_;
 };

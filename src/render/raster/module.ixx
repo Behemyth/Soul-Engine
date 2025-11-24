@@ -31,7 +31,7 @@ public:
 	virtual void CreatePassInput(Entity, Entity, Format)  = 0;
 	virtual void CreatePassOutput(Entity, Entity, Format) = 0;
 
-	virtual Entity CreateSurface(std::any, uvec2) = 0;
+	virtual Entity CreateSurface(NativeSurfaceHandle, uvec2) = 0;
 	virtual void UpdateSurface(Entity, uvec2)	  = 0;
 	virtual void RemoveSurface(Entity)			  = 0;
 	virtual void AttachSurface(Entity, Entity)	  = 0;
