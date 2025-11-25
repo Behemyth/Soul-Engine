@@ -68,6 +68,25 @@ public:
 		sdlWindow_ = window;
 	}
 
+	// Create a Vulkan surface for this window
+	// Returns the VkSurfaceKHR as a uint64_t handle (0 on failure)
+	std::uint64_t CreateVulkanSurface(std::uint64_t vulkanInstance)
+	{
+		if (!sdlWindow_)
+		{
+			return 0;
+		}
+
+		VkSurfaceKHR surface = nullptr;
+		auto instance = reinterpret_cast<VkInstance>(vulkanInstance);
+
+		if (SDL_Vulkan_CreateSurface(sdlWindow_, instance, nullptr, &surface))
+		{
+			return reinterpret_cast<std::uint64_t>(surface);
+		}
+		return 0;
+	}
+
 private:
 	void Destroy()
 	{

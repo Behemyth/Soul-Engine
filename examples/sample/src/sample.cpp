@@ -52,9 +52,29 @@ protected:
 
 			SDLWindow& mainWindow = GetSoul().Window()->CreateWindow(winParams);
 
-			if (mainWindow.GetNativeHandle())
+			if (mainWindow.IsValid())
 			{
-				// Window created successfully
+				// Create Vulkan surface from SDL window
+				auto vkSurface = mainWindow.CreateVulkanSurface(GetSoul().Raster().InstanceHandle());
+
+				if (vkSurface != 0)
+				{
+					// Create surface in raster backend
+					surfaceEntity_ = GetSoul().Raster().CreateSurface(
+						static_cast<NativeSurfaceHandle>(vkSurface),
+						{winParams.pixelSize.x, winParams.pixelSize.y});
+
+					// Create render pass
+					ShaderSet shaders = {};  // Empty for now, basic clear pass
+					renderPassEntity_ = GetSoul().Raster().CreatePass(shaders, [](Entity subPass) {
+						// Configure subpass if needed
+					});
+
+					// Attach surface to render pass
+					GetSoul().Raster().AttachSurface(renderPassEntity_, surfaceEntity_);
+
+					hasValidSurface_ = true;
+				}
 			}
 		}
 
@@ -93,6 +113,12 @@ protected:
 
 	void OnShutdown() override
 	{
+		// Clean up surfaces before shutdown
+		if (hasValidSurface_)
+		{
+			GetSoul().Raster().DetachSurface(renderPassEntity_, surfaceEntity_);
+			GetSoul().Raster().RemoveSurface(surfaceEntity_);
+		}
 	}
 
 	bool ShouldContinue() const override
@@ -107,15 +133,22 @@ private:
 
 	void RenderFrame(Frame& current, Frame& previous)
 	{
-		if (GetSoul().Window().has_value())
+		if (!hasValidSurface_)
 		{
-			auto windows = GetSoul().Window()->GetWindows();
-			for (auto& window: windows)
-			{
-				// TODO: Render to each window
-			}
+			return;
 		}
+
+		// Execute render pass (clears screen to blue)
+		CommandList commandList;
+		GetSoul().Raster().ExecutePass(renderPassEntity_, surfaceEntity_, commandList);
+
+		// Present the frame
+		GetSoul().Raster().Present();
 	}
+
+	Entity surfaceEntity_;
+	Entity renderPassEntity_;
+	bool hasValidSurface_ = false;
 };
 
 std::int32_t main(std::int32_t, char*[])

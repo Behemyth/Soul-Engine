@@ -30,14 +30,6 @@ private:
 	vk::Instance instance_;
 
 	// Debug state
-	// TODO: Should be conditionally included when the class is only debug mode.
-	// TODO: Fix callback signature to work with C++20 modules (needs C Vulkan types)
-
-	// static VkBool32 DebugCallback(VkDebugUtilsMessageSeverityFlagBitsEXT,
-	// 	VkDebugUtilsMessageTypeFlagsEXT,
-	// 	const VkDebugUtilsMessengerCallbackDataEXT*,
-	// 	void*);
-	 
 	vk::DebugUtilsMessengerEXT debugMessenger_;
 
 };

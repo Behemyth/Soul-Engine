@@ -1,6 +1,58 @@
 module synodic.soul.raster.backend.vulkan;
 
-// Using static dispatcher - no dynamic loader needed with C++20 modules
+import vulkan_hpp;
+import std;
+
+namespace {
+
+// Debug callback for Vulkan validation layers using vulkan-hpp types
+vk::Bool32 DebugCallback(
+	vk::DebugUtilsMessageSeverityFlagBitsEXT messageSeverity,
+	vk::DebugUtilsMessageTypeFlagsEXT messageType,
+	const vk::DebugUtilsMessengerCallbackDataEXT* pCallbackData,
+	void* pUserData)
+{
+	// Determine severity string
+	const char* severityStr = "UNKNOWN";
+	if (messageSeverity & vk::DebugUtilsMessageSeverityFlagBitsEXT::eError)
+	{
+		severityStr = "ERROR";
+	}
+	else if (messageSeverity & vk::DebugUtilsMessageSeverityFlagBitsEXT::eWarning)
+	{
+		severityStr = "WARNING";
+	}
+	else if (messageSeverity & vk::DebugUtilsMessageSeverityFlagBitsEXT::eInfo)
+	{
+		severityStr = "INFO";
+	}
+	else if (messageSeverity & vk::DebugUtilsMessageSeverityFlagBitsEXT::eVerbose)
+	{
+		severityStr = "VERBOSE";
+	}
+
+	// Determine type string
+	const char* typeStr = "";
+	if (messageType & vk::DebugUtilsMessageTypeFlagBitsEXT::eValidation)
+	{
+		typeStr = "VALIDATION";
+	}
+	else if (messageType & vk::DebugUtilsMessageTypeFlagBitsEXT::ePerformance)
+	{
+		typeStr = "PERFORMANCE";
+	}
+	else if (messageType & vk::DebugUtilsMessageTypeFlagBitsEXT::eGeneral)
+	{
+		typeStr = "GENERAL";
+	}
+
+	std::println(std::cerr, "[Vulkan {} {}] {}", severityStr, typeStr, pCallbackData->pMessage);
+
+	// Return false to indicate the call should not be aborted
+	return vk::False;
+}
+
+} // anonymous namespace
 
 
 VulkanInstance::VulkanInstance(const vk::ApplicationInfo& appInfo,
@@ -43,11 +95,7 @@ VulkanInstance::VulkanInstance(const vk::ApplicationInfo& appInfo,
 
 	instance_ = createInstance(instanceCreationInfo);
 
-	// Note: Debug messenger requires dynamic dispatch or macro configuration
-	// Static dispatcher doesn't support VK_EXT_debug_utils extension functions
-	// For validation, check standard output or use a dynamic dispatcher
-	if constexpr (false && Compiler::Debug()) {
-
+	if constexpr (Compiler::Debug()) {
 
 		vk::DebugUtilsMessengerCreateInfoEXT messengerCreateInfo;
 		messengerCreateInfo.flags = vk::DebugUtilsMessengerCreateFlagBitsEXT(0);
@@ -56,12 +104,21 @@ VulkanInstance::VulkanInstance(const vk::ApplicationInfo& appInfo,
 		messengerCreateInfo.messageType = vk::DebugUtilsMessageTypeFlagBitsEXT::eGeneral |
 										  vk::DebugUtilsMessageTypeFlagBitsEXT::eValidation |
 										  vk::DebugUtilsMessageTypeFlagBitsEXT::ePerformance;
-		// TODO: Fix DebugCallback with proper C API types for C++20 modules
-		// messengerCreateInfo.pfnUserCallback = DebugCallback;
+		messengerCreateInfo.pfnUserCallback =
+			reinterpret_cast<vk::PFN_DebugUtilsMessengerCallbackEXT>(DebugCallback);
 		messengerCreateInfo.pUserData = nullptr;
 
-		debugMessenger_ =
-			instance_.createDebugUtilsMessengerEXT(messengerCreateInfo);
+		// Load extension function dynamically
+		auto createFunc = reinterpret_cast<PFN_vkCreateDebugUtilsMessengerEXT>(
+			instance_.getProcAddr("vkCreateDebugUtilsMessengerEXT"));
+
+		if (createFunc) {
+			VkDebugUtilsMessengerEXT messenger;
+			auto createInfo = static_cast<VkDebugUtilsMessengerCreateInfoEXT>(messengerCreateInfo);
+			if (createFunc(instance_, &createInfo, nullptr, &messenger) == VK_SUCCESS) {
+				debugMessenger_ = messenger;
+			}
+		}
 
 	}
 
@@ -70,9 +127,15 @@ VulkanInstance::VulkanInstance(const vk::ApplicationInfo& appInfo,
 VulkanInstance::~VulkanInstance()
 {
 
-	if constexpr (false && Compiler::Debug()) {
+	if constexpr (Compiler::Debug()) {
 
-		instance_.destroyDebugUtilsMessengerEXT(debugMessenger_);
+		// Load extension function dynamically
+		auto destroyFunc = reinterpret_cast<PFN_vkDestroyDebugUtilsMessengerEXT>(
+			instance_.getProcAddr("vkDestroyDebugUtilsMessengerEXT"));
+
+		if (destroyFunc && debugMessenger_) {
+			destroyFunc(instance_, debugMessenger_, nullptr);
+		}
 
 	}
 
@@ -102,12 +165,3 @@ std::vector<VulkanPhysicalDevice> VulkanInstance::EnumeratePhysicalDevices()
 	return physicalDevices;
 
 }
-
-// TODO: Uncomment and fix when C API types are available in modules
-// VkBool32 VulkanInstance::DebugCallback(VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity,
-// 	VkDebugUtilsMessageTypeFlagsEXT messageType,
-// 	const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData,
-// 	void* pUserData)
-// {
-// 	throw NotImplemented();
-// }

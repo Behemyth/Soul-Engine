@@ -32,7 +32,7 @@ public:
 	}
 
 	template<SchedulerBackend SchedulerType>
-	[[nodiscard]] vk::SurfaceFormatKHR UpdateFormat(const VulkanDevice<SchedulerType>& device);
+	vk::SurfaceFormatKHR UpdateFormat(const VulkanDevice<SchedulerType>& device);
 
 	[[nodiscard]] vk::SurfaceFormatKHR Format() const {
 		return format_;

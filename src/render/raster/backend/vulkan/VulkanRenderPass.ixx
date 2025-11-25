@@ -47,13 +47,15 @@ VulkanRenderPass<SchedulerType>::VulkanRenderPass(const VulkanDevice<SchedulerTy
 {
 
 	vk::RenderPassCreateInfo2 renderPassInfo;
+	renderPassInfo.sType = vk::StructureType::eRenderPassCreateInfo2;
+	renderPassInfo.pNext = nullptr;
 	renderPassInfo.flags = vk::RenderPassCreateFlags();
 	renderPassInfo.attachmentCount = static_cast<std::uint32_t>(subPassAttachments.size());
-	renderPassInfo.pAttachments = subPassAttachments.data();
+	renderPassInfo.pAttachments = subPassAttachments.empty() ? nullptr : subPassAttachments.data();
 	renderPassInfo.subpassCount = static_cast<std::uint32_t>(subPassDescriptions.size());
-	renderPassInfo.pSubpasses = subPassDescriptions.data();
+	renderPassInfo.pSubpasses = subPassDescriptions.empty() ? nullptr : subPassDescriptions.data();
 	renderPassInfo.dependencyCount = static_cast<std::uint32_t>(subPassDependencies.size());
-	renderPassInfo.pDependencies = subPassDependencies.data();
+	renderPassInfo.pDependencies = subPassDependencies.empty() ? nullptr : subPassDependencies.data();
 	renderPassInfo.correlatedViewMaskCount = 0;
 	renderPassInfo.pCorrelatedViewMasks = nullptr;
 
