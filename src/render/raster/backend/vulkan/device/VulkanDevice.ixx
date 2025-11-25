@@ -304,7 +304,42 @@ typename VulkanDevice<SchedulerType>::BuildResult VulkanDevice<SchedulerType>::B
 	}
 
 	// Create the device
+
+	// Enable Vulkan 1.4 features
+	vk::PhysicalDeviceVulkan14Features vulkan14Features;
+	vulkan14Features.maintenance5 = vk::True;
+	vulkan14Features.maintenance6 = vk::True;
+	vulkan14Features.pushDescriptor = vk::True;
+
+	// Enable Vulkan 1.3 features (synchronization2 is required for vkQueueSubmit2)
+	vk::PhysicalDeviceVulkan13Features vulkan13Features;
+	vulkan13Features.pNext = &vulkan14Features;
+	vulkan13Features.synchronization2 = vk::True;
+	vulkan13Features.dynamicRendering = vk::True;
+	vulkan13Features.maintenance4 = vk::True;
+
+	// Enable Vulkan 1.2 features
+	vk::PhysicalDeviceVulkan12Features vulkan12Features;
+	vulkan12Features.pNext = &vulkan13Features;
+	vulkan12Features.timelineSemaphore = vk::True;
+	vulkan12Features.bufferDeviceAddress = vk::True;
+	vulkan12Features.descriptorIndexing = vk::True;
+	vulkan12Features.runtimeDescriptorArray = vk::True;
+	vulkan12Features.descriptorBindingPartiallyBound = vk::True;
+	vulkan12Features.descriptorBindingVariableDescriptorCount = vk::True;
+	vulkan12Features.shaderSampledImageArrayNonUniformIndexing = vk::True;
+
+	// Enable Vulkan 1.1 features
+	vk::PhysicalDeviceVulkan11Features vulkan11Features;
+	vulkan11Features.pNext = &vulkan12Features;
+	vulkan11Features.shaderDrawParameters = vk::True;  // Required for SV_VertexID/SV_InstanceID in shaders
+
+	// Base features
+	vk::PhysicalDeviceFeatures2 deviceFeatures2;
+	deviceFeatures2.pNext = &vulkan11Features;
+
 	vk::DeviceCreateInfo deviceCreateInfo;
+	deviceCreateInfo.pNext					 = &deviceFeatures2;
 	deviceCreateInfo.flags					 = vk::DeviceCreateFlags();
 	deviceCreateInfo.queueCreateInfoCount	 = static_cast<std::uint32_t>(queueCreateInfos.size());
 	deviceCreateInfo.pQueueCreateInfos		 = queueCreateInfos.data();

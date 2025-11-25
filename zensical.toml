@@ -1,0 +1,5 @@
+[project]
+site_name = "Soul Engine"
+site_url = "https://synodic.github.io/Soul-Engine"
+docs_dir = "docs"
+site_dir = "dist"

@@ -15,11 +15,38 @@ public:
 		std::span<std::string>);
 	~VulkanInstance();
 
-	VulkanInstance(const VulkanInstance&) = default;
-	VulkanInstance(VulkanInstance&&) noexcept = default;
+	VulkanInstance(const VulkanInstance&) = delete;
 
-	VulkanInstance& operator=(const VulkanInstance&) = default;
-	VulkanInstance& operator=(VulkanInstance&&) noexcept = default;
+	VulkanInstance(VulkanInstance&& other) noexcept :
+		instance_(other.instance_),
+		debugMessenger_(other.debugMessenger_)
+	{
+		other.instance_ = nullptr;
+		other.debugMessenger_ = nullptr;
+	}
+
+	VulkanInstance& operator=(const VulkanInstance&) = delete;
+
+	VulkanInstance& operator=(VulkanInstance&& other) noexcept {
+		if (this != &other) {
+			// Destroy existing resources
+			if (instance_) {
+				if constexpr (Compiler::Debug()) {
+					auto destroyFunc = reinterpret_cast<PFN_vkDestroyDebugUtilsMessengerEXT>(
+						instance_.getProcAddr("vkDestroyDebugUtilsMessengerEXT"));
+					if (destroyFunc && debugMessenger_) {
+						destroyFunc(instance_, debugMessenger_, nullptr);
+					}
+				}
+				instance_.destroy();
+			}
+			instance_ = other.instance_;
+			debugMessenger_ = other.debugMessenger_;
+			other.instance_ = nullptr;
+			other.debugMessenger_ = nullptr;
+		}
+		return *this;
+	}
 
 	const vk::Instance& Handle() const;
 

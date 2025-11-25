@@ -14,7 +14,7 @@ bool VulkanQueue::Submit()
 
 }
 
-bool VulkanQueue::Present(
+vk::Result VulkanQueue::Present(
 	std::span<vk::Semaphore> semaphores,
 	std::span<vk::SwapchainKHR> swapChains,
 	std::span<std::uint32_t> imageIndices) const
@@ -22,32 +22,25 @@ bool VulkanQueue::Present(
 
 	// Verify sizes match
 	if (swapChains.size() != imageIndices.size()) {
-		throw std::runtime_error("SwapChain and imageIndices size mismatch");
+		return vk::Result::eErrorUnknown;
 	}
-
-	//TODO: Reduce allocation calls
-	std::vector<vk::Result> swapChainResults(swapChains.size());
 
 	vk::PresentInfoKHR presentInfo;
-	presentInfo.waitSemaphoreCount = semaphores.size();
+	presentInfo.waitSemaphoreCount = static_cast<std::uint32_t>(semaphores.size());
 	presentInfo.pWaitSemaphores = semaphores.data();
-	presentInfo.swapchainCount = swapChains.size();
+	presentInfo.swapchainCount = static_cast<std::uint32_t>(swapChains.size());
 	presentInfo.pSwapchains = swapChains.data();
 	presentInfo.pImageIndices = imageIndices.data();
-	presentInfo.pResults = swapChainResults.data();
+	presentInfo.pResults = nullptr;
 
-	const auto result = queue_.presentKHR(presentInfo);
-
-	bool success = result == vk::Result::eSuccess;
-
-	for (const auto& swapChainResult : swapChainResults) {
-
-		success &= swapChainResult == vk::Result::eSuccess;
-
+	// Use the non-throwing version by catching and returning the result
+	try {
+		return queue_.presentKHR(presentInfo);
+	} catch (const vk::OutOfDateKHRError&) {
+		return vk::Result::eErrorOutOfDateKHR;
+	} catch (const vk::SurfaceLostKHRError&) {
+		return vk::Result::eErrorSurfaceLostKHR;
 	}
-
-	return success;
-
 }
 
 const vk::Queue& VulkanQueue::Handle() const

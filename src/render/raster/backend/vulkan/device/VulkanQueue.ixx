@@ -17,7 +17,7 @@ public:
 	VulkanQueue& operator=(VulkanQueue&&) noexcept = default;
 
 	bool Submit();
-	bool Present(std::span<vk::Semaphore> semaphores,
+	[[nodiscard]] vk::Result Present(std::span<vk::Semaphore> semaphores,
 		std::span<vk::SwapchainKHR> swapChains,
 		std::span<std::uint32_t> imageIndices) const;
 

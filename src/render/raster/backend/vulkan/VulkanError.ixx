@@ -17,6 +17,7 @@ export enum class VulkanError {
 	DeviceNotFound,
 	DeviceLost,
 	SurfaceNotSupported,
+	SurfaceLost,
 
 	// Swapchain errors
 	SwapchainOutOfDate,
@@ -50,6 +51,8 @@ export constexpr VulkanError FromVkResult(vk::Result result) noexcept {
 			return VulkanError::DeviceLost;
 		case vk::Result::eErrorOutOfDateKHR:
 			return VulkanError::SwapchainOutOfDate;
+		case vk::Result::eErrorSurfaceLostKHR:
+			return VulkanError::SurfaceLost;
 		default:
 			return VulkanError::UnknownError;
 	}
@@ -74,6 +77,8 @@ export constexpr const char* ToString(VulkanError error) noexcept {
 			return "Device lost";
 		case VulkanError::SurfaceNotSupported:
 			return "Surface not supported by device";
+		case VulkanError::SurfaceLost:
+			return "Surface lost";
 		case VulkanError::SwapchainOutOfDate:
 			return "Swapchain out of date";
 		case VulkanError::SwapchainAcquireFailed:

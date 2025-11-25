@@ -13,9 +13,9 @@ VulkanPipelineCache::VulkanPipelineCache(const vk::Device& device):
 
 VulkanPipelineCache::~VulkanPipelineCache()
 {
-
-	device_.destroyPipelineCache(pipelineCache_);
-
+	if (pipelineCache_) {
+		device_.destroyPipelineCache(pipelineCache_);
+	}
 }
 
 const vk::PipelineCache& VulkanPipelineCache::Handle()

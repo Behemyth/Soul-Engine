@@ -4,6 +4,8 @@ target_sources(soul-engine
 			graph.ixx
 			parameter.ixx
 			builder.ixx
+			pass.ixx
+			resource.ixx
 )
 
 add_subdirectory(backend)

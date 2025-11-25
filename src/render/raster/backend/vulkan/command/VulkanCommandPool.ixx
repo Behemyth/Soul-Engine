@@ -31,16 +31,40 @@ public:
 	}
 
 	~VulkanCommandPool() {
-		scheduler_.ForEachThread(TaskPriority::UX, [&]() noexcept {
-			device_.destroyCommandPool(commandPool_);
-		});
+		if (commandPool_) {
+			scheduler_.ForEachThread(TaskPriority::UX, [&]() noexcept {
+				device_.destroyCommandPool(commandPool_);
+			});
+		}
 	}
 
 	VulkanCommandPool(const VulkanCommandPool&) = delete;
-	VulkanCommandPool(VulkanCommandPool&&) noexcept = default;
+
+	VulkanCommandPool(VulkanCommandPool&& other) noexcept :
+		scheduler_(other.scheduler_),
+		device_(other.device_),
+		commandPool_(other.commandPool_)
+	{
+		other.commandPool_ = nullptr;
+		other.device_ = nullptr;
+	}
 
 	VulkanCommandPool& operator=(const VulkanCommandPool&) = delete;
-	VulkanCommandPool& operator=(VulkanCommandPool&&) noexcept = default;
+
+	VulkanCommandPool& operator=(VulkanCommandPool&& other) noexcept {
+		if (this != &other) {
+			if (commandPool_) {
+				scheduler_.ForEachThread(TaskPriority::UX, [&]() noexcept {
+					device_.destroyCommandPool(commandPool_);
+				});
+			}
+			device_ = other.device_;
+			commandPool_ = other.commandPool_;
+			other.commandPool_ = nullptr;
+			other.device_ = nullptr;
+		}
+		return *this;
+	}
 
 	const vk::CommandPool& Handle() const {
 		return commandPool_;

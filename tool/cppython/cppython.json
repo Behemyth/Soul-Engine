@@ -5,7 +5,7 @@
             "name": "cppython",
             "description": "Injected configuration preset for CPPython",
             "hidden": true,
-            "toolchainFile": "build/generators/conan_toolchain.cmake"
+            "toolchainFile": "${sourceDir}/build/generators/conan_toolchain.cmake"
         }
     ]
 }

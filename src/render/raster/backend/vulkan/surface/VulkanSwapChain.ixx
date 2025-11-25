@@ -13,21 +13,56 @@ class VulkanSwapChain {
 
 public:
 
-	// Factory method that returns expected for proper error handling
+	// Factory method that returns value with proper error handling
 	static VulkanResult<VulkanSwapChain> Create(VulkanDevice<SchedulerType>&,
 		VulkanSurface&,
 		bool,
 		VulkanSwapChain* = nullptr);
 
-	VulkanSwapChain(VulkanSwapChain&& o) noexcept = default;
-	VulkanSwapChain& operator=(VulkanSwapChain&& other) noexcept = default;
+	VulkanSwapChain(VulkanSwapChain&& other) noexcept :
+		device_(other.device_),
+		renderImages_(std::move(other.renderImages_)),
+		renderImageViews_(std::move(other.renderImageViews_)),
+		activeImageIndex_(other.activeImageIndex_),
+		size_(other.size_),
+		swapChain_(other.swapChain_)
+	{
+		other.swapChain_ = nullptr;
+		other.device_ = nullptr;
+	}
+
+	VulkanSwapChain& operator=(VulkanSwapChain&& other) noexcept {
+		if (this != &other) {
+			// Clean up current resources if valid
+			if (swapChain_) {
+				for (auto& view : renderImageViews_) {
+					device_.destroyImageView(view);
+				}
+				device_.waitIdle();
+				device_.destroySwapchainKHR(swapChain_);
+			}
+			// Move from other
+			device_ = other.device_;
+			renderImages_ = std::move(other.renderImages_);
+			renderImageViews_ = std::move(other.renderImageViews_);
+			activeImageIndex_ = other.activeImageIndex_;
+			size_ = other.size_;
+			swapChain_ = other.swapChain_;
+			// Invalidate source
+			other.swapChain_ = nullptr;
+			other.device_ = nullptr;
+		}
+		return *this;
+	}
 
 	~VulkanSwapChain() {
-		for (auto i = 0; i < renderImageViews_.size(); ++i) {
-			device_.destroyImageView(renderImageViews_[i]);
+		if (swapChain_) {
+			for (auto& view : renderImageViews_) {
+				device_.destroyImageView(view);
+			}
+			device_.waitIdle();
+			device_.destroySwapchainKHR(swapChain_);
 		}
-		device_.waitIdle();
-		device_.destroySwapchainKHR(swapChain_);
 	}
 
 	VulkanSwapChain(const VulkanSwapChain&) = delete;
@@ -203,14 +238,19 @@ VulkanResult<VulkanSwapChain<SchedulerType>> VulkanSwapChain<SchedulerType>::Cre
 template<SchedulerBackend SchedulerType>
 VulkanResult<std::uint32_t> VulkanSwapChain<SchedulerType>::AcquireImage(const vk::Semaphore& presentSemaphore)
 {
+	try {
+		auto [acquireResult, imageIndex] = device_.acquireNextImageKHR(swapChain_, std::numeric_limits<std::uint64_t>::max(), presentSemaphore, nullptr);
 
-	auto [acquireResult, imageIndex] = device_.acquireNextImageKHR(swapChain_, std::numeric_limits<uint64_t>::max(), presentSemaphore, nullptr);
+		// Suboptimal is still usable, just mark for recreation later
+		if (acquireResult != vk::Result::eSuccess && acquireResult != vk::Result::eSuboptimalKHR) {
+			return std::unexpected(FromVkResult(acquireResult));
+		}
 
-	if (acquireResult != vk::Result::eSuccess) {
-		return std::unexpected(FromVkResult(acquireResult));
+		activeImageIndex_ = imageIndex;
+		return imageIndex;
+	} catch (const vk::OutOfDateKHRError&) {
+		return std::unexpected(VulkanError::SwapchainOutOfDate);
+	} catch (const vk::SurfaceLostKHRError&) {
+		return std::unexpected(VulkanError::SurfaceLost);
 	}
-
-	activeImageIndex_ = imageIndex;
-	return imageIndex;
-
 }

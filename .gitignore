@@ -14,5 +14,11 @@ Resources/Textures/*
 
 #Python
 Pipfile.lock
+
+#VS
 /out
 vc140.pdb
+
+#Build
+/dist
+.pdm-python

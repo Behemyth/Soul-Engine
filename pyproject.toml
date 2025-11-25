@@ -18,10 +18,11 @@ homepage = "https://github.com/synodic/Soul-Engine"
 repository = "https://github.com/synodic/Soul-Engine"
 
 [project.optional-dependencies]
-build = ["cppython[cmake,conan,git]>=0.9.11"]
+build = ["cppython[cmake,conan,git]>=0.9.15.dev1"]
 [dependency-groups]
-lint = ["ruff>=0.14.5", "pyrefly>=0.42.1", "isort>=7.0.0"]
+lint = ["ruff>=0.14.7", "pyrefly>=0.44.1", "isort>=7.0.0"]
 test = ["pytest-cov>=7.0.0", "pytest-mock>=3.15.1"]
+docs = ["zensical>=0.0.11"]
 
 [tool.cppython]
 dependencies = [
@@ -30,13 +31,12 @@ dependencies = [
 	'cppaste>=0.0.0.dev1',
 	'portability>=0.0.0.dev1',
 	'sdl>=3.2.20',
-	'vulkan-memory-allocator>=3.3.0',
+	'vulkan-memory-allocator==3.3.0',
 ]
 
 [tool.cppython.generators.cmake]
 preset_file = "tool/cmake/platform/common/CMakePresets.json"
 configuration_name = "default"
-cmake_binary = "C:/Program Files/CMake/bin/cmake.exe"
 
 [tool.cppython.providers.conan]
 remotes = []
@@ -81,6 +81,7 @@ skip_empty = true
 [tool.pdm.scripts]
 build = { shell = "cppython build" }
 test = { shell = "cppython test" }
+dev = { shell = "zensical serve" }
 
 [build-system]
 build-backend = "pdm.backend"

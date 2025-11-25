@@ -16,14 +16,35 @@ public:
 		vk::Extent2D&);
 
 	~VulkanFrameBuffer() {
-		device_.destroyFramebuffer(frameBuffer_);
+		if (frameBuffer_) {
+			device_.destroyFramebuffer(frameBuffer_);
+		}
 	}
 
 	VulkanFrameBuffer(const VulkanFrameBuffer&) = delete;
-	VulkanFrameBuffer(VulkanFrameBuffer&&) noexcept = default;
+
+	VulkanFrameBuffer(VulkanFrameBuffer&& other) noexcept :
+		device_(other.device_),
+		frameBuffer_(other.frameBuffer_)
+	{
+		other.frameBuffer_ = nullptr;
+		other.device_ = nullptr;
+	}
 
 	VulkanFrameBuffer& operator=(const VulkanFrameBuffer&) = delete;
-	VulkanFrameBuffer& operator=(VulkanFrameBuffer&&) noexcept = default;
+
+	VulkanFrameBuffer& operator=(VulkanFrameBuffer&& other) noexcept {
+		if (this != &other) {
+			if (frameBuffer_) {
+				device_.destroyFramebuffer(frameBuffer_);
+			}
+			device_ = other.device_;
+			frameBuffer_ = other.frameBuffer_;
+			other.frameBuffer_ = nullptr;
+			other.device_ = nullptr;
+		}
+		return *this;
+	}
 
 	const vk::Framebuffer& Handle() const {
 		return frameBuffer_;

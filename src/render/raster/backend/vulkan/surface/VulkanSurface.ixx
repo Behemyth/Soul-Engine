@@ -18,14 +18,39 @@ public:
 	}
 
 	~VulkanSurface() {
-		instance_.destroySurfaceKHR(surface_);
+		if (surface_) {
+			instance_.destroySurfaceKHR(surface_);
+		}
 	}
 
 	VulkanSurface(const VulkanSurface&) = delete;
-	VulkanSurface(VulkanSurface&&) noexcept = default;
+
+	VulkanSurface(VulkanSurface&& other) noexcept :
+		instance_(other.instance_),
+		surface_(other.surface_),
+		size_(other.size_),
+		format_(other.format_)
+	{
+		other.surface_ = nullptr;
+		other.instance_ = nullptr;
+	}
 
 	VulkanSurface& operator=(const VulkanSurface&) = delete;
-	VulkanSurface& operator=(VulkanSurface&&) noexcept = default;
+
+	VulkanSurface& operator=(VulkanSurface&& other) noexcept {
+		if (this != &other) {
+			if (surface_) {
+				instance_.destroySurfaceKHR(surface_);
+			}
+			instance_ = other.instance_;
+			surface_ = other.surface_;
+			size_ = other.size_;
+			format_ = other.format_;
+			other.surface_ = nullptr;
+			other.instance_ = nullptr;
+		}
+		return *this;
+	}
 
 	[[nodiscard]] vk::SurfaceKHR Handle() const {
 		return surface_;

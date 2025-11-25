@@ -4,10 +4,17 @@ import synodic.soul.scheduler;
 import :graph_node;
 import std;
 
-export class GraphTask : public GraphNode {
+export template<SchedulerBackend SchedulerType>
+class GraphTask : public GraphNode {
 public:
-	GraphTask(std::shared_ptr<SchedulerModule>&) noexcept;
-	GraphTask(std::shared_ptr<SchedulerModule>&, std::function<void()>&&) noexcept;
+	GraphTask(SchedulerType& scheduler) noexcept :
+		scheduler_(scheduler) {
+	}
+
+	GraphTask(SchedulerType& scheduler, std::function<void()>&& callable) noexcept :
+		scheduler_(scheduler),
+		callable_(std::move(callable)) {
+	}
 
 	~GraphTask() override = default;
 
@@ -17,9 +24,13 @@ public:
 	GraphTask& operator=(const GraphTask&) = delete;
 	GraphTask& operator=(GraphTask&&) = default;
 
-	void Execute(std::chrono::nanoseconds) override;
+	void Execute(std::chrono::nanoseconds) override {
+		if (callable_) {
+			callable_();
+		}
+	}
 
 private:
-	std::shared_ptr<SchedulerModule> scheduler_;
+	SchedulerType& scheduler_;
 	std::function<void()> callable_;
 };

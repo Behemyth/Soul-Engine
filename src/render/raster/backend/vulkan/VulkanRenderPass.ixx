@@ -17,14 +17,35 @@ public:
 		std::span<vk::SubpassDependency2> subPassDependencies);
 
 	~VulkanRenderPass() {
-		device_.destroyRenderPass(renderPass_);
+		if (renderPass_) {
+			device_.destroyRenderPass(renderPass_);
+		}
 	}
 
 	VulkanRenderPass(const VulkanRenderPass&) = delete;
-	VulkanRenderPass(VulkanRenderPass&&) noexcept = default;
+
+	VulkanRenderPass(VulkanRenderPass&& other) noexcept :
+		device_(other.device_),
+		renderPass_(other.renderPass_)
+	{
+		other.renderPass_ = nullptr;
+		other.device_ = nullptr;
+	}
 
 	VulkanRenderPass& operator=(const VulkanRenderPass&) = delete;
-	VulkanRenderPass& operator=(VulkanRenderPass&&) noexcept = default;
+
+	VulkanRenderPass& operator=(VulkanRenderPass&& other) noexcept {
+		if (this != &other) {
+			if (renderPass_) {
+				device_.destroyRenderPass(renderPass_);
+			}
+			device_ = other.device_;
+			renderPass_ = other.renderPass_;
+			other.renderPass_ = nullptr;
+			other.device_ = nullptr;
+		}
+		return *this;
+	}
 
 	const vk::RenderPass& Handle() const {
 		return renderPass_;

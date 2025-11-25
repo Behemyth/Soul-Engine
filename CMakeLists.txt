@@ -31,7 +31,7 @@ find_package(SDL3 REQUIRED)
 if(DEFINED ENV{VULKAN_SDK})
 	set(VULKAN_SDK_ROOT "$ENV{VULKAN_SDK}")
 	message(STATUS "Using Vulkan SDK from environment: ${VULKAN_SDK_ROOT}")
-	
+
 	# Manually set up Vulkan target from system SDK
 	if(NOT TARGET Vulkan::Vulkan)
 		find_library(Vulkan_LIBRARY
@@ -40,9 +40,9 @@ if(DEFINED ENV{VULKAN_SDK})
 			NO_DEFAULT_PATH
 			REQUIRED
 		)
-		
+
 		set(Vulkan_INCLUDE_DIR "${VULKAN_SDK_ROOT}/Include")
-		
+
 		add_library(Vulkan::Vulkan UNKNOWN IMPORTED)
 		set_target_properties(Vulkan::Vulkan PROPERTIES
 			IMPORTED_LOCATION "${Vulkan_LIBRARY}"
@@ -57,7 +57,7 @@ else()
 	set(CMAKE_FIND_PACKAGE_PREFER_CONFIG FALSE)
 	find_package(Vulkan REQUIRED MODULE)
 	set(CMAKE_PREFIX_PATH ${_ORIGINAL_PREFIX_PATH})
-	
+
 	# Get Vulkan SDK root by going up from include directory
 	get_filename_component(VULKAN_SDK_ROOT "${Vulkan_INCLUDE_DIR}" DIRECTORY)
 endif()
@@ -162,6 +162,34 @@ target_sources(soul-engine
 
 add_subdirectory(
 	src
+)
+
+##############################################
+#Shader Compilation
+
+include(ShaderCompilation)
+find_slang_compiler()
+
+# Set shader directories
+cmake_path(SET SHADER_SOURCE_DIR NORMALIZE "${CMAKE_SOURCE_DIR}/resources/shaders")
+cmake_path(SET SHADER_OUTPUT_DIR NORMALIZE "${CMAKE_BINARY_DIR}/shaders")
+
+# Auto-compile all shaders in the shaders directory
+# Discovers .slang files, parses [shader("stage")] attributes, compiles each entry point
+# Output: <shader_name>.<stage>.spv (e.g., triangle.vertex.spv, triangle.fragment.spv)
+message(STATUS "Discovering shaders in ${SHADER_SOURCE_DIR}...")
+compile_slang_shaders(
+    TARGET soul-shaders
+    SOURCE_DIR "${SHADER_SOURCE_DIR}"
+    OUTPUT_DIR "${SHADER_OUTPUT_DIR}"
+)
+
+# Make soul-engine depend on shaders being compiled
+add_dependencies(soul-engine soul-shaders)
+
+# Store shader output directory for use in code (cmake_path uses forward slashes)
+target_compile_definitions(soul-engine PRIVATE
+    SOUL_SHADER_DIR="${SHADER_OUTPUT_DIR}"
 )
 
 # NOTE: For IDE setups that do not use CMake directly, we setup all IDE directories to mimic

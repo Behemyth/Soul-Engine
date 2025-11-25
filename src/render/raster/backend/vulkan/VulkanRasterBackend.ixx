@@ -19,21 +19,115 @@ import :subpass;
 import :pipeline;
 import :render_pass;
 import :semaphore;
-import :fence;
 import :framebuffer;
+import :allocator;
+import :descriptor_pool;
+import :descriptor_set_layout;
+import :descriptor_set;
 
 // Simple ID types to replace Entity for resource management
 export using SurfaceId = std::uint64_t;
 export using PassId = std::uint64_t;
 export using SubPassId = std::uint64_t;
+export using BufferId = std::uint64_t;
+
+// GPU buffer data holding Vulkan buffer resources
+export struct BufferData {
+	vk::Buffer buffer = nullptr;
+	VmaAllocationHandle allocation = nullptr;
+	std::size_t size = 0;
+	BufferUsage usage = BufferUsage::None;
+	BufferMemory memory = BufferMemory::DeviceLocal;
+	void* mappedPtr = nullptr;  // Non-null if persistently mapped
+	
+	BufferData() = default;
+	~BufferData() = default;
+	
+	BufferData(const BufferData&) = delete;
+	BufferData(BufferData&& other) noexcept :
+		buffer(other.buffer),
+		allocation(other.allocation),
+		size(other.size),
+		usage(other.usage),
+		memory(other.memory),
+		mappedPtr(other.mappedPtr)
+	{
+		other.buffer = nullptr;
+		other.allocation = nullptr;
+		other.mappedPtr = nullptr;
+	}
+	
+	BufferData& operator=(const BufferData&) = delete;
+	BufferData& operator=(BufferData&& other) noexcept {
+		if (this != &other) {
+			buffer = other.buffer;
+			allocation = other.allocation;
+			size = other.size;
+			usage = other.usage;
+			memory = other.memory;
+			mappedPtr = other.mappedPtr;
+			other.buffer = nullptr;
+			other.allocation = nullptr;
+			other.mappedPtr = nullptr;
+		}
+		return *this;
+	}
+	
+	[[nodiscard]] bool IsValid() const { return buffer != nullptr; }
+};
+
+// Depth buffer resources
+export struct DepthBuffer {
+	vk::Image image = nullptr;
+	vk::ImageView view = nullptr;
+	VmaAllocationHandle allocation = nullptr;
+	vk::Format format = vk::Format::eD32Sfloat;  // D32 for best precision
+	uvec2 size = {0, 0};
+	
+	DepthBuffer() = default;
+	~DepthBuffer() = default;
+	
+	DepthBuffer(const DepthBuffer&) = delete;
+	DepthBuffer(DepthBuffer&& other) noexcept :
+		image(other.image),
+		view(other.view),
+		allocation(other.allocation),
+		format(other.format),
+		size(other.size)
+	{
+		other.image = nullptr;
+		other.view = nullptr;
+		other.allocation = nullptr;
+	}
+	
+	DepthBuffer& operator=(const DepthBuffer&) = delete;
+	DepthBuffer& operator=(DepthBuffer&& other) noexcept {
+		if (this != &other) {
+			image = other.image;
+			view = other.view;
+			allocation = other.allocation;
+			format = other.format;
+			size = other.size;
+			other.image = nullptr;
+			other.view = nullptr;
+			other.allocation = nullptr;
+		}
+		return *this;
+	}
+	
+	[[nodiscard]] bool IsValid() const { return image && view; }
+};
 
 // Frame synchronization data for each frame in flight
+// Uses timeline semaphores for CPU-GPU synchronization and binary semaphores for swapchain operations
 export template<SchedulerBackend SchedulerType>
 struct FrameData {
-	std::optional<VulkanSemaphore> imageAvailableSemaphore;
-	std::optional<VulkanSemaphore> renderFinishedSemaphore;
-	std::optional<VulkanFence> inFlightFence;
-	std::optional<VulkanFrameBuffer<SchedulerType>> framebuffer;
+	std::optional<VulkanSemaphore> imageAvailableSemaphore;  // Binary - for swapchain acquire
+	std::optional<VulkanSemaphore> renderFinishedSemaphore;  // Binary - for swapchain present
+	std::optional<VulkanTimelineSemaphore> frameTimeline;    // Timeline - for CPU-GPU frame sync
+	std::uint64_t timelineValue = 0;                          // Current timeline value for this frame
+	std::optional<VulkanCommandBuffer> commandBuffer;
+	bool readyToPresent = false;  // True if frame was successfully rendered
 
 	FrameData() = default;
 	~FrameData() = default;
@@ -50,8 +144,13 @@ export template<SchedulerBackend SchedulerType>
 struct SurfaceData {
 	VulkanSurface surface;
 	std::optional<VulkanSwapChain<SchedulerType>> swapChain;
-	std::vector<FrameData<SchedulerType>> frames;
+	std::vector<FrameData<SchedulerType>> frames;  // Per frame-in-flight sync resources
+	std::vector<VulkanFrameBuffer<SchedulerType>> swapchainFramebuffers;  // Per swapchain image framebuffers
+	DepthBuffer depthBuffer;  // Shared depth buffer for all swapchain images
 	uvec2 size;
+	bool needsSwapchainRecreation = false;
+	std::uint32_t currentAcquiredImageIndex = 0;  // Index of acquired swapchain image for multi-pass
+	bool frameAcquired = false;  // True if swapchain image was acquired this frame
 
 	SurfaceData(VulkanSurface&& surf, uvec2 surfaceSize) :
 		surface(std::move(surf)),
@@ -74,7 +173,6 @@ struct RenderPassData {
 	std::vector<vk::SubpassDependency2KHR> dependencies;
 	std::vector<VulkanPipeline> pipelines;
 	std::optional<VulkanRenderPass<SchedulerType>> renderPass;
-	std::optional<VulkanCommandBuffer> commandBuffer;
 	std::vector<SurfaceId> attachedSurfaces;
 
 	RenderPassData() = default;
@@ -118,6 +216,7 @@ public:
 	Entity CreatePass(const ShaderSet&, std::function<void(Entity)>) override;
 	Entity CreateSubPass(Entity, const ShaderSet&, std::function<void(Entity)>) override;
 	void ExecutePass(Entity, Entity, CommandList&) override;
+	void ExecutePassWithFlags(Entity, Entity, CommandList&, PassExecutionFlags) override;
 
 	//RenderPass Modification
 	void CreatePassInput(Entity, Entity, Format) override;
@@ -129,7 +228,21 @@ public:
 	void AttachSurface(Entity, Entity) override;
 	void DetachSurface(Entity, Entity) override;
 
+	// Buffer management
+	GPUBufferHandle CreateBuffer(const BufferDesc& desc) override;
+	void DestroyBuffer(GPUBufferHandle handle) override;
+	void UploadBufferData(GPUBufferHandle handle, const void* data, 
+		std::size_t size, std::size_t offset = 0) override;
+	void* MapBuffer(GPUBufferHandle handle) override;
+	void UnmapBuffer(GPUBufferHandle handle) override;
+	void FlushBuffer(GPUBufferHandle handle, std::size_t offset = 0, 
+		std::size_t size = std::numeric_limits<std::size_t>::max()) override;
+
 	void Compile(CommandList& commandList) override;
+
+	// Material/lighting uniform buffer updates (call before ExecutePass)
+	void UpdateMaterial(const void* materialData, std::size_t size);
+	void UpdateSceneLighting(const void* lightingData, std::size_t size);
 
 	[[nodiscard]] const VulkanInstance& Instance() const;
 	[[nodiscard]] std::uint64_t InstanceHandle() const;
@@ -146,10 +259,16 @@ private:
 	SurfaceId nextSurfaceId_ = 1;
 	PassId nextPassId_ = 1;
 	SubPassId nextSubPassId_ = 1;
+	BufferId nextBufferId_ = 1;
 
 	SurfaceId GenerateSurfaceId() { return nextSurfaceId_++; }
 	PassId GeneratePassId() { return nextPassId_++; }
 	SubPassId GenerateSubPassId() { return nextSubPassId_++; }
+	BufferId GenerateBufferId() { return nextBufferId_++; }
+
+	// Depth buffer management
+	void CreateDepthBuffer(SurfaceData<SchedulerType>& surfaceData, uvec2 size);
+	void DestroyDepthBuffer(SurfaceData<SchedulerType>& surfaceData);
 
 	// Command helpers
 	void Draw(DrawCommand&, vk::CommandBuffer&);
@@ -168,6 +287,27 @@ private:
 	std::unordered_map<SurfaceId, SurfaceData<SchedulerType>> surfaces_;
 	std::unordered_map<PassId, RenderPassData<SchedulerType>> renderPasses_;
 	std::unordered_map<SubPassId, SubPassData> subPasses_;
+	std::unordered_map<BufferId, BufferData> buffers_;
+
+	// Staging buffer for uploads (device-local buffers require staging)
+	std::optional<BufferData> stagingBuffer_;
+	static constexpr std::size_t stagingBufferSize_ = 64 * 1024 * 1024;  // 64 MB staging buffer
+
+	// Descriptor infrastructure
+	std::optional<VulkanDescriptorPool> descriptorPool_;
+	std::optional<VulkanDescriptorSetLayout> materialLayout_;    // Set 0: Material + Lighting
+	
+	// Per-frame material/lighting uniform buffers
+	struct FrameUniforms {
+		BufferData materialBuffer;
+		BufferData lightingBuffer;
+		VulkanDescriptorSet descriptorSet;
+	};
+	std::vector<FrameUniforms> frameUniforms_;
+
+	// Initialize descriptor infrastructure
+	void InitializeDescriptors();
+	void DestroyDescriptors();
 
 	// TODO: put on stack and remove deferred construction
 	std::unique_ptr<VulkanInstance> instance_;
@@ -192,7 +332,8 @@ VulkanRasterBackend<SchedulerType>::VulkanRasterBackend(SchedulerType& scheduler
 
 	std::vector<std::string> validationLayers;
 	std::vector<std::string> instanceExtensions {
-		"VK_KHR_surface"};
+		"VK_KHR_surface",
+		"VK_KHR_get_surface_capabilities2"};
 
 	// Platform-specific surface extension
 #ifdef _WIN32
@@ -227,6 +368,9 @@ VulkanRasterBackend<SchedulerType>::VulkanRasterBackend(SchedulerType& scheduler
 	for (auto& vkDevice : devices_) {
 		commandPools_.push_back(VulkanCommandPool(scheduler_, vkDevice));
 	}
+
+	// Initialize descriptor infrastructure for PBR rendering
+	InitializeDescriptors();
 }
 
 template<SchedulerBackend SchedulerType>
@@ -253,25 +397,138 @@ void VulkanRasterBackend<SchedulerType>::Present()
 			}
 
 			// Get the render finished semaphore for this frame
-			if (currentFrame_ < surfaceData.frames.size() &&
-				surfaceData.frames[currentFrame_].renderFinishedSemaphore.has_value()) {
-				presentSemaphores.push_back(
-					surfaceData.frames[currentFrame_].renderFinishedSemaphore->Handle());
-				imageIndices.push_back(swapChain.ActiveImageIndex());
-				presentSwapChains.push_back(swapChain.Handle());
+			if (currentFrame_ < surfaceData.frames.size()) {
+				auto& frameData = surfaceData.frames[currentFrame_];
+				if (frameData.readyToPresent && frameData.renderFinishedSemaphore.has_value()) {
+					presentSemaphores.push_back(frameData.renderFinishedSemaphore->Handle());
+					imageIndices.push_back(swapChain.ActiveImageIndex());
+					presentSwapChains.push_back(swapChain.Handle());
+					frameData.readyToPresent = false;  // Reset for next frame
+				}
 			}
 		}
 
 		if (!presentSwapChains.empty()) {
 			auto graphicsQueues = vkDevice.GraphicsQueues();
 			if (!graphicsQueues.empty()) {
-				graphicsQueues[0].Present(presentSemaphores, presentSwapChains, imageIndices);
+				auto presentResult = graphicsQueues[0].Present(presentSemaphores, presentSwapChains, imageIndices);
+
+				// Handle swapchain out of date - will be recreated on next frame
+				if (presentResult == vk::Result::eErrorOutOfDateKHR ||
+					presentResult == vk::Result::eSuboptimalKHR) {
+					// TODO: Mark surfaces for swapchain recreation
+				}
 			}
 		}
 	}
 
 	// Advance to next frame
 	currentFrame_ = (currentFrame_ + 1) % frameCount;
+}
+
+template<SchedulerBackend SchedulerType>
+void VulkanRasterBackend<SchedulerType>::InitializeDescriptors()
+{
+	if (devices_.empty()) return;
+	
+	auto& device = devices_[0];
+	auto logicalDevice = device.Logical();
+	
+	// Create descriptor pool with capacity for per-frame descriptor sets
+	// We need 1 set per frame with 2 uniform buffers each (Material + SceneLighting)
+	DescriptorPoolSizes poolSizes;
+	poolSizes.uniformBuffers = frameCount * 2;  // 2 UBOs per frame
+	poolSizes.maxSets = frameCount;
+	
+	descriptorPool_.emplace(logicalDevice, poolSizes);
+	
+	// Create layout for set 0: Material (binding 0) + SceneLighting (binding 1)
+	std::vector<DescriptorBinding> bindings {
+		DescriptorBinding::UniformBuffer(0, vk::ShaderStageFlagBits::eFragment),  // Material
+		DescriptorBinding::UniformBuffer(1, vk::ShaderStageFlagBits::eFragment),  // SceneLighting
+	};
+	
+	materialLayout_.emplace(logicalDevice, bindings);
+	
+	// Create per-frame uniform buffers and descriptor sets
+	frameUniforms_.resize(frameCount);
+	
+	for (std::uint32_t i = 0; i < frameCount; ++i) {
+		// Allocate material UBO (64 bytes for alignment)
+		BufferDesc materialDesc;
+		materialDesc.size = 64;  // MaterialData is 48 bytes, pad to 64 for alignment
+		materialDesc.usage = BufferUsage::Uniform;
+		materialDesc.memory = BufferMemory::HostVisible;  // CPU-visible for easy updates
+		
+		auto materialHandle = CreateBuffer(materialDesc);
+		if (auto it = buffers_.find(materialHandle); it != buffers_.end()) {
+			frameUniforms_[i].materialBuffer = std::move(it->second);
+			buffers_.erase(it);
+		}
+		
+		// Allocate scene lighting UBO (512 bytes to hold SceneLighting struct)
+		BufferDesc sceneDesc;
+		sceneDesc.size = 512;  // SceneLighting struct
+		sceneDesc.usage = BufferUsage::Uniform;
+		sceneDesc.memory = BufferMemory::HostVisible;
+		
+		auto sceneHandle = CreateBuffer(sceneDesc);
+		if (auto it = buffers_.find(sceneHandle); it != buffers_.end()) {
+			frameUniforms_[i].lightingBuffer = std::move(it->second);
+			buffers_.erase(it);
+		}
+		
+		// Allocate descriptor set from pool
+		auto rawSet = descriptorPool_->AllocateOne(materialLayout_->Handle());
+		frameUniforms_[i].descriptorSet = VulkanDescriptorSet(logicalDevice, rawSet, *materialLayout_);
+		
+		// Write buffer bindings to descriptor set
+		std::vector<DescriptorWrite> writes {
+			DescriptorWrite::Buffer(0, frameUniforms_[i].materialBuffer.buffer, 64),
+			DescriptorWrite::Buffer(1, frameUniforms_[i].lightingBuffer.buffer, 512),
+		};
+		frameUniforms_[i].descriptorSet.Update(writes);
+	}
+}
+
+template<SchedulerBackend SchedulerType>
+void VulkanRasterBackend<SchedulerType>::DestroyDescriptors()
+{
+	// Free descriptor sets and buffers
+	frameUniforms_.clear();
+	
+	// Descriptor pool and layouts will be destroyed by their destructors
+	materialLayout_.reset();
+	descriptorPool_.reset();
+}
+
+template<SchedulerBackend SchedulerType>
+void VulkanRasterBackend<SchedulerType>::UpdateMaterial(const void* materialData, std::size_t size)
+{
+	if (currentFrame_ >= frameUniforms_.size()) return;
+	
+	auto& frameUniform = frameUniforms_[currentFrame_];
+	if (!frameUniform.materialBuffer.IsValid() || !frameUniform.materialBuffer.mappedPtr) return;
+	
+	// Copy to mapped memory (up to buffer size)
+	std::size_t copySize = std::min(size, frameUniform.materialBuffer.size);
+	std::memcpy(frameUniform.materialBuffer.mappedPtr, materialData, copySize);
+	
+	// Note: VK_MEMORY_PROPERTY_HOST_COHERENT_BIT is typically used for Shared memory,
+	// so explicit flush may not be needed. If issues arise, add vkFlushMappedMemoryRanges.
+}
+
+template<SchedulerBackend SchedulerType>
+void VulkanRasterBackend<SchedulerType>::UpdateSceneLighting(const void* lightingData, std::size_t size)
+{
+	if (currentFrame_ >= frameUniforms_.size()) return;
+	
+	auto& frameUniform = frameUniforms_[currentFrame_];
+	if (!frameUniform.lightingBuffer.IsValid() || !frameUniform.lightingBuffer.mappedPtr) return;
+	
+	// Copy to mapped memory (up to buffer size)
+	std::size_t copySize = std::min(size, frameUniform.lightingBuffer.size);
+	std::memcpy(frameUniform.lightingBuffer.mappedPtr, lightingData, copySize);
 }
 
 template<SchedulerBackend SchedulerType>
@@ -284,29 +541,53 @@ Entity VulkanRasterBackend<SchedulerType>::CreatePass(const ShaderSet& shaderSet
 	auto [passIterator, inserted] = renderPasses_.try_emplace(passId);
 	auto& passData = passIterator->second;
 
-	// Default output attachment
-	const std::uint32_t attachmentIndex = static_cast<std::uint32_t>(passData.attachments.size());
+	// === Color attachment (index 0) ===
+	const std::uint32_t colorAttachmentIndex = static_cast<std::uint32_t>(passData.attachments.size());
 
-	vk::AttachmentDescription2KHR& attachment = passData.attachments.emplace_back();
-	attachment.sType = vk::StructureType::eAttachmentDescription2;
-	attachment.pNext = nullptr;
-	attachment.flags = vk::AttachmentDescriptionFlags();
-	attachment.format = vk::Format::eB8G8R8A8Unorm; // Will be updated when surface is attached
-	attachment.samples = vk::SampleCountFlagBits::e1;
-	attachment.loadOp = vk::AttachmentLoadOp::eClear;
-	attachment.storeOp = vk::AttachmentStoreOp::eStore;
-	attachment.stencilLoadOp = vk::AttachmentLoadOp::eDontCare;
-	attachment.stencilStoreOp = vk::AttachmentStoreOp::eDontCare;
-	attachment.initialLayout = vk::ImageLayout::eUndefined;
-	attachment.finalLayout = vk::ImageLayout::ePresentSrcKHR;
+	vk::AttachmentDescription2KHR& colorAttachment = passData.attachments.emplace_back();
+	colorAttachment.sType = vk::StructureType::eAttachmentDescription2;
+	colorAttachment.pNext = nullptr;
+	colorAttachment.flags = vk::AttachmentDescriptionFlags();
+	colorAttachment.format = vk::Format::eB8G8R8A8Unorm; // Will be updated when surface is attached
+	colorAttachment.samples = vk::SampleCountFlagBits::e1;
+	colorAttachment.loadOp = vk::AttachmentLoadOp::eClear;
+	colorAttachment.storeOp = vk::AttachmentStoreOp::eStore;
+	colorAttachment.stencilLoadOp = vk::AttachmentLoadOp::eDontCare;
+	colorAttachment.stencilStoreOp = vk::AttachmentStoreOp::eDontCare;
+	colorAttachment.initialLayout = vk::ImageLayout::eUndefined;
+	colorAttachment.finalLayout = vk::ImageLayout::ePresentSrcKHR;
 
-	// Create attachment reference for subpass
+	// === Depth attachment (index 1) ===
+	const std::uint32_t depthAttachmentIndex = static_cast<std::uint32_t>(passData.attachments.size());
+
+	vk::AttachmentDescription2KHR& depthAttachment = passData.attachments.emplace_back();
+	depthAttachment.sType = vk::StructureType::eAttachmentDescription2;
+	depthAttachment.pNext = nullptr;
+	depthAttachment.flags = vk::AttachmentDescriptionFlags();
+	depthAttachment.format = vk::Format::eD32Sfloat;  // D32 for best precision
+	depthAttachment.samples = vk::SampleCountFlagBits::e1;
+	depthAttachment.loadOp = vk::AttachmentLoadOp::eClear;
+	depthAttachment.storeOp = vk::AttachmentStoreOp::eDontCare;  // Don't need to store depth
+	depthAttachment.stencilLoadOp = vk::AttachmentLoadOp::eDontCare;
+	depthAttachment.stencilStoreOp = vk::AttachmentStoreOp::eDontCare;
+	depthAttachment.initialLayout = vk::ImageLayout::eUndefined;
+	depthAttachment.finalLayout = vk::ImageLayout::eDepthStencilAttachmentOptimal;
+
+	// Create color attachment reference for subpass
 	vk::AttachmentReference2KHR colorAttachmentRef;
 	colorAttachmentRef.sType = vk::StructureType::eAttachmentReference2;
 	colorAttachmentRef.pNext = nullptr;
-	colorAttachmentRef.attachment = attachmentIndex;
+	colorAttachmentRef.attachment = colorAttachmentIndex;
 	colorAttachmentRef.layout = vk::ImageLayout::eColorAttachmentOptimal;
 	colorAttachmentRef.aspectMask = vk::ImageAspectFlagBits::eColor;
+
+	// Create depth attachment reference for subpass
+	vk::AttachmentReference2KHR depthAttachmentRef;
+	depthAttachmentRef.sType = vk::StructureType::eAttachmentReference2;
+	depthAttachmentRef.pNext = nullptr;
+	depthAttachmentRef.attachment = depthAttachmentIndex;
+	depthAttachmentRef.layout = vk::ImageLayout::eDepthStencilAttachmentOptimal;
+	depthAttachmentRef.aspectMask = vk::ImageAspectFlagBits::eDepth;
 
 	// Create default subpass
 	const SubPassId subPassId = GenerateSubPassId();
@@ -320,8 +601,8 @@ Entity VulkanRasterBackend<SchedulerType>::CreatePass(const ShaderSet& shaderSet
 	std::memcpy(&subPassEntity, &subPassId, sizeof(SubPassId));
 	function(subPassEntity);
 
-	// Create the VulkanSubPass object
-	passData.subPasses.emplace_back(subPassData.attachmentReferences);
+	// Create the VulkanSubPass object with depth attachment
+	passData.subPasses.emplace_back(subPassData.attachmentReferences, depthAttachmentRef);
 
 	// Build subpass descriptions
 	std::vector<vk::SubpassDescription2KHR> subPassDescriptions;
@@ -332,19 +613,60 @@ Entity VulkanRasterBackend<SchedulerType>::CreatePass(const ShaderSet& shaderSet
 	// Create the VulkanRenderPass
 	passData.renderPass.emplace(devices_[0], passData.attachments, subPassDescriptions, passData.dependencies);
 
-	// Create command buffer for this pass
-	passData.commandBuffer.emplace(commandPools_.back().Handle(),
-		devices_[0].Logical(), vk::CommandBufferUsageFlagBits::eSimultaneousUse,
-		vk::CommandBufferLevel::ePrimary);
+	// Load shaders and create pipeline
+	// Shader naming convention: <name>.<stage>.spv
+	// TODO: Use shaderSet entities to specify shaders dynamically
+	std::filesystem::path shaderDir = SOUL_SHADER_DIR;
+	
+	// Try PBR shaders first (for mesh rendering)
+	std::filesystem::path pbrVertexPath = shaderDir / "pbr.vertex.spv";
+	std::filesystem::path pbrFragmentPath = shaderDir / "pbr.fragment.spv";
+	
+	// Fall back to triangle shaders (for basic testing)
+	std::filesystem::path triangleVertexPath = shaderDir / "triangle.vertex.spv";
+	std::filesystem::path triangleFragmentPath = shaderDir / "triangle.fragment.spv";
 
-	// Create pipelines for each subpass
-	// TODO: Load actual shaders
-	std::vector<VulkanShader> emptyShaders;
-	std::span<VulkanShader> shaderSpan(emptyShaders);
+	if (std::filesystem::exists(pbrVertexPath) && std::filesystem::exists(pbrFragmentPath) &&
+		materialLayout_.has_value()) {
+		// Create PBR pipeline with material/lighting descriptor sets
+		std::vector<VulkanShader> shaders;
+		shaders.emplace_back(devices_[0].Logical(), vk::ShaderStageFlagBits::eVertex,
+			pbrVertexPath, "main");
+		shaders.emplace_back(devices_[0].Logical(), vk::ShaderStageFlagBits::eFragment,
+			pbrFragmentPath, "main");
 
-	for (std::size_t i = 0; i < passData.subPasses.size(); ++i) {
+		// PBR config with descriptor sets for Material (binding 0) + SceneLighting (binding 1)
+		VulkanPipelineConfig pipelineConfig = VulkanPipelineConfig::PBRWithDescriptors(
+			materialLayout_->Handle());
+
 		passData.pipelines.emplace_back(
-			devices_[0].Logical(), shaderSpan, passData.renderPass->Handle(), static_cast<std::uint32_t>(i));
+			devices_[0].Logical(),
+			shaders,
+			passData.renderPass->Handle(),
+			0,  // subpass index
+			pipelineConfig);
+	}
+	else if (std::filesystem::exists(triangleVertexPath) && std::filesystem::exists(triangleFragmentPath)) {
+		// Fallback: simple triangle pipeline
+		std::vector<VulkanShader> shaders;
+		shaders.emplace_back(devices_[0].Logical(), vk::ShaderStageFlagBits::eVertex,
+			triangleVertexPath, "main");
+		shaders.emplace_back(devices_[0].Logical(), vk::ShaderStageFlagBits::eFragment,
+			triangleFragmentPath, "main");
+
+		// Create pipeline with no vertex input (shader uses SV_VertexID)
+		VulkanPipelineConfig pipelineConfig;
+		pipelineConfig.useVertexInput = false;
+		pipelineConfig.depthTest = false;
+		pipelineConfig.depthWrite = false;
+		pipelineConfig.cullMode = vk::CullModeFlagBits::eNone;
+
+		passData.pipelines.emplace_back(
+			devices_[0].Logical(),
+			shaders,
+			passData.renderPass->Handle(),
+			0,  // subpass index
+			pipelineConfig);
 	}
 
 	// Return pass ID as Entity
@@ -389,6 +711,19 @@ void VulkanRasterBackend<SchedulerType>::ExecutePass(Entity renderPassEntity,
 	Entity surfaceEntity,
 	CommandList& commandList)
 {
+	// Legacy single-pass execution - wraps ExecutePassWithFlags
+	ExecutePassWithFlags(renderPassEntity, surfaceEntity, commandList, PassExecutionFlags::SinglePass);
+}
+
+template<SchedulerBackend SchedulerType>
+void VulkanRasterBackend<SchedulerType>::ExecutePassWithFlags(Entity renderPassEntity,
+	Entity surfaceEntity,
+	CommandList& commandList,
+	PassExecutionFlags flags)
+{
+	const bool isFirstPass = HasFlag(flags, PassExecutionFlags::FirstPass);
+	const bool isLastPass = HasFlag(flags, PassExecutionFlags::LastPass);
+
 	// Extract IDs from Entities
 	PassId passId;
 	std::memcpy(&passId, &renderPassEntity, sizeof(PassId));
@@ -407,7 +742,7 @@ void VulkanRasterBackend<SchedulerType>::ExecutePass(Entity renderPassEntity,
 	auto& passData = passIt->second;
 	auto& surfaceData = surfaceIt->second;
 
-	if (!passData.renderPass.has_value() || !passData.commandBuffer.has_value()) {
+	if (!passData.renderPass.has_value()) {
 		return; // Pass not fully initialized
 	}
 
@@ -415,10 +750,7 @@ void VulkanRasterBackend<SchedulerType>::ExecutePass(Entity renderPassEntity,
 		return; // No swapchain
 	}
 
-	auto& swapChain = surfaceData.swapChain.value();
 	auto& renderPass = passData.renderPass.value();
-	auto& commandBuffer = passData.commandBuffer.value();
-	auto& commandBufferHandle = commandBuffer.Handle();
 
 	// Check frame data
 	if (currentFrame_ >= surfaceData.frames.size()) {
@@ -428,33 +760,138 @@ void VulkanRasterBackend<SchedulerType>::ExecutePass(Entity renderPassEntity,
 	auto& frameData = surfaceData.frames[currentFrame_];
 	if (!frameData.imageAvailableSemaphore.has_value() ||
 		!frameData.renderFinishedSemaphore.has_value() ||
-		!frameData.framebuffer.has_value()) {
+		!frameData.frameTimeline.has_value() ||
+		!frameData.commandBuffer.has_value()) {
 		return;
 	}
 
-	// Acquire next swapchain image
-	auto acquireResult = swapChain.AcquireImage(frameData.imageAvailableSemaphore->Handle());
-	if (!acquireResult.has_value()) {
-		return; // Failed to acquire image
+	// Get the per-frame command buffer
+	auto& commandBuffer = frameData.commandBuffer.value();
+	auto& commandBufferHandle = commandBuffer.Handle();
+
+	// =====================================================================
+	// FIRST PASS ONLY: Swapchain management, timeline wait, acquire, begin command buffer
+	// =====================================================================
+	if (isFirstPass) {
+		// Check if swapchain needs recreation
+		if (surfaceData.needsSwapchainRecreation) {
+			// Wait for device idle before recreating swapchain
+			devices_[0].Synchronize();
+
+			// Update surface format
+			surfaceData.surface.UpdateFormat(devices_[0]);
+
+			// Check if surface has valid extent (not minimized)
+			const auto& physicalDevice = devices_[0].Physical();
+			vk::SurfaceCapabilitiesKHR surfaceCaps =
+				physicalDevice.getSurfaceCapabilitiesKHR(surfaceData.surface.Handle());
+
+			if (surfaceCaps.currentExtent.width == 0 || surfaceCaps.currentExtent.height == 0) {
+				// Window is minimized or has no extent, skip this frame
+				surfaceData.frameAcquired = false;
+				return;
+			}
+
+			// Recreate swapchain
+			VulkanSwapChain<SchedulerType>* oldSwapChain =
+				surfaceData.swapChain.has_value() ? &surfaceData.swapChain.value() : nullptr;
+
+			auto newSwapChainResult = VulkanSwapChain<SchedulerType>::Create(
+				devices_[0], surfaceData.surface, false, oldSwapChain);
+
+			if (newSwapChainResult.has_value()) {
+				surfaceData.swapChain.emplace(std::move(newSwapChainResult.value()));
+
+				// Recreate framebuffers with new swapchain image views
+				auto& newSwapChain = surfaceData.swapChain.value();
+				auto imageViews = newSwapChain.ImageViews();
+				auto swapChainSize = newSwapChain.Size();
+
+				// Recreate depth buffer to match new swapchain size
+				CreateDepthBuffer(surfaceData, {swapChainSize.width, swapChainSize.height});
+
+				// Clear old framebuffers and create new ones for each swapchain image
+				surfaceData.swapchainFramebuffers.clear();
+				for (std::size_t i = 0; i < imageViews.size(); ++i) {
+					std::vector<vk::ImageView> attachments = {imageViews[i]};
+					// Add depth attachment if available
+					if (surfaceData.depthBuffer.IsValid()) {
+						attachments.push_back(surfaceData.depthBuffer.view);
+					}
+					surfaceData.swapchainFramebuffers.emplace_back(
+						devices_[0].Logical(),
+						attachments,
+						renderPass,
+						swapChainSize);
+				}
+
+				surfaceData.needsSwapchainRecreation = false;
+			} else {
+				surfaceData.frameAcquired = false;
+				return; // Recreation failed, try again next frame
+			}
+		}
+
+		// Get swapchain reference AFTER potential recreation
+		auto& swapChain = surfaceData.swapChain.value();
+
+		// Wait for this frame's previous GPU work to complete using timeline semaphore
+		// This ensures command buffer and binary semaphore from previous use are free
+		if (frameData.timelineValue > 0) {
+			frameData.frameTimeline->Wait(frameData.timelineValue);
+		}
+
+		// Acquire next swapchain image
+		auto acquireResult = swapChain.AcquireImage(frameData.imageAvailableSemaphore->Handle());
+		if (!acquireResult.has_value()) {
+			// Mark for recreation - the device sync in recreation will handle semaphore cleanup
+			surfaceData.needsSwapchainRecreation = true;
+			surfaceData.frameAcquired = false;
+			return;
+		}
+
+		// Store acquired image index for use by all passes this frame
+		surfaceData.currentAcquiredImageIndex = acquireResult.value();
+		surfaceData.frameAcquired = true;
+
+		// Increment timeline value for this frame's submission
+		frameData.timelineValue++;
+
+		// Begin command buffer
+		vk::CommandBufferBeginInfo beginInfo;
+		beginInfo.flags = vk::CommandBufferUsageFlagBits::eOneTimeSubmit;
+		commandBufferHandle.begin(beginInfo);
 	}
 
+	// =====================================================================
+	// ALL PASSES: Check if frame was acquired, record render pass commands
+	// =====================================================================
+	if (!surfaceData.frameAcquired) {
+		return; // Frame not acquired, skip rendering
+	}
+
+	// Get the acquired image index for framebuffer selection
+	auto acquiredImageIndex = surfaceData.currentAcquiredImageIndex;
+	if (acquiredImageIndex >= surfaceData.swapchainFramebuffers.size()) {
+		// Framebuffers not ready yet
+		return;
+	}
+	auto& framebuffer = surfaceData.swapchainFramebuffers[acquiredImageIndex];
+	auto& swapChain = surfaceData.swapChain.value();
 	auto swapChainSize = swapChain.Size();
 
-	// Begin command buffer
-	vk::CommandBufferBeginInfo beginInfo;
-	beginInfo.flags = vk::CommandBufferUsageFlagBits::eOneTimeSubmit;
-	commandBufferHandle.begin(beginInfo);
-
-	// Set up render pass begin info
-	vk::ClearValue clearColor(vk::ClearColorValue(std::array<float, 4> {0.0f, 0.0f, 0.2f, 1.0f}));
+	// Set up render pass begin info with color and depth clear values
+	std::array<vk::ClearValue, 2> clearValues;
+	clearValues[0].color = vk::ClearColorValue(std::array<float, 4> {0.0f, 0.0f, 0.2f, 1.0f});
+	clearValues[1].depthStencil = vk::ClearDepthStencilValue(1.0f, 0);  // Clear depth to 1.0 (far plane)
 
 	vk::RenderPassBeginInfo renderPassBeginInfo;
 	renderPassBeginInfo.renderPass = renderPass.Handle();
-	renderPassBeginInfo.framebuffer = frameData.framebuffer->Handle();
+	renderPassBeginInfo.framebuffer = framebuffer.Handle();
 	renderPassBeginInfo.renderArea.offset = vk::Offset2D{0, 0};
 	renderPassBeginInfo.renderArea.extent = swapChainSize;
-	renderPassBeginInfo.clearValueCount = 1;
-	renderPassBeginInfo.pClearValues = &clearColor;
+	renderPassBeginInfo.clearValueCount = static_cast<std::uint32_t>(clearValues.size());
+	renderPassBeginInfo.pClearValues = clearValues.data();
 
 	// Begin render pass
 	commandBufferHandle.beginRenderPass(renderPassBeginInfo, vk::SubpassContents::eInline);
@@ -477,32 +914,139 @@ void VulkanRasterBackend<SchedulerType>::ExecutePass(Entity renderPassEntity,
 	// Bind pipeline if available
 	if (!passData.pipelines.empty()) {
 		commandBufferHandle.bindPipeline(vk::PipelineBindPoint::eGraphics, passData.pipelines[0].Handle());
+
+		// Bind descriptor sets for material/lighting uniforms (if PBR pipeline)
+		if (currentFrame_ < frameUniforms_.size() && 
+			frameUniforms_[currentFrame_].descriptorSet.IsValid()) {
+			vk::DescriptorSet descSet = frameUniforms_[currentFrame_].descriptorSet.Handle();
+			commandBufferHandle.bindDescriptorSets(
+				vk::PipelineBindPoint::eGraphics,
+				passData.pipelines[0].Layout().Handle(),
+				0,  // First set
+				1, &descSet,
+				0, nullptr);  // No dynamic offsets
+		}
+
+		// Process command list commands using index-based iteration
+		bool hasDrawCommands = false;
+		for (std::size_t i = 0; i < commandList.CommandCount(); ++i) {
+			switch (commandList.GetCommandType(i)) {
+				case CommandType::BindVertexBuffer: {
+					const auto& cmd = commandList.GetBindVertexBuffer(i);
+					const BufferId bufferId = static_cast<BufferId>(cmd.buffer);
+					auto bufferIt = buffers_.find(bufferId);
+					if (bufferIt != buffers_.end()) {
+						vk::Buffer vkBuffer = bufferIt->second.buffer;
+						vk::DeviceSize offset = cmd.offset;
+						commandBufferHandle.bindVertexBuffers(cmd.binding, 1, &vkBuffer, &offset);
+					}
+					break;
+				}
+				case CommandType::BindIndexBuffer: {
+					const auto& cmd = commandList.GetBindIndexBuffer(i);
+					const BufferId bufferId = static_cast<BufferId>(cmd.buffer);
+					auto bufferIt = buffers_.find(bufferId);
+					if (bufferIt != buffers_.end()) {
+						vk::IndexType indexType = cmd.use32BitIndices 
+							? vk::IndexType::eUint32 
+							: vk::IndexType::eUint16;
+						commandBufferHandle.bindIndexBuffer(bufferIt->second.buffer, cmd.offset, indexType);
+					}
+					break;
+				}
+				case CommandType::SetPushConstants: {
+					const auto& cmd = commandList.GetSetPushConstants(i);
+					if (cmd.size > 0) {
+						// Use vertex + fragment stages by default
+						vk::ShaderStageFlags stages = vk::ShaderStageFlagBits::eVertex | vk::ShaderStageFlagBits::eFragment;
+						commandBufferHandle.pushConstants(
+							passData.pipelines[0].Layout().Handle(),
+							stages,
+							cmd.offset,
+							cmd.size,
+							cmd.data.data());
+					}
+					break;
+				}
+				case CommandType::DrawIndexed: {
+					const auto& cmd = commandList.GetDrawIndexed(i);
+					commandBufferHandle.drawIndexed(cmd.indexCount, cmd.instanceCount, 
+						cmd.firstIndex, cmd.vertexOffset, cmd.firstInstance);
+					hasDrawCommands = true;
+					break;
+				}
+				case CommandType::Draw: {
+					const auto& cmd = commandList.GetDraw(i);
+					commandBufferHandle.draw(cmd.vertexCount, cmd.instanceCount, 
+						cmd.firstVertex, cmd.firstInstance);
+					hasDrawCommands = true;
+					break;
+				}
+				default:
+					// Other command types not yet implemented
+					break;
+			}
+		}
+		
+		// Fallback: if no draw commands in list, draw default triangle (shader-generated)
+		if (!hasDrawCommands) {
+			commandBufferHandle.draw(3, 1, 0, 0);
+		}
 	}
 
-	// TODO: Process command list commands
-	// The CommandList class needs iteration support to process commands here
-
-	// End render pass and command buffer
+	// End this render pass
 	commandBufferHandle.endRenderPass();
-	commandBufferHandle.end();
 
-	// Submit command buffer
-	vk::SubmitInfo submitInfo;
-	vk::PipelineStageFlags waitStages[] = {vk::PipelineStageFlagBits::eColorAttachmentOutput};
-	vk::Semaphore waitSemaphores[] = {frameData.imageAvailableSemaphore->Handle()};
-	vk::Semaphore signalSemaphores[] = {frameData.renderFinishedSemaphore->Handle()};
+	// =====================================================================
+	// LAST PASS ONLY: End command buffer, submit with semaphores
+	// =====================================================================
+	if (isLastPass) {
+		// End command buffer
+		commandBufferHandle.end();
 
-	submitInfo.waitSemaphoreCount = 1;
-	submitInfo.pWaitSemaphores = waitSemaphores;
-	submitInfo.pWaitDstStageMask = waitStages;
-	submitInfo.commandBufferCount = 1;
-	submitInfo.pCommandBuffers = &commandBufferHandle;
-	submitInfo.signalSemaphoreCount = 1;
-	submitInfo.pSignalSemaphores = signalSemaphores;
+		// Submit command buffer using synchronization2 with timeline semaphores
+		// Wait on binary semaphore from swapchain acquire
+		vk::SemaphoreSubmitInfo waitSemaphoreInfo;
+		waitSemaphoreInfo.semaphore = frameData.imageAvailableSemaphore->Handle();
+		waitSemaphoreInfo.stageMask = vk::PipelineStageFlagBits2::eColorAttachmentOutput;
+		waitSemaphoreInfo.value = 0;  // Binary semaphore
+		waitSemaphoreInfo.deviceIndex = 0;
 
-	auto graphicsQueues = devices_[0].GraphicsQueues();
-	if (!graphicsQueues.empty()) {
-		graphicsQueues[0].Handle().submit(submitInfo);
+		// Signal both binary (for present) and timeline (for frame sync) semaphores
+		std::array<vk::SemaphoreSubmitInfo, 2> signalSemaphoreInfos;
+
+		// Binary semaphore for presentation
+		signalSemaphoreInfos[0].semaphore = frameData.renderFinishedSemaphore->Handle();
+		signalSemaphoreInfos[0].stageMask = vk::PipelineStageFlagBits2::eAllGraphics;
+		signalSemaphoreInfos[0].value = 0;  // Binary semaphore
+		signalSemaphoreInfos[0].deviceIndex = 0;
+
+		// Timeline semaphore for CPU-GPU frame sync
+		signalSemaphoreInfos[1].semaphore = frameData.frameTimeline->Handle();
+		signalSemaphoreInfos[1].stageMask = vk::PipelineStageFlagBits2::eAllGraphics;
+		signalSemaphoreInfos[1].value = frameData.timelineValue;  // Timeline value
+		signalSemaphoreInfos[1].deviceIndex = 0;
+
+		vk::CommandBufferSubmitInfo commandBufferInfo;
+		commandBufferInfo.commandBuffer = commandBufferHandle;
+		commandBufferInfo.deviceMask = 0;
+
+		vk::SubmitInfo2 submitInfo;
+		submitInfo.waitSemaphoreInfoCount = 1;
+		submitInfo.pWaitSemaphoreInfos = &waitSemaphoreInfo;
+		submitInfo.commandBufferInfoCount = 1;
+		submitInfo.pCommandBufferInfos = &commandBufferInfo;
+		submitInfo.signalSemaphoreInfoCount = static_cast<std::uint32_t>(signalSemaphoreInfos.size());
+		submitInfo.pSignalSemaphoreInfos = signalSemaphoreInfos.data();
+
+		auto graphicsQueues = devices_[0].GraphicsQueues();
+		if (!graphicsQueues.empty()) {
+			graphicsQueues[0].Handle().submit2(submitInfo);  // No fence needed - using timeline semaphore
+			frameData.readyToPresent = true;  // Mark frame as ready for presentation
+		}
+
+		// Reset frame acquired flag for next frame
+		surfaceData.frameAcquired = false;
 	}
 }
 
@@ -586,15 +1130,23 @@ Entity VulkanRasterBackend<SchedulerType>::CreateSurface(NativeSurfaceHandle nat
 
 	surfaceData.swapChain.emplace(std::move(swapChainResult.value()));
 
+	// Create depth buffer matching swapchain size
+	auto swapChainSize = surfaceData.swapChain->Size();
+	CreateDepthBuffer(surfaceData, {swapChainSize.width, swapChainSize.height});
+
 	// Create frame synchronization resources
 	const auto imageCount = surfaceData.swapChain->Images().size();
 	surfaceData.frames.resize(frameCount);
 
 	for (std::uint32_t i = 0; i < frameCount; ++i) {
 		auto& frame = surfaceData.frames[i];
-		frame.imageAvailableSemaphore.emplace(devices_[0].Logical());
-		frame.renderFinishedSemaphore.emplace(devices_[0].Logical());
-		frame.inFlightFence.emplace(devices_[0].Logical());
+		frame.imageAvailableSemaphore.emplace(devices_[0].Logical());  // Binary for swapchain acquire
+		frame.renderFinishedSemaphore.emplace(devices_[0].Logical());  // Binary for swapchain present
+		frame.frameTimeline.emplace(devices_[0].Logical(), 0);         // Timeline for frame sync, start at 0
+		frame.timelineValue = 0;
+		frame.commandBuffer.emplace(commandPools_.back().Handle(),
+			devices_[0].Logical(), vk::CommandBufferUsageFlagBits::eOneTimeSubmit,
+			vk::CommandBufferLevel::ePrimary);
 	}
 
 	// Return surface ID as Entity
@@ -645,6 +1197,12 @@ void VulkanRasterBackend<SchedulerType>::RemoveSurface(Entity surfaceEntity)
 		devices_[0].Synchronize();
 	}
 
+	// Destroy depth buffer before removing surface
+	auto surfaceIt = surfaces_.find(surfaceId);
+	if (surfaceIt != surfaces_.end()) {
+		DestroyDepthBuffer(surfaceIt->second);
+	}
+
 	surfaces_.erase(surfaceId);
 }
 
@@ -668,19 +1226,35 @@ void VulkanRasterBackend<SchedulerType>::AttachSurface(Entity renderPassEntity, 
 	auto& passData = passIt->second;
 	auto& surfaceData = surfaceIt->second;
 
+	// Check if already attached
+	for (const auto& attached : passData.attachedSurfaces) {
+		if (attached == surfaceId) {
+			return;  // Already attached, don't recreate framebuffers
+		}
+	}
+
 	// Add surface to pass's attached surfaces
 	passData.attachedSurfaces.push_back(surfaceId);
 
 	// Create framebuffers for this surface if render pass exists
-	if (passData.renderPass.has_value() && surfaceData.swapChain.has_value()) {
+	// Only create if we don't already have framebuffers
+	if (passData.renderPass.has_value() && surfaceData.swapChain.has_value() 
+		&& surfaceData.swapchainFramebuffers.empty()) {
 		auto& swapChain = surfaceData.swapChain.value();
 		auto imageViews = swapChain.ImageViews();
 		auto swapChainSize = swapChain.Size();
 
-		// Create framebuffers for each frame
-		for (std::size_t i = 0; i < surfaceData.frames.size() && i < imageViews.size(); ++i) {
+		// Ensure depth buffer exists and matches swapchain size
+		CreateDepthBuffer(surfaceData, {swapChainSize.width, swapChainSize.height});
+
+		// Create framebuffers for each swapchain image with color + depth attachments
+		for (std::size_t i = 0; i < imageViews.size(); ++i) {
 			std::vector<vk::ImageView> attachments = {imageViews[i]};
-			surfaceData.frames[i].framebuffer.emplace(
+			// Add depth attachment if available
+			if (surfaceData.depthBuffer.IsValid()) {
+				attachments.push_back(surfaceData.depthBuffer.view);
+			}
+			surfaceData.swapchainFramebuffers.emplace_back(
 				devices_[0].Logical(),
 				attachments,
 				passData.renderPass.value(),
@@ -713,6 +1287,262 @@ void VulkanRasterBackend<SchedulerType>::DetachSurface(Entity renderPassEntity, 
 template<SchedulerBackend SchedulerType>
 void VulkanRasterBackend<SchedulerType>::Compile(CommandList&)
 {
+}
+
+// Convert BufferUsage flags to Vulkan buffer usage flags
+constexpr vk::BufferUsageFlags ToVulkanBufferUsage(BufferUsage usage) {
+	vk::BufferUsageFlags flags;
+	if (HasBufferUsage(usage, BufferUsage::Vertex)) {
+		flags |= vk::BufferUsageFlagBits::eVertexBuffer;
+	}
+	if (HasBufferUsage(usage, BufferUsage::Index)) {
+		flags |= vk::BufferUsageFlagBits::eIndexBuffer;
+	}
+	if (HasBufferUsage(usage, BufferUsage::Uniform)) {
+		flags |= vk::BufferUsageFlagBits::eUniformBuffer;
+	}
+	if (HasBufferUsage(usage, BufferUsage::Storage)) {
+		flags |= vk::BufferUsageFlagBits::eStorageBuffer;
+	}
+	if (HasBufferUsage(usage, BufferUsage::TransferSrc)) {
+		flags |= vk::BufferUsageFlagBits::eTransferSrc;
+	}
+	if (HasBufferUsage(usage, BufferUsage::TransferDst)) {
+		flags |= vk::BufferUsageFlagBits::eTransferDst;
+	}
+	return flags;
+}
+
+template<SchedulerBackend SchedulerType>
+GPUBufferHandle VulkanRasterBackend<SchedulerType>::CreateBuffer(const BufferDesc& desc)
+{
+	if (desc.size == 0) {
+		return 0;  // Invalid size
+	}
+
+	auto& device = devices_[0];
+	auto& allocator = device.Allocator();
+
+	// Convert usage flags - always add TransferDst for device-local buffers
+	vk::BufferUsageFlags vkUsage = ToVulkanBufferUsage(desc.usage);
+	if (desc.memory == BufferMemory::DeviceLocal) {
+		vkUsage |= vk::BufferUsageFlagBits::eTransferDst;
+	}
+
+	// Set up VMA allocation based on memory type
+	VulkanAllocationCreateInfo allocInfo;
+	switch (desc.memory) {
+		case BufferMemory::DeviceLocal:
+			allocInfo.usage = MemoryUsage::GpuOnly;
+			allocInfo.mapped = false;
+			break;
+		case BufferMemory::HostVisible:
+			allocInfo.usage = MemoryUsage::CpuToGpu;
+			allocInfo.mapped = true;
+			break;
+		case BufferMemory::HostCached:
+			allocInfo.usage = MemoryUsage::GpuToCpu;
+			allocInfo.mapped = true;
+			break;
+	}
+
+	auto bufferResult = allocator.CreateBuffer(desc.size, vkUsage, allocInfo);
+	if (!bufferResult.has_value()) {
+		return 0;  // Failed to create buffer
+	}
+
+	// Generate buffer ID and store data
+	const BufferId bufferId = GenerateBufferId();
+	
+	BufferData bufferData;
+	bufferData.buffer = bufferResult.value().buffer;
+	bufferData.allocation = bufferResult.value().allocation;
+	bufferData.size = desc.size;
+	bufferData.usage = desc.usage;
+	bufferData.memory = desc.memory;
+	bufferData.mappedPtr = bufferResult.value().mappedData;
+
+	buffers_.emplace(bufferId, std::move(bufferData));
+
+	return static_cast<GPUBufferHandle>(bufferId);
+}
+
+template<SchedulerBackend SchedulerType>
+void VulkanRasterBackend<SchedulerType>::DestroyBuffer(GPUBufferHandle handle)
+{
+	const BufferId bufferId = static_cast<BufferId>(handle);
+	auto bufferIt = buffers_.find(bufferId);
+	if (bufferIt == buffers_.end()) {
+		return;  // Invalid handle
+	}
+
+	auto& bufferData = bufferIt->second;
+	auto& device = devices_[0];
+	auto& allocator = device.Allocator();
+
+	// Destroy buffer and free memory
+	if (bufferData.buffer) {
+		allocator.DestroyBuffer(bufferData.buffer, bufferData.allocation);
+	}
+
+	buffers_.erase(bufferIt);
+}
+
+template<SchedulerBackend SchedulerType>
+void VulkanRasterBackend<SchedulerType>::UploadBufferData(GPUBufferHandle handle, 
+	const void* data, std::size_t size, std::size_t offset)
+{
+	const BufferId bufferId = static_cast<BufferId>(handle);
+	auto bufferIt = buffers_.find(bufferId);
+	if (bufferIt == buffers_.end()) {
+		return;  // Invalid handle
+	}
+
+	auto& bufferData = bufferIt->second;
+	if (offset + size > bufferData.size) {
+		return;  // Out of bounds
+	}
+
+	auto& device = devices_[0];
+	auto& allocator = device.Allocator();
+
+	// For host-visible buffers, write directly
+	if (bufferData.memory != BufferMemory::DeviceLocal) {
+		if (bufferData.mappedPtr) {
+			std::memcpy(static_cast<char*>(bufferData.mappedPtr) + offset, data, size);
+			// Flush if not cached
+			if (bufferData.memory == BufferMemory::HostVisible) {
+				allocator.FlushAllocation(bufferData.allocation, offset, size);
+			}
+		}
+		return;
+	}
+
+	// For device-local buffers, use staging buffer + transfer queue
+	// Create staging buffer if needed
+	if (!stagingBuffer_.has_value() || stagingBuffer_->size < size) {
+		if (stagingBuffer_.has_value()) {
+			allocator.DestroyBuffer(stagingBuffer_->buffer, stagingBuffer_->allocation);
+		}
+
+		const std::size_t stagingSize = std::max(size, stagingBufferSize_);
+
+		VulkanAllocationCreateInfo stagingAllocInfo;
+		stagingAllocInfo.usage = MemoryUsage::CpuToGpu;
+		stagingAllocInfo.mapped = true;
+
+		auto stagingResult = allocator.CreateBuffer(stagingSize, 
+			vk::BufferUsageFlagBits::eTransferSrc, stagingAllocInfo);
+		if (!stagingResult.has_value()) {
+			return;  // Failed to create staging buffer
+		}
+
+		BufferData stagingData;
+		stagingData.buffer = stagingResult.value().buffer;
+		stagingData.allocation = stagingResult.value().allocation;
+		stagingData.size = stagingSize;
+		stagingData.memory = BufferMemory::HostVisible;
+		stagingData.mappedPtr = stagingResult.value().mappedData;
+		stagingBuffer_.emplace(std::move(stagingData));
+	}
+
+	// Copy data to staging buffer
+	std::memcpy(stagingBuffer_->mappedPtr, data, size);
+	allocator.FlushAllocation(stagingBuffer_->allocation, 0, size);
+
+	// Use graphics queue for transfers since our command pool is created for graphics queue family
+	// TODO: Create separate transfer command pool for async transfers on dedicated transfer queue
+	auto graphicsQueues = device.GraphicsQueues();
+	
+	if (graphicsQueues.empty()) {
+		return;  // No queue available
+	}
+	
+	VulkanQueue* queue = &graphicsQueues[0];
+
+	// Create a one-time command buffer for the transfer
+	// Use the first command pool which is created for the graphics queue family
+	VulkanCommandBuffer transferCmd(commandPools_[0].Handle(),
+		device.Logical(), vk::CommandBufferUsageFlagBits::eOneTimeSubmit,
+		vk::CommandBufferLevel::ePrimary);
+
+	vk::CommandBufferBeginInfo beginInfo;
+	beginInfo.flags = vk::CommandBufferUsageFlagBits::eOneTimeSubmit;
+	transferCmd.Handle().begin(beginInfo);
+
+	vk::BufferCopy copyRegion;
+	copyRegion.srcOffset = 0;
+	copyRegion.dstOffset = offset;
+	copyRegion.size = size;
+	transferCmd.Handle().copyBuffer(stagingBuffer_->buffer, bufferData.buffer, copyRegion);
+
+	transferCmd.Handle().end();
+
+	// Submit and wait (synchronous for simplicity - could be async with timeline semaphores)
+	vk::CommandBufferSubmitInfo cmdInfo;
+	cmdInfo.commandBuffer = transferCmd.Handle();
+	cmdInfo.deviceMask = 0;
+
+	vk::SubmitInfo2 submitInfo;
+	submitInfo.commandBufferInfoCount = 1;
+	submitInfo.pCommandBufferInfos = &cmdInfo;
+
+	queue->Handle().submit2(submitInfo);
+	device.Logical().waitIdle();  // Simple sync - could use fence/timeline for async
+}
+
+template<SchedulerBackend SchedulerType>
+void* VulkanRasterBackend<SchedulerType>::MapBuffer(GPUBufferHandle handle)
+{
+	const BufferId bufferId = static_cast<BufferId>(handle);
+	auto bufferIt = buffers_.find(bufferId);
+	if (bufferIt == buffers_.end()) {
+		return nullptr;  // Invalid handle
+	}
+
+	auto& bufferData = bufferIt->second;
+	
+	// Device-local buffers cannot be mapped
+	if (bufferData.memory == BufferMemory::DeviceLocal) {
+		return nullptr;
+	}
+
+	return bufferData.mappedPtr;
+}
+
+template<SchedulerBackend SchedulerType>
+void VulkanRasterBackend<SchedulerType>::UnmapBuffer(GPUBufferHandle handle)
+{
+	// Our buffers are persistently mapped, so nothing to do
+	// This exists for API completeness and future flexibility
+}
+
+template<SchedulerBackend SchedulerType>
+void VulkanRasterBackend<SchedulerType>::FlushBuffer(GPUBufferHandle handle, 
+	std::size_t offset, std::size_t size)
+{
+	const BufferId bufferId = static_cast<BufferId>(handle);
+	auto bufferIt = buffers_.find(bufferId);
+	if (bufferIt == buffers_.end()) {
+		return;  // Invalid handle
+	}
+
+	auto& bufferData = bufferIt->second;
+	
+	// Device-local buffers don't need flushing
+	if (bufferData.memory == BufferMemory::DeviceLocal) {
+		return;
+	}
+
+	auto& device = devices_[0];
+	auto& allocator = device.Allocator();
+
+	// Clamp size to buffer size
+	if (size == std::numeric_limits<std::size_t>::max()) {
+		size = bufferData.size - offset;
+	}
+
+	allocator.FlushAllocation(bufferData.allocation, offset, size);
 }
 
 template<SchedulerBackend SchedulerType>
@@ -793,8 +1623,100 @@ vk::Format VulkanRasterBackend<SchedulerType>::ConvertFormat(Format format)
 	switch (format) {
 		case Format::RGBA:
 			return vk::Format::eR8G8B8A8Srgb;
+		case Format::D32_FLOAT:
+			return vk::Format::eD32Sfloat;
+		case Format::D24_UNORM_S8_UINT:
+			return vk::Format::eD24UnormS8Uint;
+		case Format::D16_UNORM:
+			return vk::Format::eD16Unorm;
 		default:
 			// TODO: Implement all format conversions
 			return vk::Format::eUndefined;
 	}
+}
+
+// Create depth buffer for a surface
+template<SchedulerBackend SchedulerType>
+void VulkanRasterBackend<SchedulerType>::CreateDepthBuffer(SurfaceData<SchedulerType>& surfaceData, uvec2 size)
+{
+	// Don't recreate if size matches
+	if (surfaceData.depthBuffer.IsValid() && 
+	    surfaceData.depthBuffer.size.x == size.x && 
+	    surfaceData.depthBuffer.size.y == size.y) {
+		return;
+	}
+	
+	// Destroy existing depth buffer if any
+	DestroyDepthBuffer(surfaceData);
+	
+	auto& device = devices_[0];
+	auto& allocator = device.Allocator();
+	
+	// Create depth image
+	vk::ImageCreateInfo imageInfo;
+	imageInfo.imageType = vk::ImageType::e2D;
+	imageInfo.format = vk::Format::eD32Sfloat;  // D32 for best precision
+	imageInfo.extent.width = size.x;
+	imageInfo.extent.height = size.y;
+	imageInfo.extent.depth = 1;
+	imageInfo.mipLevels = 1;
+	imageInfo.arrayLayers = 1;
+	imageInfo.samples = vk::SampleCountFlagBits::e1;
+	imageInfo.tiling = vk::ImageTiling::eOptimal;
+	imageInfo.usage = vk::ImageUsageFlagBits::eDepthStencilAttachment;
+	imageInfo.sharingMode = vk::SharingMode::eExclusive;
+	imageInfo.initialLayout = vk::ImageLayout::eUndefined;
+	
+	VulkanAllocationCreateInfo allocInfo;
+	allocInfo.usage = MemoryUsage::GpuOnly;
+	
+	auto imageResult = allocator.CreateImage(imageInfo, allocInfo);
+	if (!imageResult.has_value()) {
+		return;  // Failed to create image
+	}
+	
+	surfaceData.depthBuffer.image = imageResult.value().image;
+	surfaceData.depthBuffer.allocation = imageResult.value().allocation;
+	surfaceData.depthBuffer.format = vk::Format::eD32Sfloat;
+	surfaceData.depthBuffer.size = size;
+	
+	// Create depth image view
+	vk::ImageViewCreateInfo viewInfo;
+	viewInfo.image = surfaceData.depthBuffer.image;
+	viewInfo.viewType = vk::ImageViewType::e2D;
+	viewInfo.format = vk::Format::eD32Sfloat;
+	viewInfo.subresourceRange.aspectMask = vk::ImageAspectFlagBits::eDepth;
+	viewInfo.subresourceRange.baseMipLevel = 0;
+	viewInfo.subresourceRange.levelCount = 1;
+	viewInfo.subresourceRange.baseArrayLayer = 0;
+	viewInfo.subresourceRange.layerCount = 1;
+	
+	surfaceData.depthBuffer.view = device.Logical().createImageView(viewInfo);
+}
+
+// Destroy depth buffer resources
+template<SchedulerBackend SchedulerType>
+void VulkanRasterBackend<SchedulerType>::DestroyDepthBuffer(SurfaceData<SchedulerType>& surfaceData)
+{
+	if (!surfaceData.depthBuffer.IsValid()) {
+		return;
+	}
+	
+	auto& device = devices_[0];
+	auto& allocator = device.Allocator();
+	
+	// Destroy image view
+	if (surfaceData.depthBuffer.view) {
+		device.Logical().destroyImageView(surfaceData.depthBuffer.view);
+		surfaceData.depthBuffer.view = nullptr;
+	}
+	
+	// Destroy image and free memory
+	if (surfaceData.depthBuffer.image) {
+		allocator.DestroyImage(surfaceData.depthBuffer.image, surfaceData.depthBuffer.allocation);
+		surfaceData.depthBuffer.image = nullptr;
+		surfaceData.depthBuffer.allocation = nullptr;
+	}
+	
+	surfaceData.depthBuffer.size = {0, 0};
 }

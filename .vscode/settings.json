@@ -83,6 +83,7 @@
         "unordered_set": "cpp",
         "variant": "cpp",
         "expected": "cpp",
-        "shared_mutex": "cpp"
+        "shared_mutex": "cpp",
+        "cinttypes": "cpp"
     }
 }

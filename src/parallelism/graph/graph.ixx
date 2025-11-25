@@ -5,42 +5,54 @@ import :graph_node;
 import :graph_task;
 import std;
 
-export class Graph : public GraphNode {
+export template<SchedulerBackend SchedulerType>
+class TaskGraph : public GraphNode {
 public:
-	Graph(std::shared_ptr<SchedulerModule>&);
-	~Graph() override = default;
-
-	Graph(const Graph&) = delete;
-	Graph(Graph&&) noexcept = default;
-
-	Graph& operator=(const Graph&) = delete;
-	Graph& operator=(Graph&&) noexcept = default;
-
-	template <typename Callable>
-	GraphTask& AddTask(Callable&&);
-	Graph& CreateGraph();
-
-	void Execute(std::chrono::nanoseconds) override;
-
-private:
-	std::shared_ptr<SchedulerModule> scheduler_;
-	std::forward_list<GraphTask> tasks_;
-	std::forward_list<Graph> graphs_;
-};
-
-module :private;
-
-// Create a tasks under this graph's control
-template <typename Callable>
-GraphTask& Graph::AddTask(Callable&& callable) {
-	if constexpr (!std::is_invocable_v<Callable>) {
-		static_assert(std::false_type::value, "The provided parameter is not callable");
+	explicit TaskGraph(SchedulerType& scheduler) :
+		scheduler_(scheduler) {
 	}
 
-	GraphTask& task = tasks_.emplace_front(scheduler_, std::forward<Callable>(callable));
+	~TaskGraph() override = default;
 
-	task.DependsOn(*this);
-	task.Root(true);
+	TaskGraph(const TaskGraph&) = delete;
+	TaskGraph(TaskGraph&&) noexcept = default;
 
-	return task;
-}
+	TaskGraph& operator=(const TaskGraph&) = delete;
+	TaskGraph& operator=(TaskGraph&&) noexcept = default;
+
+	template <typename Callable>
+	GraphTask<SchedulerType>& AddTask(Callable&& callable) {
+		if constexpr (!std::is_invocable_v<Callable>) {
+			static_assert(std::is_invocable_v<Callable>, "The provided parameter is not callable");
+		}
+
+		GraphTask<SchedulerType>& task = tasks_.emplace_front(scheduler_, std::forward<Callable>(callable));
+
+		task.DependsOn(*this);
+		task.Root(true);
+
+		return task;
+	}
+
+	TaskGraph& CreateGraph() {
+		return graphs_.emplace_front(scheduler_);
+	}
+
+	void Execute(std::chrono::nanoseconds) override {
+		// Execute all root tasks
+		for (auto& task : tasks_) {
+			if (task.Root()) {
+				task.Execute(std::chrono::nanoseconds(0));
+			}
+		}
+	}
+
+private:
+	SchedulerType& scheduler_;
+	std::forward_list<GraphTask<SchedulerType>> tasks_;
+	std::forward_list<TaskGraph<SchedulerType>> graphs_;
+};
+
+// Backward compatibility alias
+export template<SchedulerBackend SchedulerType>
+using Graph = TaskGraph<SchedulerType>;

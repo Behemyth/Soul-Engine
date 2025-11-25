@@ -24,6 +24,9 @@ target_sources(soul-engine
 			surface/VulkanSurface.ixx
 			surface/VulkanSwapChain.ixx
 			surface/VulkanFrame.ixx
+			descriptor/VulkanDescriptorPool.ixx
+			descriptor/VulkanDescriptorSetLayout.ixx
+			descriptor/VulkanDescriptorSet.ixx
 	PRIVATE
 		VulkanAllocator.cpp
 		buffer/VulkanBuffer.cpp
