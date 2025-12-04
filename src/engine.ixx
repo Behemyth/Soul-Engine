@@ -15,7 +15,6 @@ import synodic.soul.render.graph;
 import synodic.soul.scheduler;
 import synodic.soul.graph;
 import synodic.soul.compute;
-import synodic.soul.memory;
 import synodic.soul.tracer;
 import synodic.soul.transput;
 
