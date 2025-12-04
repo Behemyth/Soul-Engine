@@ -28,6 +28,7 @@ class CPPythonBase(ConanFile):
         self.requires("portability/[>=0.0.0.dev1]")
         self.requires("sdl/[>=3.2.20]")
         self.requires("vulkan-memory-allocator/3.3.0")
+        self.requires("glaze/[>=6.0.1]")
 
     def build_requirements(self):
         """CPPython managed build and test requirements."""

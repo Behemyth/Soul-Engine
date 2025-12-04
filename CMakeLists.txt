@@ -25,6 +25,7 @@ find_package(honesty REQUIRED)
 find_package(synodic-template-library REQUIRED)
 find_package(cppaste REQUIRED)
 find_package(SDL3 REQUIRED)
+find_package(glaze REQUIRED)
 
 # Find Vulkan from system SDK (not from Conan)
 # Use VULKAN_SDK environment variable to locate the system Vulkan SDK
@@ -106,6 +107,7 @@ option(BUILD_OPENCL_COMPUTE "Build the OpenCL Compute backend" ${OpenCL_FOUND})#
 option(BUILD_VULKAN_RASTER "Build the Vulkan Raster backend" ON)#TODO: Implement use of this option
 option(BUILD_FIBER_SCHEDULER "Build the Fiber Scheduler backend" OFF)
 option(BUILD_ENTITY_GRAPH "Build the Entity Graph backend" ON)
+option(BUILD_GLTF_LOADER "Build the GLTF mesh loader backend" ON)
 
 ##############################################
 #Project Target
@@ -149,6 +151,11 @@ target_link_libraries(soul-engine
 # Conditionally define SOUL_ENABLE_SHADER_HOT_RELOAD macro
 if(SOUL_ENABLE_SHADER_HOT_RELOAD)
 	target_compile_definitions(soul-engine PRIVATE SOUL_ENABLE_SHADER_HOT_RELOAD)
+endif()
+
+# Conditionally link glaze for GLTF mesh loading
+if(BUILD_GLTF_LOADER)
+	target_link_libraries(soul-engine PRIVATE glaze::glaze)
 endif()
 
 # Create file set for C++20 modules

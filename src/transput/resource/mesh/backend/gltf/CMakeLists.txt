@@ -1,14 +1,10 @@
-
-
 ##############################################
-#Resource
+# GLTF Mesh Loader Backend
 
 target_sources(soul-engine
     PUBLIC
 		FILE_SET CXX_MODULES FILES
-			resource.ixx
+			gltf_types.ixx
+			gltf_loader.ixx
 )
-
-add_subdirectory(modules/shader)
-add_subdirectory(mesh)
 

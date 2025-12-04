@@ -15,6 +15,7 @@ import synodic.soul.render.material;
 import synodic.soul.compute.backend.mock;
 import synodic.soul.scheduler.backend.passthrough;
 import synodic.soul.backend.sdl;
+import synodic.soul.transput;  // GLTF mesh loading
 
 using SampleApp = synodic::soul::App<
 	PassthroughSchedulerBackend,
@@ -76,8 +77,18 @@ protected:
 			}
 		}
 
-		// Generate procedural cube mesh
-		cubeMeshData_ = GenerateCube(1.0f);
+		// Load mesh from GLTF file, fallback to procedural cube
+		const std::filesystem::path meshPath = "resources/assets/box/box.glb";
+		auto loadResult = synodic::soul::gltf::LoadMesh(meshPath);
+		if (loadResult)
+		{
+			cubeMeshData_ = std::move(loadResult->data);
+		}
+		else
+		{
+			// Fallback to procedural cube if GLTF loading fails
+			cubeMeshData_ = GenerateCube(1.0f);
+		}
 
 		// Upload cube mesh to GPU
 		meshUploader_.emplace(GetSoul().Raster());
@@ -143,12 +154,12 @@ protected:
 				if (isOrbiting_) {
 					double deltaX = x - lastMouseX_;
 					double deltaY = y - lastMouseY_;
-					
+
 					// Sensitivity
 					const float sensitivity = 0.005f;
 					orbitYaw_ -= static_cast<float>(deltaX) * sensitivity;
 					orbitPitch_ += static_cast<float>(deltaY) * sensitivity;
-					
+
 					// Clamp pitch to avoid gimbal lock
 					const float maxPitch = 1.5f;  // ~85 degrees
 					if (orbitPitch_ > maxPitch) orbitPitch_ = maxPitch;
@@ -213,16 +224,16 @@ private:
 		float camX = orbitDistance_ * std::cos(orbitPitch_) * std::sin(orbitYaw_);
 		float camY = orbitDistance_ * std::sin(orbitPitch_);
 		float camZ = orbitDistance_ * std::cos(orbitPitch_) * std::cos(orbitYaw_);
-		
+
 		cameraPosition_ = {camX, camY, camZ};
 		cameraTarget_ = {0.0f, 0.0f, 0.0f};
-		
+
 		// Update view matrix
 		viewMatrix_ = mat4::LookAt(
 			cameraPosition_.x, cameraPosition_.y, cameraPosition_.z,
 			cameraTarget_.x, cameraTarget_.y, cameraTarget_.z,
 			0.0f, 1.0f, 0.0f);
-		
+
 		// Update scene lighting camera position for specular
 		sceneLighting_.cameraPositionX = cameraPosition_.x;
 		sceneLighting_.cameraPositionY = cameraPosition_.y;
@@ -269,10 +280,10 @@ private:
 
 			// Set push constants (MVP + Model matrices)
 			ctx.commands.PushConstants(pushConstants_);
-			
+
 			// Draw the cube mesh (binds vertex/index buffers and issues DrawIndexed)
 			ctx.commands.DrawMesh(
-				cubeGPUMesh_.vertexBuffer, 
+				cubeGPUMesh_.vertexBuffer,
 				cubeGPUMesh_.indexBuffer,
 				cubeGPUMesh_.indexCount,
 				true);  // 32-bit indices
@@ -332,7 +343,7 @@ private:
 	// Camera
 	vec3 cameraPosition_;
 	vec3 cameraTarget_;
-	
+
 	// Orbit camera controls
 	float orbitYaw_ = 0.0f;
 	float orbitPitch_ = 0.3f;
