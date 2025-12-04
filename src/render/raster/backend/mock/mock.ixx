@@ -1,17 +1,18 @@
 export module synodic.soul.raster.backend.mock;
 
+import std;
 import synodic.soul.raster;
 
 export class MockRasterBackend : public RasterModule
 {
 public:
-	MockRasterBackend()			  = default;
+	MockRasterBackend()           = default;
 	~MockRasterBackend() override = default;
 
-	MockRasterBackend(const MockRasterBackend&)		= delete;
+	MockRasterBackend(const MockRasterBackend&)     = delete;
 	MockRasterBackend(MockRasterBackend&&) noexcept = default;
 
-	MockRasterBackend& operator=(const MockRasterBackend&)	   = delete;
+	MockRasterBackend& operator=(const MockRasterBackend&)     = delete;
 	MockRasterBackend& operator=(MockRasterBackend&&) noexcept = default;
 
 	void Present() override
@@ -29,6 +30,10 @@ public:
 	}
 
 	void ExecutePass(Entity, Entity, CommandList&) override
+	{
+	}
+
+	void ExecutePassWithFlags(Entity, Entity, CommandList&, PassExecutionFlags) override
 	{
 	}
 
@@ -61,8 +66,39 @@ public:
 	{
 	}
 
+	// Buffer management
+	GPUBufferHandle CreateBuffer(const BufferDesc&) override
+	{
+		return nextBufferHandle_++;
+	}
+
+	void DestroyBuffer(GPUBufferHandle) override
+	{
+	}
+
+	void UploadBufferData(GPUBufferHandle, const void*, std::size_t, std::size_t) override
+	{
+	}
+
+	void* MapBuffer(GPUBufferHandle) override
+	{
+		return nullptr;
+	}
+
+	void UnmapBuffer(GPUBufferHandle) override
+	{
+	}
+
+	void FlushBuffer(GPUBufferHandle, std::size_t, std::size_t) override
+	{
+	}
+
 	// Agnostic raster API interface
 	void Compile(CommandList&) override
 	{
 	}
+
+private:
+	GPUBufferHandle nextBufferHandle_ = 1;
 };
+
