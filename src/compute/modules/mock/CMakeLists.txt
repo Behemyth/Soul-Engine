@@ -6,7 +6,7 @@ target_sources(soul-engine
 		FILE_SET CXX_MODULES FILES
 			compute.mock.ixx
     PRIVATE
-			MockBackend.cpp
-			MockBuffer.cpp
-			MockDevice.cpp
+			mock_backend.cpp
+			mock_buffer.cpp
+			mock_device.cpp
 )

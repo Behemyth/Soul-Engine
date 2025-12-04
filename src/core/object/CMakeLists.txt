@@ -7,5 +7,5 @@ target_sources(soul-engine
 		FILE_SET CXX_MODULES FILES
 			object.ixx
     PRIVATE
-			Loader.cpp
+			loader.cpp
 )

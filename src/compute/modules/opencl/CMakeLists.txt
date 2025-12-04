@@ -6,7 +6,7 @@ target_sources(soul-engine
 		FILE_SET CXX_MODULES FILES
 			compute.opencl.ixx
     PRIVATE
-			OpenCLBackend.cpp
-			OpenCLBuffer.cpp
-			OpenCLDevice.cpp
+			opencl_backend.cpp
+			opencl_buffer.cpp
+			opencl_device.cpp
 )

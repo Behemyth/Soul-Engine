@@ -6,7 +6,7 @@ set(CMAKE_EXPERIMENTAL_CXX_IMPORT_STD "d0edc3af-4c50-42ea-a356-e2862fe7a444")
 set(CMAKE_CXX_MODULE_STD ON)
 
 #Set CMake tools location
-list(APPEND CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/tool/CMake)
+list(APPEND CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/tool/cmake)
 
 
 ##############################################
@@ -167,7 +167,7 @@ add_subdirectory(
 ##############################################
 #Shader Compilation
 
-include(ShaderCompilation)
+include(shader_compilation)
 find_slang_compiler()
 
 # Set shader directories

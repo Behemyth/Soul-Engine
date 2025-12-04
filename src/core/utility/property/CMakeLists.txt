@@ -4,5 +4,5 @@
 
 target_sources(soul-engine
     PRIVATE
-			Property.cpp
+			property.cpp
 )

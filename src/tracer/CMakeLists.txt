@@ -12,7 +12,7 @@ target_sources(soul-engine
 			ray/ray.ixx
 			ray/ray_job.ixx
 	PRIVATE
-			Camera/Film/Film.cpp
-			Ray/RayJob.cpp
+			camera/film/film.cpp
+			ray/ray_job.cpp
 )
 

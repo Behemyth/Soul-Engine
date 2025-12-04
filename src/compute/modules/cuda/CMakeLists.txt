@@ -6,7 +6,7 @@ target_sources(soul-engine
 		FILE_SET CXX_MODULES FILES
 			compute.cuda.ixx
     PRIVATE
-			CUDABackend.cpp
-			CUDABuffer.cpp
-			CUDADevice.cpp
+			cuda_backend.cpp
+			cuda_buffer.cpp
+			cuda_device.cpp
 )
