@@ -2,6 +2,7 @@ export module synodic.soul.raster.backend.vulkan:descriptor_set_layout;
 
 import std;
 import vulkan_hpp;
+import synodic.soul.transput;
 
 // Binding description for layout creation
 export struct DescriptorBinding {
@@ -45,6 +46,65 @@ export struct DescriptorBinding {
 		vk::ShaderStageFlags stages = vk::ShaderStageFlagBits::eCompute)
 	{
 		return {binding, vk::DescriptorType::eStorageImage, 1, stages};
+	}
+	
+	// Create from reflection data
+	static DescriptorBinding FromReflection(const synodic::soul::shader::ReflectedBinding& reflected)
+	{
+		DescriptorBinding binding;
+		binding.binding = reflected.binding;
+		binding.count = reflected.count;
+		
+		// Convert descriptor type
+		using DT = synodic::soul::shader::DescriptorType;
+		switch (reflected.type) {
+			case DT::UNIFORM_BUFFER:
+				binding.type = vk::DescriptorType::eUniformBuffer;
+				break;
+			case DT::STORAGE_BUFFER:
+				binding.type = vk::DescriptorType::eStorageBuffer;
+				break;
+			case DT::COMBINED_IMAGE_SAMPLER:
+				binding.type = vk::DescriptorType::eCombinedImageSampler;
+				break;
+			case DT::SAMPLED_IMAGE:
+				binding.type = vk::DescriptorType::eSampledImage;
+				break;
+			case DT::STORAGE_IMAGE:
+				binding.type = vk::DescriptorType::eStorageImage;
+				break;
+			case DT::SAMPLER:
+				binding.type = vk::DescriptorType::eSampler;
+				break;
+			case DT::INPUT_ATTACHMENT:
+				binding.type = vk::DescriptorType::eInputAttachment;
+				break;
+			default:
+				binding.type = vk::DescriptorType::eUniformBuffer;
+				break;
+		}
+		
+		// Convert stage flags
+		binding.stages = {};
+		using SF = synodic::soul::shader::ShaderStageFlags;
+		if (synodic::soul::shader::HasFlag(reflected.stages, SF::VERTEX))
+			binding.stages |= vk::ShaderStageFlagBits::eVertex;
+		if (synodic::soul::shader::HasFlag(reflected.stages, SF::FRAGMENT))
+			binding.stages |= vk::ShaderStageFlagBits::eFragment;
+		if (synodic::soul::shader::HasFlag(reflected.stages, SF::COMPUTE))
+			binding.stages |= vk::ShaderStageFlagBits::eCompute;
+		if (synodic::soul::shader::HasFlag(reflected.stages, SF::GEOMETRY))
+			binding.stages |= vk::ShaderStageFlagBits::eGeometry;
+		if (synodic::soul::shader::HasFlag(reflected.stages, SF::TESSELLATION_CONTROL))
+			binding.stages |= vk::ShaderStageFlagBits::eTessellationControl;
+		if (synodic::soul::shader::HasFlag(reflected.stages, SF::TESSELLATION_EVALUATION))
+			binding.stages |= vk::ShaderStageFlagBits::eTessellationEvaluation;
+		
+		// Default to all graphics if no specific stages
+		if (!binding.stages)
+			binding.stages = vk::ShaderStageFlagBits::eAllGraphics;
+		
+		return binding;
 	}
 };
 

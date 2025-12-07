@@ -14,8 +14,9 @@ export namespace synodic::soul::shader
 		FILE_NOT_FOUND,
 		INVALID_SOURCE,
 		CACHE_ERROR,
-		SLANG_INIT_FAILED,
-		SLANG_COMPILE_FAILED,
+		BACKEND_INIT_FAILED,
+		BACKEND_COMPILE_FAILED,
+		REFLECTION_FAILED,
 		UNKNOWN_ERROR
 	};
 
@@ -31,27 +32,29 @@ export namespace synodic::soul::shader
 		{
 			switch (static_cast<ShaderErrorCode>(condition))
 			{
-				case ShaderErrorCode::SUCCESS :
+				case ShaderErrorCode::SUCCESS:
 					return "Success";
-				case ShaderErrorCode::COMPILATION_FAILED :
+				case ShaderErrorCode::COMPILATION_FAILED:
 					return "Shader compilation failed";
-				case ShaderErrorCode::INVALID_STAGE :
+				case ShaderErrorCode::INVALID_STAGE:
 					return "Invalid shader stage";
-				case ShaderErrorCode::INVALID_ENTRY_POINT :
+				case ShaderErrorCode::INVALID_ENTRY_POINT:
 					return "Invalid entry point";
-				case ShaderErrorCode::FILE_NOT_FOUND :
+				case ShaderErrorCode::FILE_NOT_FOUND:
 					return "Shader file not found";
-				case ShaderErrorCode::INVALID_SOURCE :
+				case ShaderErrorCode::INVALID_SOURCE:
 					return "Invalid shader source";
-				case ShaderErrorCode::CACHE_ERROR :
+				case ShaderErrorCode::CACHE_ERROR:
 					return "Shader cache error";
-				case ShaderErrorCode::SLANG_INIT_FAILED :
-					return "Failed to initialize Slang compiler";
-				case ShaderErrorCode::SLANG_COMPILE_FAILED :
-					return "Slang compilation failed";
-				case ShaderErrorCode::UNKNOWN_ERROR :
+				case ShaderErrorCode::BACKEND_INIT_FAILED:
+					return "Failed to initialize shader compiler backend";
+				case ShaderErrorCode::BACKEND_COMPILE_FAILED:
+					return "Shader compiler backend compilation failed";
+				case ShaderErrorCode::REFLECTION_FAILED:
+					return "Shader reflection failed";
+				case ShaderErrorCode::UNKNOWN_ERROR:
 					return "Unknown shader error";
-				default :
+				default:
 					return "Unrecognized error";
 			}
 		}
@@ -83,15 +86,15 @@ export namespace synodic::soul::shader
 		Severity severity;
 		std::string message;
 		std::string filePath;
-		int line {0};
-		int column {0};
+		int line{0};
+		int column{0};
 	};
 
 	struct CompilationResult
 	{
 		std::vector<std::byte> spirvCode;
 		std::vector<ShaderDiagnostic> diagnostics;
-		bool hasErrors {false};
+		bool hasErrors{false};
 	};
 
 }

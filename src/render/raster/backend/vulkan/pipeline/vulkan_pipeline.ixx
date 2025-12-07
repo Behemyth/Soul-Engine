@@ -13,14 +13,20 @@ import std;
 // Vertex format for pipeline creation
 export enum class VertexFormat {
 	None,       // No vertex input (shader generates vertices)
-	Legacy,     // Old VertexLayout format (position, normal, texcoord, velocity, object)
 	PBR,        // PBRVertex format (position, normal, tangent, texcoord) - 48 bytes
+	Custom,     // Use custom vertex attributes from reflection or explicit config
+};
+
+// Custom vertex attribute for reflection-based or explicit configuration
+export struct VertexAttribute {
+	std::uint32_t location = 0;
+	std::uint32_t offset = 0;
+	vk::Format format = vk::Format::eR32G32B32A32Sfloat;
 };
 
 // Pipeline configuration options
 export struct VulkanPipelineConfig {
 	VertexFormat vertexFormat = VertexFormat::None;
-	bool useVertexInput = false;          // Deprecated: use vertexFormat instead
 	vk::PrimitiveTopology topology = vk::PrimitiveTopology::eTriangleList;
 	vk::PolygonMode polygonMode = vk::PolygonMode::eFill;
 	vk::CullModeFlags cullMode = vk::CullModeFlagBits::eBack;
@@ -63,8 +69,31 @@ export struct VulkanPipelineConfig {
 		config.depthWrite = true;
 		config.depthOnly = true;
 		config.depthCompareOp = vk::CompareOp::eLess;
-		// Depth pre-pass only needs MVP (64 bytes), but we use full 128 for consistency
 		config.layoutConfig = PipelineLayoutConfig::WithTransformPushConstants();
+		return config;
+	}
+	
+	// Custom vertex layout (used when vertexFormat == Custom)
+	std::vector<VertexAttribute> customVertexAttributes;
+	std::uint32_t customVertexStride = 0;
+	
+	// Helper for custom vertex format from explicit attributes
+	static VulkanPipelineConfig WithCustomVertexFormat(
+		std::vector<VertexAttribute> attributes,
+		std::uint32_t stride,
+		vk::DescriptorSetLayout descriptorLayout = nullptr)
+	{
+		VulkanPipelineConfig config;
+		config.vertexFormat = VertexFormat::Custom;
+		config.customVertexAttributes = std::move(attributes);
+		config.customVertexStride = stride;
+		config.depthTest = true;
+		config.depthWrite = true;
+		auto layoutCfg = PipelineLayoutConfig::WithTransformPushConstants();
+		if (descriptorLayout) {
+			layoutCfg.descriptorSetLayouts.push_back(descriptorLayout);
+		}
+		config.layoutConfig = std::move(layoutCfg);
 		return config;
 	}
 };

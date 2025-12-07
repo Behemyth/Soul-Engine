@@ -1,5 +1,8 @@
 # Shader compilation using Slang
 # This module provides functions to compile Slang shaders to SPIR-V at build time
+#
+# Reflection is handled at runtime via SlangReflection in slang_reflection.ixx
+# which uses Slang's actual reflection API for accurate type information.
 
 # Find slangc compiler from Vulkan SDK
 function(find_slang_compiler)

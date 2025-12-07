@@ -27,57 +27,58 @@ export namespace synodic::soul::shader
 	{
 		switch (stage)
 		{
-			case ShaderStage::VERTEX :
+			case ShaderStage::VERTEX:
 				return "vertex";
-			case ShaderStage::TESSELLATION_CONTROL :
+			case ShaderStage::TESSELLATION_CONTROL:
 				return "hull";
-			case ShaderStage::TESSELLATION_EVALUATION :
+			case ShaderStage::TESSELLATION_EVALUATION:
 				return "domain";
-			case ShaderStage::GEOMETRY :
+			case ShaderStage::GEOMETRY:
 				return "geometry";
-			case ShaderStage::FRAGMENT :
+			case ShaderStage::FRAGMENT:
 				return "fragment";
-			case ShaderStage::COMPUTE :
+			case ShaderStage::COMPUTE:
 				return "compute";
-			case ShaderStage::RAY_GEN :
+			case ShaderStage::RAY_GEN:
 				return "raygeneration";
-			case ShaderStage::ANY_HIT :
+			case ShaderStage::ANY_HIT:
 				return "anyhit";
-			case ShaderStage::CLOSEST_HIT :
+			case ShaderStage::CLOSEST_HIT:
 				return "closesthit";
-			case ShaderStage::MISS :
+			case ShaderStage::MISS:
 				return "miss";
-			case ShaderStage::INTERSECTION :
+			case ShaderStage::INTERSECTION:
 				return "intersection";
-			case ShaderStage::CALLABLE :
+			case ShaderStage::CALLABLE:
 				return "callable";
-			case ShaderStage::TASK :
+			case ShaderStage::TASK:
 				return "task";
-			case ShaderStage::MESH :
+			case ShaderStage::MESH:
 				return "mesh";
-			default :
+			default:
 				return "unknown";
 		}
 	}
+
+	// Shader source formats supported by backends
 	enum class ShaderSourceFormat
 	{
 		GLSL,
 		HLSL,
-		SLANG
+		SLANG,
+		SPIRV  // Pre-compiled SPIR-V
 	};
 
-	/**
-	 * TODO: Replace with something thought out
-	 */
+	// Compile options for shader compilation (backend-agnostic)
 	struct ShaderCompileOptions
 	{
 		ShaderStage stage;
-		ShaderSourceFormat sourceFormat {ShaderSourceFormat::SLANG};
-		std::string entryPoint {"main"};
+		ShaderSourceFormat sourceFormat{ShaderSourceFormat::SLANG};
+		std::string entryPoint{"main"};
 		std::vector<std::string> defines;
 		std::vector<std::filesystem::path> includePaths;
-		int optimizationLevel {2};
-		bool generateDebugInfo {false};
+		int optimizationLevel{2};
+		bool generateDebugInfo{false};
 	};
 
 }

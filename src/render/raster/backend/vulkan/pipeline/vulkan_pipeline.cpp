@@ -2,11 +2,17 @@ module synodic.soul.raster.backend.vulkan;
 
 // PBR vertex layout constants - matches synodic.soul.render.mesh:vertex
 // position(vec3) + normal(vec3) + tangent(vec4) + texcoord(vec2) = 48 bytes
-constexpr std::uint32_t PBRVertexStride = 48;
-constexpr std::uint32_t PBRPositionOffset = 0;
-constexpr std::uint32_t PBRNormalOffset = 12;
-constexpr std::uint32_t PBRTangentOffset = 24;
-constexpr std::uint32_t PBRTexCoordOffset = 40;
+namespace PBRLayout {
+	constexpr std::uint32_t Stride = 48;
+	constexpr std::uint32_t PositionLocation = 0;
+	constexpr std::uint32_t NormalLocation = 1;
+	constexpr std::uint32_t TangentLocation = 2;
+	constexpr std::uint32_t TexCoordLocation = 3;
+	constexpr std::uint32_t PositionOffset = 0;
+	constexpr std::uint32_t NormalOffset = 12;
+	constexpr std::uint32_t TangentOffset = 24;
+	constexpr std::uint32_t TexCoordOffset = 40;
+}
 
 VulkanPipeline::VulkanPipeline(const vk::Device& device,
 	const std::span<VulkanShader> shaders,
@@ -52,34 +58,54 @@ void VulkanPipeline::CreatePipeline(std::span<VulkanShader> shaders,
 	if (config.vertexFormat == VertexFormat::PBR) {
 		// PBR vertex format: position, normal, tangent, texcoord
 		bindingDescription.binding = 0;
-		bindingDescription.stride = PBRVertexStride;
+		bindingDescription.stride = PBRLayout::Stride;
 		bindingDescription.inputRate = vk::VertexInputRate::eVertex;
 
 		attributeDescriptions.resize(4);
 
 		// Position - location 0
 		attributeDescriptions[0].binding = 0;
-		attributeDescriptions[0].location = 0;
+		attributeDescriptions[0].location = PBRLayout::PositionLocation;
 		attributeDescriptions[0].format = vk::Format::eR32G32B32Sfloat;
-		attributeDescriptions[0].offset = PBRPositionOffset;
+		attributeDescriptions[0].offset = PBRLayout::PositionOffset;
 
 		// Normal - location 1
 		attributeDescriptions[1].binding = 0;
-		attributeDescriptions[1].location = 1;
+		attributeDescriptions[1].location = PBRLayout::NormalLocation;
 		attributeDescriptions[1].format = vk::Format::eR32G32B32Sfloat;
-		attributeDescriptions[1].offset = PBRNormalOffset;
+		attributeDescriptions[1].offset = PBRLayout::NormalOffset;
 
 		// Tangent - location 2 (vec4 for handedness)
 		attributeDescriptions[2].binding = 0;
-		attributeDescriptions[2].location = 2;
+		attributeDescriptions[2].location = PBRLayout::TangentLocation;
 		attributeDescriptions[2].format = vk::Format::eR32G32B32A32Sfloat;
-		attributeDescriptions[2].offset = PBRTangentOffset;
+		attributeDescriptions[2].offset = PBRLayout::TangentOffset;
 
 		// TexCoord - location 3
 		attributeDescriptions[3].binding = 0;
-		attributeDescriptions[3].location = 3;
+		attributeDescriptions[3].location = PBRLayout::TexCoordLocation;
 		attributeDescriptions[3].format = vk::Format::eR32G32Sfloat;
-		attributeDescriptions[3].offset = PBRTexCoordOffset;
+		attributeDescriptions[3].offset = PBRLayout::TexCoordOffset;
+
+		vertexInputInfo.vertexBindingDescriptionCount = 1;
+		vertexInputInfo.vertexAttributeDescriptionCount = static_cast<std::uint32_t>(attributeDescriptions.size());
+		vertexInputInfo.pVertexBindingDescriptions = &bindingDescription;
+		vertexInputInfo.pVertexAttributeDescriptions = attributeDescriptions.data();
+	} else if (config.vertexFormat == VertexFormat::Custom && !config.customVertexAttributes.empty()) {
+		// Custom vertex format from reflection or explicit configuration
+		bindingDescription.binding = 0;
+		bindingDescription.stride = config.customVertexStride;
+		bindingDescription.inputRate = vk::VertexInputRate::eVertex;
+
+		attributeDescriptions.reserve(config.customVertexAttributes.size());
+		for (const auto& attr : config.customVertexAttributes) {
+			vk::VertexInputAttributeDescription desc;
+			desc.binding = 0;
+			desc.location = attr.location;
+			desc.format = attr.format;
+			desc.offset = attr.offset;
+			attributeDescriptions.push_back(desc);
+		}
 
 		vertexInputInfo.vertexBindingDescriptionCount = 1;
 		vertexInputInfo.vertexAttributeDescriptionCount = static_cast<std::uint32_t>(attributeDescriptions.size());

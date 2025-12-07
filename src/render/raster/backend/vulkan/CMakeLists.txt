@@ -27,6 +27,7 @@ target_sources(soul-engine
 			descriptor/vulkan_descriptor_pool.ixx
 			descriptor/vulkan_descriptor_set_layout.ixx
 			descriptor/vulkan_descriptor_set.ixx
+			shader/vulkan_shader_reflection_utils.ixx
 	PRIVATE
 		vulkan_allocator.cpp
 		buffer/vulkan_buffer.cpp

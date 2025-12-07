@@ -1,5 +1,7 @@
 
 
+
+
 ##############################################
 #Resource
 
@@ -9,6 +11,8 @@ target_sources(soul-engine
 			resource.ixx
 )
 
-add_subdirectory(modules/shader)
+add_subdirectory(shader)
 add_subdirectory(mesh)
+
+
 
