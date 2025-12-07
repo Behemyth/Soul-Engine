@@ -10,6 +10,10 @@ using namespace synodic::soul::mesh;
 
 namespace
 {
+	// PBR layout constants (must match gltf_loader)
+	constexpr std::size_t PBR_FLOATS_PER_VERTEX = 12;
+	constexpr std::size_t PBR_POSITION_OFFSET = 0;
+
 	// Helper to create minimal valid GLB data
 	auto CreateMinimalGLB(std::string_view json) -> std::vector<std::byte>
 	{
@@ -146,15 +150,18 @@ namespace
 				{
 					const auto& mesh = result->data;
 
-					// Box should have vertices and indices
-					requirements.Expect(!mesh.vertices.empty());
+					// Box should have vertex data and indices
+					requirements.Expect(!mesh.vertexData.empty());
 					requirements.Expect(!mesh.indices.empty());
 					requirements.Expect(mesh.IsValid());
+					requirements.Expect(mesh.vertexCount > 0);
 
-					// Verify bounds are computed
-					requirements.Expect(result->bounds.min.x <= result->bounds.max.x);
-					requirements.Expect(result->bounds.min.y <= result->bounds.max.y);
-					requirements.Expect(result->bounds.min.z <= result->bounds.max.z);
+				// Verify bounds are computed
+					auto boundsMin = result->bounds.Min();
+					auto boundsMax = result->bounds.Max();
+					requirements.Expect(boundsMin.x <= boundsMax.x);
+					requirements.Expect(boundsMin.y <= boundsMax.y);
+					requirements.Expect(boundsMin.z <= boundsMax.z);
 				}
 			};
 
@@ -196,14 +203,15 @@ namespace
 				options2.scale = 2.0f;
 				auto result2   = LoadMesh(boxPath, options2);
 
-				if (result1 && result2 && !result1->data.vertices.empty())
+				if (result1 && result2 && result1->data.vertexCount > 0)
 				{
-					// Scaled mesh should have positions 2x larger
-					const float pos1 = result1->data.vertices[0].position.x;
-					const float pos2 = result2->data.vertices[0].position.x;
+				// Get first vertex's X position from raw float buffer
+				const float pos1 = result1->data.vertexData[PBR_POSITION_OFFSET];
+				const float pos2 = result2->data.vertexData[PBR_POSITION_OFFSET];
 
-					// Allow small epsilon for floating point
-					requirements.Expect(std::abs(pos2 - pos1 * 2.0f) < 0.001f);
+				// Scaled mesh should have positions 2x larger
+				// Allow small epsilon for floating point
+				requirements.Expect(std::abs(pos2 - pos1 * 2.0f) < 0.001f);
 				}
 			};
 		});

@@ -1,4 +1,5 @@
 import std;
+import synodic.library;
 import synodic.soul.core;
 import synodic.soul.engine;
 import synodic.soul.scheduler;
@@ -15,7 +16,7 @@ import synodic.soul.render.material;
 import synodic.soul.compute.backend.mock;
 import synodic.soul.scheduler.backend.passthrough;
 import synodic.soul.backend.sdl;
-import synodic.soul.transput;  // GLTF mesh loading
+import synodic.soul.transput; // GLTF mesh loading
 
 using SampleApp = synodic::soul::App<
 	PassthroughSchedulerBackend,
@@ -34,11 +35,7 @@ public:
 		SDLInputBackend inputBackend,
 		SDLWindowBackend windowBackend,
 		PassthroughSchedulerBackend& schedulerBackend) :
-		SampleApp(
-			params,
-			std::move(inputBackend),
-			std::move(windowBackend),
-			VulkanRasterBackend(schedulerBackend))
+		SampleApp(params, std::move(inputBackend), std::move(windowBackend), VulkanRasterBackend(schedulerBackend))
 	{
 	}
 
@@ -71,7 +68,7 @@ protected:
 						static_cast<NativeSurfaceHandle>(vkSurface),
 						{winParams.pixelSize.x, winParams.pixelSize.y});
 
-					surfaceSize_ = {winParams.pixelSize.x, winParams.pixelSize.y};
+					surfaceSize_	 = {winParams.pixelSize.x, winParams.pixelSize.y};
 					hasValidSurface_ = true;
 				}
 			}
@@ -79,7 +76,7 @@ protected:
 
 		// Load mesh from GLTF file, fallback to procedural cube
 		const std::filesystem::path meshPath = "resources/assets/box/box.glb";
-		auto loadResult = synodic::soul::gltf::LoadMesh(meshPath);
+		auto loadResult						 = synodic::soul::gltf::LoadMesh(meshPath);
 		if (loadResult)
 		{
 			cubeMeshData_ = std::move(loadResult->data);
@@ -95,75 +92,82 @@ protected:
 		cubeGPUMesh_ = meshUploader_->UploadMesh(cubeMeshData_);
 
 		// Create PBR material for the cube (bright red for debugging)
-		cubeMaterial_ = PBRMaterialData{};  // Start fresh
+		cubeMaterial_			 = PBRMaterialData {};	// Start fresh
 		cubeMaterial_.baseColorR = 1.0f;
 		cubeMaterial_.baseColorG = 0.2f;
 		cubeMaterial_.baseColorB = 0.2f;
 		cubeMaterial_.baseColorA = 1.0f;
-		cubeMaterial_.metallic = 0.0f;  // Dielectric for simpler shading
-		cubeMaterial_.roughness = 0.5f;
-		cubeMaterial_.ao = 1.0f;
+		cubeMaterial_.metallic	 = 0.0f;  // Dielectric for simpler shading
+		cubeMaterial_.roughness	 = 0.5f;
+		cubeMaterial_.ao		 = 1.0f;
 
 		// Set up camera
 		cameraPosition_ = {0.0f, 1.5f, 3.0f};
-		cameraTarget_ = {0.0f, 0.0f, 0.0f};
+		cameraTarget_	= {0.0f, 0.0f, 0.0f};
 
 		// Calculate view and projection matrices
 		float aspectRatio = static_cast<float>(surfaceSize_.x) / static_cast<float>(surfaceSize_.y);
-		viewMatrix_ = mat4::LookAt(
-			cameraPosition_.x, cameraPosition_.y, cameraPosition_.z,
-			cameraTarget_.x, cameraTarget_.y, cameraTarget_.z,
-			0.0f, 1.0f, 0.0f);
-		projectionMatrix_ = mat4::Perspective(
-			0.785398f,  // 45 degrees FOV
+		viewMatrix_		  = synodic::math::LookAt(
+			cameraPosition_,
+			cameraTarget_,
+			synodic::math::vec3{0.0f, 1.0f, 0.0f});
+		projectionMatrix_ = synodic::math::Perspective(
+			0.785398f,	// 45 degrees FOV
 			aspectRatio,
-			0.1f,       // Near plane
-			100.0f);    // Far plane
+			0.1f,  // Near plane
+			100.0f);  // Far plane
 
 		// Set up lighting
-		sceneLighting_.cameraPositionX = cameraPosition_.x;
-		sceneLighting_.cameraPositionY = cameraPosition_.y;
-		sceneLighting_.cameraPositionZ = cameraPosition_.z;
-		sceneLighting_.lightCount = 1;
-		sceneLighting_.ambientColorR = 0.2f;  // Increased ambient for visibility
-		sceneLighting_.ambientColorG = 0.2f;
-		sceneLighting_.ambientColorB = 0.2f;
+		sceneLighting_.cameraPositionX	= cameraPosition_.x;
+		sceneLighting_.cameraPositionY	= cameraPosition_.y;
+		sceneLighting_.cameraPositionZ	= cameraPosition_.z;
+		sceneLighting_.lightCount		= 1;
+		sceneLighting_.ambientColorR	= 0.2f;	 // Increased ambient for visibility
+		sceneLighting_.ambientColorG	= 0.2f;
+		sceneLighting_.ambientColorB	= 0.2f;
 		sceneLighting_.ambientIntensity = 1.0f;
 
 		// Main directional light
-		sceneLighting_.lights[0].type = LightType::Directional;
+		sceneLighting_.lights[0].type		= LightType::Directional;
 		sceneLighting_.lights[0].directionX = -0.5f;
 		sceneLighting_.lights[0].directionY = -1.0f;
 		sceneLighting_.lights[0].directionZ = -0.3f;
-		sceneLighting_.lights[0].colorR = 1.0f;
-		sceneLighting_.lights[0].colorG = 0.95f;
-		sceneLighting_.lights[0].colorB = 0.9f;
-		sceneLighting_.lights[0].intensity = 3.0f;
+		sceneLighting_.lights[0].colorR		= 1.0f;
+		sceneLighting_.lights[0].colorG		= 0.95f;
+		sceneLighting_.lights[0].colorB		= 0.9f;
+		sceneLighting_.lights[0].intensity	= 3.0f;
 
 		// Initialize orbit camera
-		orbitYaw_ = 0.0f;
-		orbitPitch_ = 0.3f;  // Slight downward angle
+		orbitYaw_	   = 0.0f;
+		orbitPitch_	   = 0.3f;	// Slight downward angle
 		orbitDistance_ = 4.0f;
-		lastMouseX_ = 0.0;
-		lastMouseY_ = 0.0;
-		isOrbiting_ = false;
+		lastMouseX_	   = 0.0;
+		lastMouseY_	   = 0.0;
+		isOrbiting_	   = false;
 
 		GetSoul().Input().AddMousePositionCallback(
 			[this](double x, double y)
 			{
-				if (isOrbiting_) {
+				if (isOrbiting_)
+				{
 					double deltaX = x - lastMouseX_;
 					double deltaY = y - lastMouseY_;
 
 					// Sensitivity
-					const float sensitivity = 0.005f;
-					orbitYaw_ -= static_cast<float>(deltaX) * sensitivity;
-					orbitPitch_ += static_cast<float>(deltaY) * sensitivity;
+					const float sensitivity	 = 0.005f;
+					orbitYaw_				-= static_cast<float>(deltaX) * sensitivity;
+					orbitPitch_				+= static_cast<float>(deltaY) * sensitivity;
 
 					// Clamp pitch to avoid gimbal lock
 					const float maxPitch = 1.5f;  // ~85 degrees
-					if (orbitPitch_ > maxPitch) orbitPitch_ = maxPitch;
-					if (orbitPitch_ < -maxPitch) orbitPitch_ = -maxPitch;
+					if (orbitPitch_ > maxPitch)
+					{
+						orbitPitch_ = maxPitch;
+					}
+					if (orbitPitch_ < -maxPitch)
+					{
+						orbitPitch_ = -maxPitch;
+					}
 				}
 				lastMouseX_ = x;
 				lastMouseY_ = y;
@@ -173,7 +177,8 @@ protected:
 			[this](std::uint32_t button, ButtonState state)
 			{
 				// Left mouse button for orbiting
-				if (button == 1) {
+				if (button == 1)
+				{
 					isOrbiting_ = (state == ButtonState::PRESS);
 				}
 			});
@@ -201,7 +206,8 @@ protected:
 	void OnShutdown() override
 	{
 		// Destroy GPU mesh before raster backend
-		if (meshUploader_.has_value() && cubeGPUMesh_.IsValid()) {
+		if (meshUploader_.has_value() && cubeGPUMesh_.IsValid())
+		{
 			meshUploader_->DestroyMesh(cubeGPUMesh_);
 		}
 		meshUploader_.reset();
@@ -226,13 +232,13 @@ private:
 		float camZ = orbitDistance_ * std::cos(orbitPitch_) * std::cos(orbitYaw_);
 
 		cameraPosition_ = {camX, camY, camZ};
-		cameraTarget_ = {0.0f, 0.0f, 0.0f};
+		cameraTarget_	= {0.0f, 0.0f, 0.0f};
 
 		// Update view matrix
-		viewMatrix_ = mat4::LookAt(
-			cameraPosition_.x, cameraPosition_.y, cameraPosition_.z,
-			cameraTarget_.x, cameraTarget_.y, cameraTarget_.z,
-			0.0f, 1.0f, 0.0f);
+		viewMatrix_ = synodic::math::LookAt(
+			cameraPosition_,
+			cameraTarget_,
+			synodic::math::vec3{0.0f, 1.0f, 0.0f});
 
 		// Update scene lighting camera position for specular
 		sceneLighting_.cameraPositionX = cameraPosition_.x;
@@ -240,11 +246,11 @@ private:
 		sceneLighting_.cameraPositionZ = cameraPosition_.z;
 
 		// Model matrix - static cube at origin
-		modelMatrix_ = mat4::Identity();
+		modelMatrix_ = synodic::math::Mat4<float>::identity();
 
 		// Compute MVP and push constant data
-		mat4 vp = projectionMatrix_ * viewMatrix_;
-		pushConstants_.mvp = vp * modelMatrix_;
+		synodic::math::mat4 vp = projectionMatrix_ * viewMatrix_;
+		pushConstants_.mvp	 = vp * modelMatrix_;
 		pushConstants_.model = modelMatrix_;
 	}
 
@@ -275,8 +281,12 @@ private:
 		// Pass 2: Main PBR Pass - renders color with depth testing
 
 		// Lambda to record cube draw commands
-		auto recordCubeDraw = [this](PassExecutionContext& ctx) {
-			if (!cubeGPUMesh_.IsValid()) return;
+		auto recordCubeDraw = [this](PassExecutionContext& ctx)
+		{
+			if (!cubeGPUMesh_.IsValid())
+			{
+				return;
+			}
 
 			// Set push constants (MVP + Model matrices)
 			ctx.commands.PushConstants(pushConstants_);
@@ -286,26 +296,26 @@ private:
 				cubeGPUMesh_.vertexBuffer,
 				cubeGPUMesh_.indexBuffer,
 				cubeGPUMesh_.indexCount,
-				true);  // 32-bit indices
+				true);	// 32-bit indices
 		};
 
 		// === Depth Pre-Pass ===
 		// Renders geometry to depth buffer only
 		// Benefits: Early-Z rejection, reduces overdraw in main pass
 		auto depthPrePass = RenderPassBuilder("DepthPrePass")
-			.DepthOutput(surfaceResource, ResourceUsage::DepthStencilWrite)
-			.ClearDepth(1.0f)                         // Far plane (reverse-Z would use 0.0f)
-			.Build();
+								.DepthOutput(surfaceResource, ResourceUsage::DepthStencilWrite)
+								.ClearDepth(1.0f)  // Far plane (reverse-Z would use 0.0f)
+								.Build();
 
 		renderGraph.AddPassWithCallback(std::move(depthPrePass), recordCubeDraw);
 
 		// === Main PBR Pass ===
 		// Renders color with PBR shading, reads depth from pre-pass
 		auto mainPass = RenderPassBuilder("MainPBRPass")
-			.ColorOutput(surfaceResource, ResourceUsage::Present)
-			.DepthInput(surfaceResource, ResourceUsage::DepthStencilRead)
-			.ClearColor(0.1f, 0.1f, 0.15f, 1.0f)      // Dark blue-gray background
-			.Build();
+							.ColorOutput(surfaceResource, ResourceUsage::Present)
+							.DepthInput(surfaceResource, ResourceUsage::DepthStencilRead)
+							.ClearColor(0.1f, 0.1f, 0.15f, 1.0f)  // Dark blue-gray background
+							.Build();
 
 		renderGraph.AddPassWithCallback(std::move(mainPass), recordCubeDraw);
 
@@ -324,8 +334,8 @@ private:
 
 	// Window/surface state
 	Entity surfaceEntity_;
-	uvec2 surfaceSize_ = {0, 0};
-	bool hasValidSurface_ = false;
+	synodic::math::uvec2 surfaceSize_ = {0, 0};
+	bool hasValidSurface_			  = false;
 
 	// Mesh data (CPU-side, ready for GPU upload)
 	MeshData cubeMeshData_;
@@ -341,21 +351,21 @@ private:
 	SceneLightingData sceneLighting_;
 
 	// Camera
-	vec3 cameraPosition_;
-	vec3 cameraTarget_;
+	synodic::math::vec3 cameraPosition_;
+	synodic::math::vec3 cameraTarget_;
 
 	// Orbit camera controls
-	float orbitYaw_ = 0.0f;
-	float orbitPitch_ = 0.3f;
+	float orbitYaw_		 = 0.0f;
+	float orbitPitch_	 = 0.3f;
 	float orbitDistance_ = 4.0f;
-	double lastMouseX_ = 0.0;
-	double lastMouseY_ = 0.0;
-	bool isOrbiting_ = false;
+	double lastMouseX_	 = 0.0;
+	double lastMouseY_	 = 0.0;
+	bool isOrbiting_	 = false;
 
 	// Transforms
-	mat4 modelMatrix_;
-	mat4 viewMatrix_;
-	mat4 projectionMatrix_;
+	synodic::math::mat4 modelMatrix_;
+	synodic::math::mat4 viewMatrix_;
+	synodic::math::mat4 projectionMatrix_;
 	PushConstantData pushConstants_;
 };
 

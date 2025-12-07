@@ -1,25 +1,12 @@
 module synodic.soul.raster.backend.vulkan;
 
-// Legacy vertex type - kept for backwards compatibility
-// TODO: Remove when all code uses PBRVertex
-struct LegacyVertexLayout {
-	struct { float x, y, z; } position;
-	struct { float x, y, z; } normal;
-	struct { float x, y; } textureCoord;
-	struct { float x, y, z; } velocity;
-	std::uint32_t object;
-};
-
-// PBR vertex layout - matches PBRVertex in synodic.soul.render.mesh:vertex
-// position (12) + normal (12) + tangent (16) + texcoord (8) = 48 bytes
-struct PBRVertexLayout {
-	struct { float x, y, z; } position;      // location 0
-	struct { float x, y, z; } normal;        // location 1
-	struct { float x, y, z, w; } tangent;    // location 2
-	struct { float x, y; } texCoord;         // location 3
-};
-
-static_assert(sizeof(PBRVertexLayout) == 48, "PBRVertexLayout must be 48 bytes");
+// PBR vertex layout constants - matches synodic.soul.render.mesh:vertex
+// position(vec3) + normal(vec3) + tangent(vec4) + texcoord(vec2) = 48 bytes
+constexpr std::uint32_t PBRVertexStride = 48;
+constexpr std::uint32_t PBRPositionOffset = 0;
+constexpr std::uint32_t PBRNormalOffset = 12;
+constexpr std::uint32_t PBRTangentOffset = 24;
+constexpr std::uint32_t PBRTexCoordOffset = 40;
 
 VulkanPipeline::VulkanPipeline(const vk::Device& device,
 	const std::span<VulkanShader> shaders,
@@ -27,12 +14,11 @@ VulkanPipeline::VulkanPipeline(const vk::Device& device,
 	const std::uint32_t subPassIndex):
 	device_(device),
 	pipelineCache_(device_),
-	pipelineLayout_(device_)  // Empty layout for legacy
+	pipelineLayout_(device_)
 {
-	// Default config with legacy vertex input enabled
+	// Default config with PBR vertex input
 	VulkanPipelineConfig config;
-	config.vertexFormat = VertexFormat::Legacy;
-	config.useVertexInput = true;
+	config.vertexFormat = VertexFormat::PBR;
 	config.depthTest = true;
 	config.depthWrite = true;
 	CreatePipeline(shaders, renderPass, subPassIndex, config);
@@ -63,67 +49,42 @@ void VulkanPipeline::CreatePipeline(std::span<VulkanShader> shaders,
 
 	vk::PipelineVertexInputStateCreateInfo vertexInputInfo;
 
-	// Determine effective vertex format
-	VertexFormat effectiveFormat = config.vertexFormat;
-	if (effectiveFormat == VertexFormat::None && config.useVertexInput) {
-		effectiveFormat = VertexFormat::Legacy;  // Backwards compatibility
-	}
-
-	if (effectiveFormat == VertexFormat::PBR) {
+	if (config.vertexFormat == VertexFormat::PBR) {
 		// PBR vertex format: position, normal, tangent, texcoord
-		// Layout: position(12) + normal(12) + tangent(16) + texcoord(8) = 48 bytes
 		bindingDescription.binding = 0;
-		bindingDescription.stride = sizeof(PBRVertexLayout);  // 48 bytes
+		bindingDescription.stride = PBRVertexStride;
 		bindingDescription.inputRate = vk::VertexInputRate::eVertex;
 
 		attributeDescriptions.resize(4);
 
-		// Position - location 0, offset 0
+		// Position - location 0
 		attributeDescriptions[0].binding = 0;
 		attributeDescriptions[0].location = 0;
 		attributeDescriptions[0].format = vk::Format::eR32G32B32Sfloat;
-		attributeDescriptions[0].offset = 0;
+		attributeDescriptions[0].offset = PBRPositionOffset;
 
-		// Normal - location 1, offset 12
+		// Normal - location 1
 		attributeDescriptions[1].binding = 0;
 		attributeDescriptions[1].location = 1;
 		attributeDescriptions[1].format = vk::Format::eR32G32B32Sfloat;
-		attributeDescriptions[1].offset = 12;
+		attributeDescriptions[1].offset = PBRNormalOffset;
 
-		// Tangent - location 2, offset 24 (vec4 for handedness)
+		// Tangent - location 2 (vec4 for handedness)
 		attributeDescriptions[2].binding = 0;
 		attributeDescriptions[2].location = 2;
 		attributeDescriptions[2].format = vk::Format::eR32G32B32A32Sfloat;
-		attributeDescriptions[2].offset = 24;
+		attributeDescriptions[2].offset = PBRTangentOffset;
 
-		// TexCoord - location 3, offset 40
+		// TexCoord - location 3
 		attributeDescriptions[3].binding = 0;
 		attributeDescriptions[3].location = 3;
 		attributeDescriptions[3].format = vk::Format::eR32G32Sfloat;
-		attributeDescriptions[3].offset = 40;
+		attributeDescriptions[3].offset = PBRTexCoordOffset;
 
 		vertexInputInfo.vertexBindingDescriptionCount = 1;
 		vertexInputInfo.vertexAttributeDescriptionCount = static_cast<std::uint32_t>(attributeDescriptions.size());
 		vertexInputInfo.pVertexBindingDescriptions = &bindingDescription;
 		vertexInputInfo.pVertexAttributeDescriptions = attributeDescriptions.data();
-
-	} else if (effectiveFormat == VertexFormat::Legacy) {
-		// Legacy vertex format: position only (for backwards compatibility)
-		bindingDescription.binding = 0;
-		bindingDescription.stride = sizeof(LegacyVertexLayout);
-		bindingDescription.inputRate = vk::VertexInputRate::eVertex;
-
-		attributeDescriptions.resize(1);
-		attributeDescriptions[0].binding = 0;
-		attributeDescriptions[0].location = 0;
-		attributeDescriptions[0].format = vk::Format::eR32G32B32Sfloat;
-		attributeDescriptions[0].offset = 0;
-
-		vertexInputInfo.vertexBindingDescriptionCount = 1;
-		vertexInputInfo.vertexAttributeDescriptionCount = static_cast<std::uint32_t>(attributeDescriptions.size());
-		vertexInputInfo.pVertexBindingDescriptions = &bindingDescription;
-		vertexInputInfo.pVertexAttributeDescriptions = attributeDescriptions.data();
-
 	} else {
 		// No vertex input - shader uses SV_VertexID with hardcoded vertices
 		vertexInputInfo.vertexBindingDescriptionCount = 0;

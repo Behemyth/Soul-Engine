@@ -1,6 +1,7 @@
 export module synodic.soul.raster;
 
 import std;
+import synodic.library;
 
 import synodic.soul.core;
 
@@ -88,8 +89,8 @@ public:
 	virtual void CreatePassInput(Entity, Entity, Format)  = 0;
 	virtual void CreatePassOutput(Entity, Entity, Format) = 0;
 
-	virtual Entity CreateSurface(NativeSurfaceHandle, uvec2) = 0;
-	virtual void UpdateSurface(Entity, uvec2)	  = 0;
+	virtual Entity CreateSurface(NativeSurfaceHandle, synodic::math::uvec2) = 0;
+	virtual void UpdateSurface(Entity, synodic::math::uvec2)	  = 0;
 	virtual void RemoveSurface(Entity)			  = 0;
 	virtual void AttachSurface(Entity, Entity)	  = 0;
 	virtual void DetachSurface(Entity, Entity)	  = 0;

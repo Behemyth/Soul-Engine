@@ -1,17 +1,23 @@
 export module synodic.soul.render.mesh:mesh;
 
 import std;
+import synodic.library;
 import synodic.soul.core;
 import synodic.soul.raster;  // For GPUBufferHandle
 import :vertex;
 
-// CPU-side mesh data - owns vertex and index data before GPU upload
+// Use synodic library's AABB with min/max storage
+export using AABB = synodic::math::AABB<synodic::math::AABBMinMax<float>>;
+
+// CPU-side mesh data - raw interleaved vertex buffer with layout metadata
 export struct MeshData {
-	std::vector<PBRVertex> vertices;
+	std::vector<float> vertexData;    // Raw interleaved vertex attributes
 	std::vector<Index> indices;
+	VertexLayout layout;              // Describes how to interpret vertexData
+	std::uint32_t vertexCount = 0;
 
 	[[nodiscard]] std::size_t VertexBufferSize() const noexcept {
-		return vertices.size() * sizeof(PBRVertex);
+		return vertexData.size() * sizeof(float);
 	}
 
 	[[nodiscard]] std::size_t IndexBufferSize() const noexcept {
@@ -23,43 +29,33 @@ export struct MeshData {
 	}
 
 	[[nodiscard]] bool IsValid() const noexcept {
-		return !vertices.empty() && !indices.empty();
+		return !vertexData.empty() && !indices.empty() && vertexCount > 0;
 	}
 
-	// Compute tangents for all triangles
+	// Get pointer to a specific vertex's data
+	[[nodiscard]] const float* VertexAt(std::size_t index) const noexcept {
+		return vertexData.data() + (index * layout.stride / sizeof(float));
+	}
+
+	[[nodiscard]] float* VertexAt(std::size_t index) noexcept {
+		return vertexData.data() + (index * layout.stride / sizeof(float));
+	}
+
+	// Reserve space for N vertices with the current layout
+	void Reserve(std::size_t count) {
+		vertexData.reserve(count * layout.stride / sizeof(float));
+		vertexCount = 0;
+	}
+
+	// Resize to hold exactly N vertices
+	void Resize(std::size_t count) {
+		vertexData.resize(count * layout.stride / sizeof(float));
+		vertexCount = static_cast<std::uint32_t>(count);
+	}
+
+	// TODO: Implement ComputeTangents
 	void ComputeTangents() {
-		for (std::size_t i = 0; i + 2 < indices.size(); i += 3) {
-			ComputeTangent(
-				vertices[indices[i]],
-				vertices[indices[i + 1]],
-				vertices[indices[i + 2]]);
-		}
-	}
-};
-
-// Axis-aligned bounding box
-export struct AABB {
-	vec3 min{std::numeric_limits<float>::max(), std::numeric_limits<float>::max(), std::numeric_limits<float>::max()};
-	vec3 max{std::numeric_limits<float>::lowest(), std::numeric_limits<float>::lowest(), std::numeric_limits<float>::lowest()};
-
-	constexpr AABB() = default;
-	constexpr AABB(vec3 min_, vec3 max_) : min(min_), max(max_) {}
-
-	[[nodiscard]] constexpr vec3 Center() const {
-		return (min + max) * 0.5f;
-	}
-
-	[[nodiscard]] constexpr vec3 Extents() const {
-		return (max - min) * 0.5f;
-	}
-
-	void Expand(const vec3& point) {
-		min.x = std::min(min.x, point.x);
-		min.y = std::min(min.y, point.y);
-		min.z = std::min(min.z, point.z);
-		max.x = std::max(max.x, point.x);
-		max.y = std::max(max.y, point.y);
-		max.z = std::max(max.z, point.z);
+		// Placeholder - requires knowing attribute offsets from layout
 	}
 };
 
@@ -69,6 +65,7 @@ export struct GPUMesh {
 	GPUBufferHandle indexBuffer = 0;    // Handle to GPU index buffer
 	std::uint32_t indexCount = 0;
 	std::uint32_t vertexCount = 0;
+	VertexLayout layout;                // Layout for pipeline binding
 	AABB bounds;
 
 	[[nodiscard]] bool IsValid() const noexcept {
@@ -98,11 +95,14 @@ export struct Mesh {
 	}
 };
 
-// Compute AABB from mesh data
+// Compute AABB from mesh data (assumes position is first attribute, vec3)
 export inline AABB ComputeAABB(const MeshData& data) {
-	AABB bounds;
-	for (const auto& vertex : data.vertices) {
-		bounds.Expand(vertex.position);
+	AABB bounds = AABB::Empty();
+	const std::size_t floatsPerVertex = data.layout.stride / sizeof(float);
+
+	for (std::uint32_t i = 0; i < data.vertexCount; ++i) {
+		const float* vertex = data.vertexData.data() + (i * floatsPerVertex);
+		bounds = synodic::math::Expand(bounds, synodic::math::vec3{vertex[0], vertex[1], vertex[2]});
 	}
 	return bounds;
 }

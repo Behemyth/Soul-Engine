@@ -1,6 +1,7 @@
 export module synodic.soul.engine:core.geometry;
 
 import std;
+import synodic.library;
 import synodic.soul.core;
 
 export class Vertex : Component
@@ -11,11 +12,10 @@ public:
 	Vertex() = default;
 	~Vertex() = default;
 
-	// TODO: Replace with proper vector types (glm removed)
-	struct { float x, y, z; } position;
-	struct { float x, y, z; } normal;
-	struct { float x, y; } textureCoord;
-	struct { float x, y, z; } velocity;
+	synodic::math::vec3 position;
+	synodic::math::vec3 normal;
+	synodic::math::vec2 textureCoord;
+	synodic::math::vec3 velocity;
 
 	std::uint32_t object;
 
@@ -28,9 +28,8 @@ public:
 	GUIVertex() = default;
 	~GUIVertex() = default;
 
-	// TODO: Replace with proper vector types (glm removed)
-	struct { float x, y; } position;
-	struct { float x, y; } textureCoord;
+	synodic::math::vec2 position;
+	synodic::math::vec2 textureCoord;
 	std::uint32_t colour;
 
 };
@@ -43,8 +42,7 @@ public:
 	Face() = default;
 	~Face() = default;
 
-	// TODO: Replace with proper vector types (glm removed)
-	struct { std::uint32_t x, y, z; } indices;
+	synodic::math::uvec3 indices;
 	std::uint32_t material; //TODO investigate materials
 };
 
@@ -56,9 +54,8 @@ public:
 	BoundingBox() = default;
 	~BoundingBox() = default;
 
-	// TODO: Replace with proper vector types (glm removed)
-	struct { float x, y, z; } min;
-	struct { float x, y, z; } max;
+	synodic::math::vec3 min;
+	synodic::math::vec3 max;
 
 };
 
@@ -70,8 +67,7 @@ public:
 	Tet() = default;
 	~Tet() = default;
 
-	// TODO: Replace with proper vector types (glm removed)
-	struct { std::uint32_t x, y, z, w; } indices;
+	synodic::math::uvec4 indices;
 	std::uint32_t material;
 	std::uint32_t object;
 

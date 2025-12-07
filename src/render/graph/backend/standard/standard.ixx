@@ -4,6 +4,7 @@ import synodic.soul.render.graph;
 import synodic.soul.raster;
 import synodic.soul.core;
 import synodic.soul.scheduler;
+import synodic.library;
 import std;
 
 // Execution context for pass callbacks
@@ -11,7 +12,7 @@ export struct PassExecutionContext {
 	const EntityRegistry& entities;
 	CommandList& commands;
 	ResourceHandle surfaceTarget = InvalidResourceHandle;
-	uvec2 renderArea = {0, 0};
+	synodic::math::uvec2 renderArea = {0, 0};
 };
 
 // Standard render graph backend implementation
@@ -65,7 +66,7 @@ public:
 	}
 
 	// Compile and execute the frame graph for a surface
-	void Execute(Entity surfaceEntity, uvec2 surfaceSize) {
+	void Execute(Entity surfaceEntity, synodic::math::uvec2 surfaceSize) {
 		if (!rasterModule_) {
 			return;
 		}
@@ -147,7 +148,7 @@ private:
 	void ExecuteRenderPass(
 		std::uint32_t passIndex,
 		Entity surfaceEntity,
-		uvec2 surfaceSize,
+		synodic::math::uvec2 surfaceSize,
 		CommandList& commandList,
 		PassExecutionFlags flags) {
 

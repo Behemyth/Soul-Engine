@@ -159,6 +159,7 @@ export struct MeshUploadResult {
 	GPUBufferHandle indexBuffer = 0;
 	std::uint32_t vertexCount = 0;
 	std::uint32_t indexCount = 0;
+	VertexLayout layout;
 	AABB bounds;
 
 	[[nodiscard]] bool IsValid() const noexcept {
@@ -167,13 +168,14 @@ export struct MeshUploadResult {
 
 	// Convert to GPUMesh
 	[[nodiscard]] GPUMesh ToGPUMesh() const {
-		return GPUMesh{
-			vertexBuffer,
-			indexBuffer,
-			indexCount,
-			vertexCount,
-			bounds
-		};
+		GPUMesh mesh;
+		mesh.vertexBuffer = vertexBuffer;
+		mesh.indexBuffer = indexBuffer;
+		mesh.indexCount = indexCount;
+		mesh.vertexCount = vertexCount;
+		mesh.layout = layout;
+		mesh.bounds = bounds;
+		return mesh;
 	}
 };
 
@@ -221,8 +223,9 @@ public:
 		}
 		
 		MeshUploadResult result;
-		result.vertexCount = static_cast<std::uint32_t>(meshData.vertices.size());
+		result.vertexCount = meshData.vertexCount;
 		result.indexCount = static_cast<std::uint32_t>(meshData.indices.size());
+		result.layout = meshData.layout;
 		result.bounds = ComputeAABB(meshData);
 		
 		// Create vertex buffer (device-local)
@@ -250,7 +253,7 @@ public:
 		
 		// Upload vertex data
 		raster_.UploadBufferData(result.vertexBuffer, 
-			meshData.vertices.data(), meshData.VertexBufferSize());
+			meshData.vertexData.data(), meshData.VertexBufferSize());
 		
 		// Upload index data
 		raster_.UploadBufferData(result.indexBuffer,

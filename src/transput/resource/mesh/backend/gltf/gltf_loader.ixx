@@ -11,6 +11,13 @@ import :gltf_types;
 
 export namespace synodic::soul::gltf
 {
+	// PBR vertex layout offsets (in floats, not bytes)
+	// Layout: position(3) + normal(3) + tangent(4) + texcoord(2) = 12 floats = 48 bytes
+	constexpr std::size_t PBR_POSITION_OFFSET = 0;   // floats 0-2
+	constexpr std::size_t PBR_NORMAL_OFFSET = 3;     // floats 3-5
+	constexpr std::size_t PBR_TANGENT_OFFSET = 6;    // floats 6-9
+	constexpr std::size_t PBR_TEXCOORD_OFFSET = 10;  // floats 10-11
+	constexpr std::size_t PBR_FLOATS_PER_VERTEX = 12;
 
 	// GLTF Mesh Loader Backend
 	// Supports both .gltf (JSON + external/embedded buffers) and .glb (binary container)
@@ -189,20 +196,20 @@ export namespace synodic::soul::gltf
 				return std::unexpected(mesh::MakeErrorCode(mesh::MeshErrorCode::EmptyMesh));
 			}
 
-			const auto& mesh = (*doc.meshes)[0];
-			if (mesh.primitives.empty())
+			const auto& gltfMesh = (*doc.meshes)[0];
+			if (gltfMesh.primitives.empty())
 			{
 				return std::unexpected(mesh::MakeErrorCode(mesh::MeshErrorCode::EmptyMesh));
 			}
 
 			// Load first primitive (future: support multiple primitives as submeshes)
-			const auto& primitive = mesh.primitives[0];
+			const auto& primitive = gltfMesh.primitives[0];
 			if (primitive.mode != PrimitiveMode::Triangles)
 			{
 				return std::unexpected(mesh::MakeErrorCode(mesh::MeshErrorCode::UnsupportedPrimitiveMode));
 			}
 
-			return LoadPrimitive(doc, primitive, bufferData, options, mesh.name.value_or(""));
+			return LoadPrimitive(doc, primitive, bufferData, options, gltfMesh.name.value_or(""));
 		}
 
 		// Load buffer data from GLB binary chunk or embedded base64 URIs
@@ -322,7 +329,7 @@ export namespace synodic::soul::gltf
 			return decoded;
 		}
 
-		// Load a single primitive into MeshData
+		// Load a single primitive into MeshData with raw float storage
 		[[nodiscard]] mesh::MeshResult<mesh::LoadedMesh> LoadPrimitive(
 			const Document& doc,
 			const Primitive& primitive,
@@ -349,12 +356,13 @@ export namespace synodic::soul::gltf
 			const auto& posAccessor = (*doc.accessors)[posAccessorIndex];
 			const std::size_t vertexCount = posAccessor.count;
 
-			// Pre-allocate vertices
-			result.data.vertices.resize(vertexCount);
+			// Set up PBR layout and allocate interleaved vertex buffer
+			result.data.layout = PBRVertexLayout();
+			result.data.Resize(vertexCount);
 
-			// Read positions
-			if (auto err = ReadAttribute<vec3>(doc, bufferData, posAccessorIndex,
-					[&](std::size_t i, const vec3& v) { result.data.vertices[i].position = v * options.scale; }))
+			// Read positions (vec3 = 3 floats, 12 bytes in glTF)
+			if (auto err = ReadFloatAttribute(doc, bufferData, posAccessorIndex, 3,
+					result.data.vertexData, PBR_POSITION_OFFSET, PBR_FLOATS_PER_VERTEX, options.scale))
 			{
 				return std::unexpected(*err);
 			}
@@ -363,36 +371,51 @@ export namespace synodic::soul::gltf
 			bool hasNormals = false;
 			if (auto normIt = primitive.attributes.find("NORMAL"); normIt != primitive.attributes.end())
 			{
-				if (auto err = ReadAttribute<vec3>(doc, bufferData, normIt->second,
-						[&](std::size_t i, const vec3& v) { result.data.vertices[i].normal = v; }))
+				if (auto err = ReadFloatAttribute(doc, bufferData, normIt->second, 3,
+						result.data.vertexData, PBR_NORMAL_OFFSET, PBR_FLOATS_PER_VERTEX, 1.0f))
 				{
 					return std::unexpected(*err);
 				}
 				hasNormals = true;
 			}
 
-			// Read tangents (optional)
+			// Read tangents (optional, vec4)
 			bool hasTangents = false;
 			if (auto tanIt = primitive.attributes.find("TANGENT"); tanIt != primitive.attributes.end())
 			{
-				if (auto err = ReadAttribute<vec4>(doc, bufferData, tanIt->second,
-						[&](std::size_t i, const vec4& v) { result.data.vertices[i].tangent = v; }))
+				if (auto err = ReadFloatAttribute(doc, bufferData, tanIt->second, 4,
+						result.data.vertexData, PBR_TANGENT_OFFSET, PBR_FLOATS_PER_VERTEX, 1.0f))
 				{
 					return std::unexpected(*err);
 				}
 				hasTangents = true;
 			}
+			else
+			{
+				// Initialize tangent w component to 1.0 (handedness)
+				for (std::size_t i = 0; i < vertexCount; ++i)
+				{
+					result.data.vertexData[i * PBR_FLOATS_PER_VERTEX + PBR_TANGENT_OFFSET + 3] = 1.0f;
+				}
+			}
 
-			// Read texture coordinates (optional)
+			// Read texture coordinates (optional, vec2)
 			if (auto uvIt = primitive.attributes.find("TEXCOORD_0"); uvIt != primitive.attributes.end())
 			{
-				if (auto err = ReadAttribute<vec2>(doc, bufferData, uvIt->second,
-						[&](std::size_t i, const vec2& v)
-						{
-							result.data.vertices[i].texCoord = options.flipTexCoordV ? vec2{v.x, 1.0f - v.y} : v;
-						}))
+				if (auto err = ReadFloatAttribute(doc, bufferData, uvIt->second, 2,
+						result.data.vertexData, PBR_TEXCOORD_OFFSET, PBR_FLOATS_PER_VERTEX, 1.0f))
 				{
 					return std::unexpected(*err);
+				}
+
+				// Flip V coordinate if requested
+				if (options.flipTexCoordV)
+				{
+					for (std::size_t i = 0; i < vertexCount; ++i)
+					{
+						float& v = result.data.vertexData[i * PBR_FLOATS_PER_VERTEX + PBR_TEXCOORD_OFFSET + 1];
+						v = 1.0f - v;
+					}
 				}
 			}
 
@@ -432,13 +455,16 @@ export namespace synodic::soul::gltf
 			return result;
 		}
 
-		// Read an attribute from accessor into vertices
-		template<typename T, typename Callback>
-		[[nodiscard]] std::optional<std::error_code> ReadAttribute(
+		// Read float attribute data directly into interleaved vertex buffer
+		[[nodiscard]] std::optional<std::error_code> ReadFloatAttribute(
 			const Document& doc,
 			const std::vector<std::vector<std::byte>>& bufferData,
 			std::size_t accessorIndex,
-			Callback&& callback)
+			std::size_t componentCount,  // 2 for vec2, 3 for vec3, 4 for vec4
+			std::vector<float>& vertexData,
+			std::size_t destOffset,      // Offset within vertex (in floats)
+			std::size_t destStride,      // Floats per vertex
+			float scale)
 		{
 			if (!doc.accessors || accessorIndex >= doc.accessors->size())
 			{
@@ -460,22 +486,31 @@ export namespace synodic::soul::gltf
 			}
 
 			const auto& buffer = bufferData[bufferView.buffer];
-			const std::size_t byteOffset = bufferView.byteOffset + accessor.byteOffset;
-			const std::size_t byteStride = bufferView.byteStride.value_or(sizeof(T));
+			const std::size_t srcByteOffset = bufferView.byteOffset + accessor.byteOffset;
+			const std::size_t srcByteStride = bufferView.byteStride.value_or(componentCount * sizeof(float));
 
-			if (byteOffset + accessor.count * byteStride > buffer.size())
+			if (srcByteOffset + accessor.count * srcByteStride > buffer.size())
 			{
 				return mesh::MakeErrorCode(mesh::MeshErrorCode::OutOfBounds);
 			}
 
-			// Read data
-			const std::byte* ptr = buffer.data() + byteOffset;
+			// Read data directly into interleaved buffer
+			const std::byte* srcPtr = buffer.data() + srcByteOffset;
 			for (std::size_t i = 0; i < accessor.count; ++i)
 			{
-				T value;
-				std::memcpy(&value, ptr, sizeof(T));
-				callback(i, value);
-				ptr += byteStride;
+				float* destPtr = vertexData.data() + (i * destStride) + destOffset;
+				std::memcpy(destPtr, srcPtr, componentCount * sizeof(float));
+
+				// Apply scale
+				if (scale != 1.0f)
+				{
+					for (std::size_t j = 0; j < componentCount; ++j)
+					{
+						destPtr[j] *= scale;
+					}
+				}
+
+				srcPtr += srcByteStride;
 			}
 
 			return std::nullopt;
@@ -548,21 +583,46 @@ export namespace synodic::soul::gltf
 		}
 
 		// Generate flat normals for a mesh without normals
-		void GenerateFlatNormals(MeshData& mesh)
+		void GenerateFlatNormals(MeshData& meshData)
 		{
-			for (std::size_t i = 0; i + 2 < mesh.indices.size(); i += 3)
+			for (std::size_t i = 0; i + 2 < meshData.indices.size(); i += 3)
 			{
-				auto& v0 = mesh.vertices[mesh.indices[i]];
-				auto& v1 = mesh.vertices[mesh.indices[i + 1]];
-				auto& v2 = mesh.vertices[mesh.indices[i + 2]];
+				const auto i0 = meshData.indices[i];
+				const auto i1 = meshData.indices[i + 1];
+				const auto i2 = meshData.indices[i + 2];
 
-				const vec3 edge1 = v1.position - v0.position;
-				const vec3 edge2 = v2.position - v0.position;
-				const vec3 normal = Normalize(Cross(edge1, edge2));
+				float* v0 = meshData.vertexData.data() + (i0 * PBR_FLOATS_PER_VERTEX);
+				float* v1 = meshData.vertexData.data() + (i1 * PBR_FLOATS_PER_VERTEX);
+				float* v2 = meshData.vertexData.data() + (i2 * PBR_FLOATS_PER_VERTEX);
 
-				v0.normal = normal;
-				v1.normal = normal;
-				v2.normal = normal;
+				// Get positions
+				const float e1x = v1[0] - v0[0], e1y = v1[1] - v0[1], e1z = v1[2] - v0[2];
+				const float e2x = v2[0] - v0[0], e2y = v2[1] - v0[1], e2z = v2[2] - v0[2];
+
+				// Cross product
+				float nx = e1y * e2z - e1z * e2y;
+				float ny = e1z * e2x - e1x * e2z;
+				float nz = e1x * e2y - e1y * e2x;
+
+				// Normalize
+				const float len = std::sqrt(nx * nx + ny * ny + nz * nz);
+				if (len > 0.0f)
+				{
+					nx /= len;
+					ny /= len;
+					nz /= len;
+				}
+				else
+				{
+					nx = 0.0f;
+					ny = 1.0f;
+					nz = 0.0f;
+				}
+
+				// Write normals
+				v0[PBR_NORMAL_OFFSET] = nx; v0[PBR_NORMAL_OFFSET + 1] = ny; v0[PBR_NORMAL_OFFSET + 2] = nz;
+				v1[PBR_NORMAL_OFFSET] = nx; v1[PBR_NORMAL_OFFSET + 1] = ny; v1[PBR_NORMAL_OFFSET + 2] = nz;
+				v2[PBR_NORMAL_OFFSET] = nx; v2[PBR_NORMAL_OFFSET + 1] = ny; v2[PBR_NORMAL_OFFSET + 2] = nz;
 			}
 		}
 	};

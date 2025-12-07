@@ -1,9 +1,8 @@
 export module synodic.soul.engine:core.geometry.face;
 
 import std;
+import synodic.library;
 import synodic.soul.core;
-
-// TODO: Replace with proper vector types (glm removed)
 
 export class Face : Component
 {
@@ -13,8 +12,7 @@ public:
 	Face() = default;
 	~Face() = default;
 
-	// TODO: Replace with proper vector types (glm removed)
-	struct { std::uint32_t x, y, z; } indices;
+	synodic::math::uvec3 indices;
 	std::uint32_t material; //TODO investigate materials
 };
 
