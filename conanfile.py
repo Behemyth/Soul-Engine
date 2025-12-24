@@ -46,7 +46,7 @@ class MyProject(CPPythonBase):
         copy(self, 'src/*', src=self.recipe_folder, dst=self.export_sources_folder)
         copy(
             self,
-            'tool/cmake/soul-engineConfig.cmake.in',
+            'tool/cmake/*',
             src=self.recipe_folder,
             dst=self.export_sources_folder,
         )
