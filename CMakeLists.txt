@@ -112,11 +112,14 @@ option(BUILD_GLTF_LOADER "Build the GLTF mesh loader backend" ON)
 ##############################################
 #Project Target
 
+# Normalize Vulkan include path to use forward slashes (fixes CMake escape issues on Windows)
+file(TO_CMAKE_PATH "${Vulkan_INCLUDE_DIR}" Vulkan_INCLUDE_DIR_NORMALIZED)
+
 add_library(VulkanHppModule)
 target_sources(VulkanHppModule PUBLIC
   FILE_SET CXX_MODULES
-  BASE_DIRS ${Vulkan_INCLUDE_DIR}
-  FILES ${Vulkan_INCLUDE_DIR}/vulkan/vulkan.cppm
+  BASE_DIRS "${Vulkan_INCLUDE_DIR_NORMALIZED}"
+  FILES "${Vulkan_INCLUDE_DIR_NORMALIZED}/vulkan/vulkan.cppm"
 )
 target_compile_features(VulkanHppModule PUBLIC cxx_std_23)
 target_link_libraries(VulkanHppModule PUBLIC Vulkan::Vulkan)
