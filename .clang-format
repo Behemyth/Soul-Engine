@@ -1,34 +1,20 @@
 AccessModifierOffset: -4
 AlignAfterOpenBracket: AlwaysBreak
 AlignArrayOfStructures: Left
-AlignConsecutiveAssignments:
-    Enabled: true
-    AcrossEmptyLines: false
-    AcrossComments: false
-    AlignCompound: true
-    PadOperators: true
-AlignConsecutiveBitFields:
-    Enabled: true
-    AcrossEmptyLines: false
-    AcrossComments: false
-AlignConsecutiveDeclarations:
-    Enabled: false
-    AcrossEmptyLines: false
-    AcrossComments: false
-AlignConsecutiveMacros:
-    Enabled: true
-    AcrossEmptyLines: false
-    AcrossComments: false
+AlignConsecutiveAssignments: Consecutive
+AlignConsecutiveBitFields: Consecutive
+AlignConsecutiveDeclarations: None
+AlignConsecutiveMacros: Consecutive
 AlignEscapedNewlines: Left
 AlignOperands: Align
 AlignTrailingComments:
-    Kind: Never
-#  OverEmptyLines - Unused
-#  MaxEmptyLinesToKeep - Unused
+    Kind: Always
+    OverEmptyLines: 0
 AllowAllArgumentsOnNextLine: false
 AllowAllParametersOfDeclarationOnNextLine: false
 AllowBreakBeforeNoexceptSpecifier: OnlyWithParen
 AllowShortBlocksOnASingleLine: Never
+AllowShortCaseExpressionOnASingleLine: false
 AllowShortCaseLabelsOnASingleLine: false
 AllowShortCompoundRequirementOnASingleLine: true
 #  AlignConsecutiveShortCaseStatements - Unused
@@ -37,29 +23,48 @@ AllowShortFunctionsOnASingleLine: None
 AllowShortIfStatementsOnASingleLine: Never
 AllowShortLambdasOnASingleLine: None
 AllowShortLoopsOnASingleLine: false
-AlwaysBreakAfterReturnType: None # All Clang 19
+AllowShortNamespacesOnASingleLine: false
 AlwaysBreakBeforeMultilineStrings: true
 AlwaysBreakTemplateDeclarations: Yes
 AttributeMacros: []
 BinPackArguments: false
 BinPackParameters: false
 BitFieldColonSpacing: Both
-# BraceWrapping - Ignored because of 'BreakBeforeBraces'
+BraceWrapping:
+    AfterCaseLabel: true
+    AfterClass: true
+    AfterControlStatement: Always
+    AfterEnum: true
+    AfterFunction: true
+    AfterNamespace: true
+    AfterStruct: true
+    AfterUnion: true
+    AfterExternBlock: true
+    BeforeCatch: true
+    BeforeElse: true
+    BeforeLambdaBody: true
+    BeforeWhile: true
+    IndentBraces: false
+    SplitEmptyFunction: true
+    SplitEmptyRecord: true
+    SplitEmptyNamespace: true
 # BracedInitializerIndentWidth - Ignored, prioritizing 'ContinuationIndentWidth'
 BreakAdjacentStringLiterals: true
 BreakAfterAttributes: Never
 BreakAfterJavaFieldAnnotations: true
+BreakAfterReturnType: Automatic
 BreakArrays: true
 BreakBeforeBinaryOperators: None
-BreakBeforeBraces: Allman
+BreakBeforeBraces: Custom
 BreakBeforeConceptDeclarations: Always
 BreakBeforeInlineASMColon: Always
 BreakBeforeTernaryOperators: false
+BreakBinaryOperations: Never
 BreakConstructorInitializers: AfterColon
-# BreakFunctionDefinitionParameters: false - Clang 19
+BreakFunctionDefinitionParameters: false
 BreakInheritanceList: AfterColon
 BreakStringLiterals: true
-# BreakTemplateDeclarations: Yes - Clang 19
+BreakTemplateDeclarations: Yes
 ColumnLimit: 120
 # CommentPragmas - Unused
 CompactNamespaces: false
@@ -80,6 +85,7 @@ IncludeBlocks: Regroup
 IndentAccessModifiers: false
 IndentCaseBlocks: false
 IndentCaseLabels: true
+IndentExportBlock: true
 IndentExternBlock: Indent
 IndentGotoLabels: false
 IndentPPDirectives: AfterHash
@@ -99,8 +105,13 @@ IntegerLiteralSeparator:
 # JavaImportGroups - Unused
 # JavaScriptQuotes - Unused
 # JavaScriptWrapImports - Unused
+KeepEmptyLines:
+    AtEndOfFile: false
+    AtStartOfBlock: false
+    AtStartOfFile: false
 KeepEmptyLinesAtEOF: false
 KeepEmptyLinesAtTheStartOfBlocks: false
+# KeepFormFeed - Unused
 LambdaBodyIndentation: Signature
 Language: Cpp
 LineEnding: LF
@@ -120,6 +131,7 @@ PPIndentWidth: -1
 PackConstructorInitializers: Never
 # PenaltyBreakAssignment - Unused
 # PenaltyBreakBeforeFirstCallParameter - Unused
+# PenaltyBreakBeforeMemberAccess - Unused
 # PenaltyBreakComment - Unused
 # PenaltyBreakFirstLessLess - Unused
 # PenaltyBreakOpenParenthesis - Unused
@@ -136,6 +148,7 @@ QualifierAlignment: Left
 ReferenceAlignment: Left
 ReflowComments: true
 RemoveBracesLLVM: false
+RemoveEmptyLinesInUnwrappedLines: true
 RemoveParentheses: ReturnStatement
 RemoveSemicolon: true
 RequiresClausePosition: OwnLine
@@ -185,7 +198,13 @@ Standard: Latest
 StatementAttributeLikeMacros: []
 StatementMacros: []
 TabWidth: 4
+# TableGenBreakInsideDAGArg: - Unused
+# TableGenBreakingDAGArgOperators: - Unused
+TemplateNames: []
+TypeNames: []
 TypenameMacros: []
 UseTab: Always
+VariableTemplates: []
 # VerilogBreakBetweenInstancePorts - Unused
 WhitespaceSensitiveMacros: []
+WrapNamespaceBodyWithEmptyLines: Never
