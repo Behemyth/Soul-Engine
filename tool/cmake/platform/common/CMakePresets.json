@@ -11,6 +11,7 @@
             "inherits": "cppython",
             "binaryDir": "${sourceDir}/build/${presetName}",
             "cacheVariables": {
+                "BUILD_TESTING": "ON",
                 "CMAKE_CONFIGURATION_TYPES": {
                     "type": "STRING",
                     "value": "Debug;Development;Release"
@@ -20,6 +21,7 @@
         {
             "name": "default-release",
             "description": "All single-configuration generators should inherit from this preset",
+            "hidden": true,
             "inherits": [
                 "cppython",
                 "default"
@@ -32,6 +34,7 @@
         {
             "name": "default-debug",
             "description": "All single-configuration generators should inherit from this preset",
+            "hidden": true,
             "inherits": [
                 "cppython",
                 "default"
@@ -50,11 +53,13 @@
         {
             "name": "default-release",
             "description": "An example build preset for release",
+            "hidden": true,
             "configurePreset": "default-release"
         },
         {
             "name": "default-debug",
             "description": "An example build preset for debug",
+            "hidden": true,
             "configurePreset": "default-debug"
         }
     ],

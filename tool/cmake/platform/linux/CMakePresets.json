@@ -1,5 +1,5 @@
 {
-	"version": 6,
+	"version": 9,
 	"include": [
 		"../common/CMakePresets.json"
 	],
@@ -19,13 +19,15 @@
 		},
 		{
 			"name": "linux-ninja-gcc",
-			"displayName": "Ninja - GCC",
-			"description": "Default configuration using Ninja and GCC",
+			"displayName": "Ninja GCC",
+			"description": "Ninja Multi-Config generator with GCC",
+			"generator": "Ninja Multi-Config",
 			"inherits": [
 				"linux-default"
 			],
 			"cacheVariables": {
-				"CMAKE_CXX_COMPILER": "g++-9"
+				"CMAKE_C_COMPILER": "gcc",
+				"CMAKE_CXX_COMPILER": "g++"
 			}
 		}
 	],
@@ -40,34 +42,31 @@
 			}
 		},
 		{
-			"name": "linux-msbuild-clang-debug",
-			"displayName": "Debug",
-			"description": "",
+			"name": "linux-ninja-gcc-release",
+			"displayName": "Ninja GCC Release",
+			"configurePreset": "linux-ninja-gcc",
+			"configuration": "Release",
 			"inherits": [
 				"linux-default"
-			],
-			"configurePreset": "linux-ninja-gcc",
-			"configuration": "Debug"
+			]
 		},
 		{
-			"name": "linux-msbuild-clang-release",
-			"displayName": "Release",
-			"description": "",
+			"name": "linux-ninja-gcc-development",
+			"displayName": "Ninja GCC Development",
+			"configurePreset": "linux-ninja-gcc",
+			"configuration": "Development",
 			"inherits": [
 				"linux-default"
-			],
-			"configurePreset": "linux-ninja-gcc",
-			"configuration": "Release"
+			]
 		},
 		{
-			"name": "linux-msbuild-clang-development",
-			"displayName": "Development",
-			"description": "",
+			"name": "linux-ninja-gcc-debug",
+			"displayName": "Ninja GCC Debug",
+			"configurePreset": "linux-ninja-gcc",
+			"configuration": "Debug",
 			"inherits": [
 				"linux-default"
-			],
-			"configurePreset": "linux-ninja-gcc",
-			"configuration": "RelWithDebInfo"
+			]
 		}
 	],
 	"testPresets": [
@@ -83,34 +82,31 @@
 			]
 		},
 		{
-			"name": "linux-msbuild-clang-debug",
-			"displayName": "Debug",
-			"description": "",
+			"name": "linux-ninja-gcc-debug",
+			"displayName": "Ninja GCC Debug",
+			"configurePreset": "linux-ninja-gcc",
 			"inherits": [
 				"linux-default"
 			],
-			"configurePreset": "linux-ninja-gcc",
 			"configuration": "Debug"
 		},
 		{
-			"name": "linux-msbuild-clang-release",
-			"displayName": "Release",
-			"description": "",
+			"name": "linux-ninja-gcc-development",
+			"displayName": "Ninja GCC Development",
+			"configurePreset": "linux-ninja-gcc",
 			"inherits": [
 				"linux-default"
 			],
-			"configurePreset": "linux-ninja-gcc",
-			"configuration": "Release"
+			"configuration": "Development"
 		},
 		{
-			"name": "linux-msbuild-clang-development",
-			"displayName": "Development",
-			"description": "",
+			"name": "linux-ninja-gcc-release",
+			"displayName": "Ninja GCC Release",
+			"configurePreset": "linux-ninja-gcc",
 			"inherits": [
 				"linux-default"
 			],
-			"configurePreset": "linux-ninja-gcc",
-			"configuration": "RelWithDebInfo"
+			"configuration": "Release"
 		}
 	]
 }

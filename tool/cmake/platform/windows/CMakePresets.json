@@ -15,11 +15,15 @@
 				"type": "equals",
 				"lhs": "${hostSystemName}",
 				"rhs": "Windows"
+			},
+			"architecture": {
+				"value": "x64",
+				"strategy": "external"
 			}
 		},
 		{
 			"name": "windows-ninja-msvc",
-			"displayName": "Ninja - MSVC",
+			"displayName": "Ninja MSVC",
 			"description": "Ninja Multi-Config generator with Microsoft Visual C++ (MSVC)",
 			"generator": "Ninja Multi-Config",
 			"inherits": [
@@ -28,11 +32,16 @@
 			"cacheVariables": {
 				"CMAKE_C_COMPILER": "cl",
 				"CMAKE_CXX_COMPILER": "cl"
+			},
+			"vendor": {
+				"microsoft.com/VisualStudioSettings/CMake/1.0": {
+					"intelliSenseMode": "windows-msvc-x64"
+				}
 			}
 		},
 		{
 			"name": "windows-ninja-clang",
-			"displayName": "Ninja - Clang",
+			"displayName": "Ninja Clang",
 			"description": "Ninja Multi-Config generator with Clang (clang-cl)",
 			"generator": "Ninja Multi-Config",
 			"inherits": [
@@ -41,11 +50,16 @@
 			"cacheVariables": {
 				"CMAKE_C_COMPILER": "clang-cl",
 				"CMAKE_CXX_COMPILER": "clang-cl"
+			},
+			"vendor": {
+				"microsoft.com/VisualStudioSettings/CMake/1.0": {
+					"intelliSenseMode": "windows-clang-x64"
+				}
 			}
 		},
 		{
 			"name": "windows-msbuild-msvc",
-			"displayName": "MSBuild - MSVC",
+			"displayName": "MSBuild MSVC",
 			"description": "Visual Studio 18 2026 generator with Microsoft Visual C++ (MSVC)",
 			"generator": "Visual Studio 18 2026",
 			"architecture": {
@@ -54,15 +68,11 @@
 			},
 			"inherits": [
 				"windows-default"
-			],
-			"cacheVariables": {
-				"CMAKE_C_COMPILER": "cl",
-				"CMAKE_CXX_COMPILER": "cl"
-			}
+			]
 		},
 		{
 			"name": "windows-msbuild-clang",
-			"displayName": "MSBuild - Clang",
+			"displayName": "MSBuild Clang",
 			"description": "Visual Studio 18 2026 generator with Clang (clang-cl)",
 			"generator": "Visual Studio 18 2026",
 			"architecture": {
@@ -72,10 +82,6 @@
 			"inherits": [
 				"windows-default"
 			],
-			"cacheVariables": {
-				"CMAKE_C_COMPILER": "clang-cl",
-				"CMAKE_CXX_COMPILER": "clang-cl"
-			},
 			"toolset": "ClangCL"
 		}
 	],
@@ -90,27 +96,27 @@
 			}
 		},
 		{
-			"name": "windows-msbuild-msvc-release",
-			"displayName": "Release",
-			"configurePreset": "windows-msbuild-msvc",
+			"name": "windows-ninja-msvc-release",
+			"displayName": "Ninja MSVC Release",
+			"configurePreset": "windows-ninja-msvc",
 			"configuration": "Release",
 			"inherits": [
 				"windows-default"
 			]
 		},
 		{
-			"name": "windows-msbuild-msvc-development",
-			"displayName": "Development",
-			"configurePreset": "windows-msbuild-msvc",
+			"name": "windows-ninja-msvc-development",
+			"displayName": "Ninja MSVC Development",
+			"configurePreset": "windows-ninja-msvc",
 			"configuration": "Development",
 			"inherits": [
 				"windows-default"
 			]
 		},
 		{
-			"name": "windows-msbuild-msvc-debug",
-			"displayName": "Debug",
-			"configurePreset": "windows-msbuild-msvc",
+			"name": "windows-ninja-msvc-debug",
+			"displayName": "Ninja MSVC Debug",
+			"configurePreset": "windows-ninja-msvc",
 			"configuration": "Debug",
 			"inherits": [
 				"windows-default"
@@ -118,7 +124,7 @@
 		},
 		{
 			"name": "windows-ninja-clang-release",
-			"displayName": "Release",
+			"displayName": "Ninja Clang Release",
 			"configurePreset": "windows-ninja-clang",
 			"configuration": "Release",
 			"inherits": [
@@ -127,7 +133,7 @@
 		},
 		{
 			"name": "windows-ninja-clang-development",
-			"displayName": "Development",
+			"displayName": "Ninja Clang Development",
 			"configurePreset": "windows-ninja-clang",
 			"configuration": "Development",
 			"inherits": [
@@ -136,8 +142,62 @@
 		},
 		{
 			"name": "windows-ninja-clang-debug",
-			"displayName": "Debug",
+			"displayName": "Ninja Clang Debug",
 			"configurePreset": "windows-ninja-clang",
+			"configuration": "Debug",
+			"inherits": [
+				"windows-default"
+			]
+		},
+		{
+			"name": "windows-msbuild-msvc-release",
+			"displayName": "MSBuild MSVC Release",
+			"configurePreset": "windows-msbuild-msvc",
+			"configuration": "Release",
+			"inherits": [
+				"windows-default"
+			]
+		},
+		{
+			"name": "windows-msbuild-msvc-development",
+			"displayName": "MSBuild MSVC Development",
+			"configurePreset": "windows-msbuild-msvc",
+			"configuration": "Development",
+			"inherits": [
+				"windows-default"
+			]
+		},
+		{
+			"name": "windows-msbuild-msvc-debug",
+			"displayName": "MSBuild MSVC Debug",
+			"configurePreset": "windows-msbuild-msvc",
+			"configuration": "Debug",
+			"inherits": [
+				"windows-default"
+			]
+		},
+		{
+			"name": "windows-msbuild-clang-release",
+			"displayName": "MSBuild Clang Release",
+			"configurePreset": "windows-msbuild-clang",
+			"configuration": "Release",
+			"inherits": [
+				"windows-default"
+			]
+		},
+		{
+			"name": "windows-msbuild-clang-development",
+			"displayName": "MSBuild Clang Development",
+			"configurePreset": "windows-msbuild-clang",
+			"configuration": "Development",
+			"inherits": [
+				"windows-default"
+			]
+		},
+		{
+			"name": "windows-msbuild-clang-debug",
+			"displayName": "MSBuild Clang Debug",
+			"configurePreset": "windows-msbuild-clang",
 			"configuration": "Debug",
 			"inherits": [
 				"windows-default"
@@ -158,13 +218,112 @@
 			]
 		},
 		{
-			"name": "windows-msbuild-msvc-test-debug",
-			"displayName": "Test Debug Configuration",
+			"name": "windows-ninja-msvc-debug",
+			"displayName": "Ninja MSVC Debug",
+			"configurePreset": "windows-ninja-msvc",
+			"inherits": [
+				"windows-default"
+			],
+			"configuration": "Debug"
+		},
+		{
+			"name": "windows-ninja-msvc-development",
+			"displayName": "Ninja MSVC Development",
+			"configurePreset": "windows-ninja-msvc",
+			"inherits": [
+				"windows-default"
+			],
+			"configuration": "Development"
+		},
+		{
+			"name": "windows-ninja-msvc-release",
+			"displayName": "Ninja MSVC Release",
+			"configurePreset": "windows-ninja-msvc",
+			"inherits": [
+				"windows-default"
+			],
+			"configuration": "Release"
+		},
+		{
+			"name": "windows-ninja-clang-debug",
+			"displayName": "Ninja Clang Debug",
+			"configurePreset": "windows-ninja-clang",
+			"inherits": [
+				"windows-default"
+			],
+			"configuration": "Debug"
+		},
+		{
+			"name": "windows-ninja-clang-development",
+			"displayName": "Ninja Clang Development",
+			"configurePreset": "windows-ninja-clang",
+			"inherits": [
+				"windows-default"
+			],
+			"configuration": "Development"
+		},
+		{
+			"name": "windows-ninja-clang-release",
+			"displayName": "Ninja Clang Release",
+			"configurePreset": "windows-ninja-clang",
+			"inherits": [
+				"windows-default"
+			],
+			"configuration": "Release"
+		},
+		{
+			"name": "windows-msbuild-msvc-debug",
+			"displayName": "MSBuild MSVC Debug",
 			"configurePreset": "windows-msbuild-msvc",
 			"inherits": [
 				"windows-default"
 			],
 			"configuration": "Debug"
+		},
+		{
+			"name": "windows-msbuild-msvc-development",
+			"displayName": "MSBuild MSVC Development",
+			"configurePreset": "windows-msbuild-msvc",
+			"inherits": [
+				"windows-default"
+			],
+			"configuration": "Development"
+		},
+		{
+			"name": "windows-msbuild-msvc-release",
+			"displayName": "MSBuild MSVC Release",
+			"configurePreset": "windows-msbuild-msvc",
+			"inherits": [
+				"windows-default"
+			],
+			"configuration": "Release"
+		},
+		{
+			"name": "windows-msbuild-clang-debug",
+			"displayName": "MSBuild Clang Debug",
+			"configurePreset": "windows-msbuild-clang",
+			"inherits": [
+				"windows-default"
+			],
+			"configuration": "Debug"
+		},
+		{
+			"name": "windows-msbuild-clang-development",
+			"displayName": "MSBuild Clang Development",
+			"configurePreset": "windows-msbuild-clang",
+			"inherits": [
+				"windows-default"
+			],
+			"configuration": "Development"
+		},
+		{
+			"name": "windows-msbuild-clang-release",
+			"displayName": "MSBuild Clang Release",
+			"configurePreset": "windows-msbuild-clang",
+			"inherits": [
+				"windows-default"
+			],
+			"configuration": "Release"
 		}
 	]
 }

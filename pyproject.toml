@@ -84,8 +84,8 @@ skip_empty = true
 build  = "cppython build"
 test  = "cppython test"
 dev  = "zensical serve"
-post_install = "copier update --defaults --skip-answered"
-post_update = "copier update --defaults --skip-answered"
+post_install = "copier recopy --force --skip-answered"
+post_update = "copier recopy --force --skip-answered"
 
 [build-system]
 build-backend = "pdm.backend"

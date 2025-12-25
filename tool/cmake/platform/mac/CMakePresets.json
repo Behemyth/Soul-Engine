@@ -1,5 +1,5 @@
 {
-	"version": 6,
+	"version": 9,
 	"include": [
 		"../common/CMakePresets.json"
 	],
@@ -10,12 +10,21 @@
 				"default"
 			],
 			"hidden": true,
-			"description": "Base preset for MacOS configurations",
+			"description": "Base preset for macOS configurations",
 			"condition": {
 				"type": "equals",
 				"lhs": "${hostSystemName}",
 				"rhs": "Darwin"
 			}
+		},
+		{
+			"name": "macos-ninja-clang",
+			"displayName": "Ninja Clang",
+			"description": "Ninja Multi-Config generator with Apple Clang",
+			"generator": "Ninja Multi-Config",
+			"inherits": [
+				"macos-default"
+			]
 		}
 	],
 	"buildPresets": [
@@ -27,6 +36,33 @@
 				"lhs": "${hostSystemName}",
 				"rhs": "Darwin"
 			}
+		},
+		{
+			"name": "macos-ninja-clang-release",
+			"displayName": "Ninja Clang Release",
+			"configurePreset": "macos-ninja-clang",
+			"configuration": "Release",
+			"inherits": [
+				"macos-default"
+			]
+		},
+		{
+			"name": "macos-ninja-clang-development",
+			"displayName": "Ninja Clang Development",
+			"configurePreset": "macos-ninja-clang",
+			"configuration": "Development",
+			"inherits": [
+				"macos-default"
+			]
+		},
+		{
+			"name": "macos-ninja-clang-debug",
+			"displayName": "Ninja Clang Debug",
+			"configurePreset": "macos-ninja-clang",
+			"configuration": "Debug",
+			"inherits": [
+				"macos-default"
+			]
 		}
 	],
 	"testPresets": [
@@ -40,6 +76,33 @@
 			"inherits": [
 				"default"
 			]
+		},
+		{
+			"name": "macos-ninja-clang-debug",
+			"displayName": "Ninja Clang Debug",
+			"configurePreset": "macos-ninja-clang",
+			"inherits": [
+				"macos-default"
+			],
+			"configuration": "Debug"
+		},
+		{
+			"name": "macos-ninja-clang-development",
+			"displayName": "Ninja Clang Development",
+			"configurePreset": "macos-ninja-clang",
+			"inherits": [
+				"macos-default"
+			],
+			"configuration": "Development"
+		},
+		{
+			"name": "macos-ninja-clang-release",
+			"displayName": "Ninja Clang Release",
+			"configurePreset": "macos-ninja-clang",
+			"inherits": [
+				"macos-default"
+			],
+			"configuration": "Release"
 		}
 	]
 }
