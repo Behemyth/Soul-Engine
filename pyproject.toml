@@ -84,6 +84,8 @@ skip_empty = true
 build = { shell = "cppython build" }
 test = { shell = "cppython test" }
 dev = { shell = "zensical serve" }
+post_install.shell = "if exist .copier-answers.yml (copier update --defaults --skip-answered)"
+post_update.shell = "if exist .copier-answers.yml (copier update --defaults --skip-answered)"
 
 [build-system]
 build-backend = "pdm.backend"
