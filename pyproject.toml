@@ -81,11 +81,11 @@ quote-style = "single"
 skip_empty = true
 
 [tool.pdm.scripts]
-build = { shell = "cppython build" }
-test = { shell = "cppython test" }
-dev = { shell = "zensical serve" }
-post_install.shell = "if exist .copier-answers.yml (copier update --defaults --skip-answered)"
-post_update.shell = "if exist .copier-answers.yml (copier update --defaults --skip-answered)"
+build  = "cppython build"
+test  = "cppython test"
+dev  = "zensical serve"
+post_install = "copier update --defaults --skip-answered"
+post_update = "copier update --defaults --skip-answered"
 
 [build-system]
 build-backend = "pdm.backend"
