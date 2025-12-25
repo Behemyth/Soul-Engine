@@ -18,30 +18,17 @@ homepage = "https://github.com/synodic/Soul-Engine"
 repository = "https://github.com/synodic/Soul-Engine"
 
 [project.optional-dependencies]
-build = [
-    "cppython[cmake,conan,git]>=0.9.15.dev3",
-]
+build = ["cppython[cmake,conan,git]>=0.9.15.dev3"]
 [dependency-groups]
-lint = [
-    "ruff>=0.14.8",
-    "pyrefly>=0.44.1",
-    "isort>=7.0.0",
-]
-test = [
-    "pytest-cov>=7.0.0",
-    "pytest-mock>=3.15.1",
-]
-docs = [
-    "zensical>=0.0.11",
-]
-config = [
-    "copier>=9.11.0",
-]
+lint = ["ruff>=0.14.8", "pyrefly>=0.44.1", "isort>=7.0.0"]
+test = ["pytest-cov>=7.0.0", "pytest-mock>=3.15.1"]
+docs = ["zensical>=0.0.11"]
+config = ["copier>=9.11.0"]
 
 [tool.cppython]
 dependencies = [
 	'honesty>=0.0.0.dev1',
-	'synodic-template-library>=0.0.0.dev1',
+	'periapsis>=0.0.0.dev1',
 	'cppaste>=0.0.0.dev1',
 	'portability>=0.0.0.dev1',
 	'sdl>=3.2.20',
