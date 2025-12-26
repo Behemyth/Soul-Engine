@@ -1,7 +1,7 @@
 export module synodic.soul.raster.backend.vulkan:shader_reflection_utils;
 
 import std;
-import vulkan_hpp;
+import vulkan;
 import synodic.soul.transput;
 
 export namespace synodic::soul::shader

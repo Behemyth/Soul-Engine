@@ -31,8 +31,8 @@ if(MSVC)
 endif()
 
 if(WIN32)
-    # Use WINDOWS subsystem but keep standard C++ entry point
-    set_target_properties(viewer PROPERTIES LINK_FLAGS "/SUBSYSTEM:WINDOWS /ENTRY:mainCRTStartup")
+    # Use CONSOLE subsystem for debugging output
+    set_target_properties(viewer PROPERTIES LINK_FLAGS "/SUBSYSTEM:CONSOLE")
 endif()
 
 add_subdirectory(src)

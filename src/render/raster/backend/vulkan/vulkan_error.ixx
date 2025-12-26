@@ -1,7 +1,7 @@
 export module synodic.soul.raster.backend.vulkan:error;
 
 import std;
-import vulkan_hpp;
+import vulkan;
 
 // Vulkan-specific error codes for std::expected
 export enum class VulkanError {

@@ -1,7 +1,7 @@
 export module synodic.soul.raster.backend.vulkan:device;
 
 import std;
-import vulkan_hpp;
+import vulkan;
 
 import :queue;
 import :allocator;

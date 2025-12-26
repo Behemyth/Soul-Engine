@@ -121,9 +121,12 @@ add_library(VulkanHppModule)
 target_sources(VulkanHppModule PUBLIC
   FILE_SET CXX_MODULES
   BASE_DIRS "${Vulkan_INCLUDE_DIR_NORMALIZED}"
-  FILES "${Vulkan_INCLUDE_DIR_NORMALIZED}/vulkan/vulkan.cppm"
+  FILES 
+    "${Vulkan_INCLUDE_DIR_NORMALIZED}/vulkan/vulkan_video.cppm"
+    "${Vulkan_INCLUDE_DIR_NORMALIZED}/vulkan/vulkan.cppm"
 )
 target_compile_features(VulkanHppModule PUBLIC cxx_std_23)
+target_compile_definitions(VulkanHppModule PUBLIC VULKAN_HPP_CXX_MODULE_EXPERIMENTAL_WARNING)
 target_link_libraries(VulkanHppModule PUBLIC Vulkan::Vulkan)
 
 add_library(soul-engine)

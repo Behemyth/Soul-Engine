@@ -2,7 +2,7 @@ export module synodic.soul.raster.backend.vulkan:swapchain;
 
 
 import std;
-import vulkan_hpp;
+import vulkan;
 import :device;
 import :surface;
 import :error;

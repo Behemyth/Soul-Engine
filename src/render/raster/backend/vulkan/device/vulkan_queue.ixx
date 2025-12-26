@@ -1,7 +1,7 @@
 export module synodic.soul.raster.backend.vulkan:queue;
 
 import std;
-import vulkan_hpp;
+import vulkan;
 
 class VulkanQueue {
 

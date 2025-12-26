@@ -8,7 +8,7 @@
 export module synodic.soul.raster.backend.vulkan:gpu_allocator;
 
 import std;
-import vulkan_hpp;
+import vulkan;
 
 import synodic.soul.raster;
 import :error;

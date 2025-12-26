@@ -1,7 +1,7 @@
 export module synodic.soul.raster.backend.vulkan:command_buffer;
 
 import std;
-import vulkan_hpp;
+import vulkan;
 
 import :command_pool;
 import :device;

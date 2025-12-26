@@ -1,6 +1,6 @@
 module synodic.soul.raster.backend.vulkan;
 
-import vulkan_hpp;
+import vulkan;
 import std;
 
 namespace
@@ -89,6 +89,12 @@ VulkanInstance::VulkanInstance(
 	instanceCreationInfo.ppEnabledExtensionNames = cExtensions.data();
 	instanceCreationInfo.enabledLayerCount		 = static_cast<std::uint32_t>(cValidationLayers.size());
 	instanceCreationInfo.ppEnabledLayerNames	 = cValidationLayers.data();
+	
+	// NOTE: GPU-Assisted Validation (GPU-AV) is incompatible with VK_EXT_descriptor_buffer.
+	// GPU-AV disables all shader instrumentation when descriptor buffers are used.
+	// For now, rely on Core Validation only. Debug printf still works for shader debugging.
+	// Watch for future SDK releases that may add GPU-AV descriptor buffer support.
+	// See: https://github.com/KhronosGroup/Vulkan-ValidationLayers/blob/main/docs/gpu_av_descriptor_buffer.md
 
 	instance_ = createInstance(instanceCreationInfo);
 
@@ -96,8 +102,10 @@ VulkanInstance::VulkanInstance(
 	{
 		vk::DebugUtilsMessengerCreateInfoEXT messengerCreateInfo;
 		messengerCreateInfo.flags = static_cast<vk::DebugUtilsMessengerCreateFlagBitsEXT>(0);
+		// Only show warnings and errors (not verbose/info) for cleaner output
 		messengerCreateInfo.messageSeverity =
-			vk::DebugUtilsMessageSeverityFlagBitsEXT::eWarning | vk::DebugUtilsMessageSeverityFlagBitsEXT::eError;
+			vk::DebugUtilsMessageSeverityFlagBitsEXT::eWarning | 
+			vk::DebugUtilsMessageSeverityFlagBitsEXT::eError;
 		messengerCreateInfo.messageType = vk::DebugUtilsMessageTypeFlagBitsEXT::eGeneral |
 										  vk::DebugUtilsMessageTypeFlagBitsEXT::eValidation |
 										  vk::DebugUtilsMessageTypeFlagBitsEXT::ePerformance;

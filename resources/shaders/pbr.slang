@@ -7,13 +7,41 @@
 // ============================================================================
 
 // Vertex data stored in GPU buffer - matches PBRVertex layout (48 bytes)
+// NOTE: For PhysicalStorageBuffer access, we read individual float components
+// to avoid alignment issues with vec3 at non-16-byte offsets.
+// This struct layout must match the C++ PBRVertex exactly (48 bytes packed).
+struct PBRVertexRaw
+{
+    float posX, posY, posZ;      // 12 bytes (offset 0)
+    float normX, normY, normZ;   // 12 bytes (offset 12)
+    // At offset 24 - vec4 tangent is 16-byte aligned already in the original
+    // struct because the GPU will pack it that way. The issue is that
+    // PhysicalStorageBuffer requires explicit std430 layout.
+    // However, our C++ struct is packed at 48 bytes, not 64.
+    // Solution: Read tangent as 4 floats
+    float tanX, tanY, tanZ, tanW;  // 16 bytes (offset 24)
+    float2 texCoord;               // 8 bytes (offset 40)
+};
+
+// Helper to convert raw vertex to vectors
 struct PBRVertex
 {
-    float3 position;   // 12 bytes
-    float3 normal;     // 12 bytes
-    float4 tangent;    // 16 bytes (w = handedness)
-    float2 texCoord;   // 8 bytes
+    float3 position;
+    float3 normal;
+    float4 tangent;
+    float2 texCoord;
 };
+
+PBRVertex LoadPBRVertex(PBRVertexRaw* buffer, uint index)
+{
+    PBRVertexRaw raw = buffer[index];
+    PBRVertex v;
+    v.position = float3(raw.posX, raw.posY, raw.posZ);
+    v.normal = float3(raw.normX, raw.normY, raw.normZ);
+    v.tangent = float4(raw.tanX, raw.tanY, raw.tanZ, raw.tanW);
+    v.texCoord = raw.texCoord;
+    return v;
+}
 
 // Per-draw instance data
 struct InstanceData
@@ -35,35 +63,43 @@ struct MaterialData
 };
 
 // Light structure
+// Light structure - uses explicit floats to avoid vec3 alignment issues with PhysicalStorageBuffer
 struct Light
 {
-    float3 position;
-    float range;
-    float3 direction;
-    float spotAngle;
-    float3 color;
-    float intensity;
-    uint type;          // 0 = directional, 1 = point, 2 = spot
-    uint castShadows;
-    float2 _padding;
+    float posX, posY, posZ;      // position (12 bytes)
+    float range;                 // 4 bytes
+    float dirX, dirY, dirZ;      // direction (12 bytes)
+    float spotAngle;             // 4 bytes
+    float colorR, colorG, colorB;// color (12 bytes)
+    float intensity;             // 4 bytes
+    uint type;                   // 0 = directional, 1 = point, 2 = spot (4 bytes)
+    uint castShadows;            // 4 bytes
+    float2 _padding;             // 8 bytes
 };
 
-// Scene lighting data
+float3 GetLightPosition(Light light) { return float3(light.posX, light.posY, light.posZ); }
+float3 GetLightDirection(Light light) { return float3(light.dirX, light.dirY, light.dirZ); }
+float3 GetLightColor(Light light) { return float3(light.colorR, light.colorG, light.colorB); }
+
+// Scene lighting data - uses explicit floats to avoid vec3 alignment issues
 struct SceneLighting
 {
-    float3 cameraPosition;
-    uint lightCount;
-    float3 ambientColor;
-    float ambientIntensity;
+    float camPosX, camPosY, camPosZ;  // cameraPosition (12 bytes)
+    uint lightCount;                   // 4 bytes
+    float ambientR, ambientG, ambientB;// ambientColor (12 bytes)
+    float ambientIntensity;            // 4 bytes
     Light lights[4];
 };
+
+float3 GetCameraPosition(SceneLighting scene) { return float3(scene.camPosX, scene.camPosY, scene.camPosZ); }
+float3 GetAmbientColor(SceneLighting scene) { return float3(scene.ambientR, scene.ambientG, scene.ambientB); }
 
 // ============================================================================
 // Vertex Shader Data (passed via GPU pointer)
 // ============================================================================
 struct VertexShaderData
 {
-    PBRVertex* vertexBuffer;     // GPU pointer to PBRVertex[]
+    PBRVertexRaw* vertexBuffer;  // GPU pointer to PBRVertexRaw[] (packed 48-byte vertices)
     uint* indexBuffer;           // GPU pointer to uint32[] (null = non-indexed)
     InstanceData* instanceData;  // GPU pointer to InstanceData
     uint vertexCount;
@@ -147,8 +183,8 @@ VertexOutput vertexMain(uint vertexId : SV_VertexID)
         actualVertexId = vsData.indexBuffer[vertexId];
     }
     
-    // Read vertex data from GPU buffer
-    PBRVertex vertex = vsData.vertexBuffer[actualVertexId];
+    // Read vertex data from GPU buffer using helper to avoid alignment issues
+    PBRVertex vertex = LoadPBRVertex(vsData.vertexBuffer, actualVertexId);
     
     // Get instance transforms - load to local copy
     InstanceData instance = *vsData.instanceData;
@@ -291,7 +327,7 @@ float4 fragmentMain(VertexOutput input) : SV_Target
     }
     
     // View direction
-    float3 V = normalize(scene.cameraPosition - input.worldPosition);
+    float3 V = normalize(GetCameraPosition(scene) - input.worldPosition);
     
     // Fresnel reflectance at normal incidence (F0)
     float3 F0 = float3(0.04, 0.04, 0.04);
@@ -309,24 +345,24 @@ float4 fragmentMain(VertexOutput input) : SV_Target
         
         if (light.type == 0) {
             // Directional light
-            L = normalize(-light.direction);
+            L = normalize(-GetLightDirection(light));
         } else {
             // Point/spot light
-            float3 lightVec = light.position - input.worldPosition;
+            float3 lightVec = GetLightPosition(light) - input.worldPosition;
             float distance = length(lightVec);
             L = lightVec / distance;
             attenuation = CalculateAttenuation(distance, light.range);
             
             if (light.type == 2) {
                 // Spot light - add cone attenuation
-                float theta = dot(L, normalize(-light.direction));
+                float theta = dot(L, normalize(-GetLightDirection(light)));
                 float epsilon = light.spotAngle * 0.1;  // Soft edge
                 attenuation *= saturate((theta - cos(light.spotAngle)) / epsilon);
             }
         }
         
         float3 H = normalize(V + L);
-        float3 radiance = light.color * light.intensity * attenuation;
+        float3 radiance = GetLightColor(light) * light.intensity * attenuation;
         
         // Cook-Torrance BRDF
         float NDF = DistributionGGX(N, H, roughness);
@@ -345,7 +381,7 @@ float4 fragmentMain(VertexOutput input) : SV_Target
     }
     
     // Ambient lighting
-    float3 ambient = scene.ambientColor * scene.ambientIntensity * albedo * ao;
+    float3 ambient = GetAmbientColor(scene) * scene.ambientIntensity * albedo * ao;
     
     // Emissive
     float3 emissive = material.emissive.rgb * material.emissive.a;

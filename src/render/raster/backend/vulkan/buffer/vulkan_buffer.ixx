@@ -5,7 +5,7 @@ import :allocator;
 import :error;
 
 import std;
-import vulkan_hpp;
+import vulkan;
 
 // Non-templated base for type-erased buffer management
 export class VulkanBuffer {

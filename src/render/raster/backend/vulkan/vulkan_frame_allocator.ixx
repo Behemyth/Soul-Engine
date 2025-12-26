@@ -9,7 +9,7 @@
 export module synodic.soul.raster.backend.vulkan:frame_allocator;
 
 import std;
-import vulkan_hpp;
+import vulkan;
 
 import synodic.soul.raster;
 import :allocator;

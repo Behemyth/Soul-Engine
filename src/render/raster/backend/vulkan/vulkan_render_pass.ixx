@@ -1,7 +1,7 @@
 
 export module synodic.soul.raster.backend.vulkan:render_pass;
 import std;
-import vulkan_hpp;
+import vulkan;
 import :device;
 import synodic.soul.scheduler;
 

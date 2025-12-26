@@ -1,7 +1,7 @@
 export module synodic.soul.raster.backend.vulkan:physical_device;
 
 import std;
-import vulkan_hpp;
+import vulkan;
 
 export class VulkanPhysicalDevice {
 

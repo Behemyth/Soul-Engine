@@ -1,7 +1,7 @@
 export module synodic.soul.raster.backend.vulkan:backend;
 
 import std;
-import vulkan_hpp;
+import vulkan;
 import synodic.periapsis;
 
 import synodic.soul.core;
@@ -361,6 +361,7 @@ VulkanRasterBackend<SchedulerType>::VulkanRasterBackend(SchedulerType& scheduler
 	if constexpr (Compiler::Debug()) {
 		validationLayers.push_back("VK_LAYER_KHRONOS_validation");
 		instanceExtensions.push_back("VK_EXT_debug_utils");
+		instanceExtensions.push_back("VK_EXT_validation_features");  // For GPU-AV
 	}
 
 	instance_.reset(new VulkanInstance(appInfo, validationLayers, instanceExtensions));
@@ -947,22 +948,20 @@ void VulkanRasterBackend<SchedulerType>::ExecutePassWithFlags(Entity renderPassE
 					rootConstants.vertexData = cmd.vertexData;
 					rootConstants.pixelData = cmd.pixelData;
 					
+					// Stage flags must match the pipeline layout declaration exactly
 					commandBufferHandle.pushConstants(
 						pipelineLayout,
-						vk::ShaderStageFlagBits::eVertex | vk::ShaderStageFlagBits::eFragment,
+						vk::ShaderStageFlagBits::eVertex | vk::ShaderStageFlagBits::eFragment | vk::ShaderStageFlagBits::eCompute,
 						0,
 						sizeof(VulkanBindlessLayout::RootConstants),
 						&rootConstants
 					);
 					
-					if (cmd.IsIndexed()) {
-						// TODO: Bind index buffer from GPU pointer
-						commandBufferHandle.drawIndexed(cmd.indexCount, cmd.instanceCount,
-							cmd.firstIndex, cmd.vertexOffset, cmd.firstInstance);
-					} else {
-						commandBufferHandle.draw(cmd.vertexCount, cmd.instanceCount,
-							cmd.firstVertex, cmd.firstInstance);
-					}
+					// With bindless rendering, the shader does its own indexing via GPU pointer.
+					// We always use draw() - the shader reads indexBuffer[vertexId] if indexed.
+					std::uint32_t vertexCount = cmd.IsIndexed() ? cmd.indexCount : cmd.vertexCount;
+					commandBufferHandle.draw(vertexCount, cmd.instanceCount,
+						cmd.firstVertex, cmd.firstInstance);
 					hasDrawCommands = true;
 					break;
 				}

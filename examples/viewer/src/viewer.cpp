@@ -215,6 +215,8 @@ protected:
 			aspectRatio,
 			0.1f,   // Near plane
 			100.0f);  // Far plane
+		// Flip Y for Vulkan's coordinate system (Y-down in clip space)
+		projectionMatrix_[1][1] *= -1.0f;
 
 		// Set up lighting
 		sceneLighting_.cameraPositionX	= cameraPosition_.x;
@@ -411,20 +413,12 @@ private:
 		sceneLighting_.cameraPositionY = cameraPosition_.y;
 		sceneLighting_.cameraPositionZ = cameraPosition_.z;
 
-		// Model matrix - rotating cube at origin
-		rotationAngle_ += 0.01f;  // Rotate over time
-		if (rotationAngle_ > 2.0f * 3.14159265f) {
-			rotationAngle_ -= 2.0f * 3.14159265f;
-		}
-		
-		// Build Y-axis rotation matrix manually
-		float c = std::cos(rotationAngle_);
-		float s = std::sin(rotationAngle_);
+		// Model matrix - identity (static cube at origin)
 		modelMatrix_ = peri::math::mat4{
-			 c,    0.0f,  s,    0.0f,
-			 0.0f, 1.0f,  0.0f, 0.0f,
-			-s,    0.0f,  c,    0.0f,
-			 0.0f, 0.0f,  0.0f, 1.0f
+			1.0f, 0.0f, 0.0f, 0.0f,
+			0.0f, 1.0f, 0.0f, 0.0f,
+			0.0f, 0.0f, 1.0f, 0.0f,
+			0.0f, 0.0f, 0.0f, 1.0f
 		};
 
 		// Compute MVP for push constant/vertex data

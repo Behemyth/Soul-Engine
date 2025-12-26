@@ -57,6 +57,7 @@ function(_compile_slang_entry_point)
         -entry "${SHADER_ENTRY_POINT}"
         -stage "${SHADER_STAGE}"
         -o "${SHADER_OUTPUT_PATH}"
+        -force-glsl-scalar-layout  # Required for PhysicalStorageBuffer with vec3 at non-16-byte offsets
     )
 
     # Add include directories

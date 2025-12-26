@@ -1,7 +1,7 @@
 export module synodic.soul.raster.backend.vulkan:pipeline_cache;
 
 import std;
-import vulkan_hpp;
+import vulkan;
 
 export class VulkanPipelineCache {
 

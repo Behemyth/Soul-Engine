@@ -1,7 +1,7 @@
 export module synodic.soul.raster.backend.vulkan:allocator;
 
 import std;
-import vulkan_hpp;
+import vulkan;
 import :error;
 
 // TODO: Custom handles

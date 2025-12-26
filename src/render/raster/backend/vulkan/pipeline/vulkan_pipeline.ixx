@@ -1,7 +1,7 @@
 export module synodic.soul.raster.backend.vulkan:pipeline;
 
 import std;
-import vulkan_hpp;
+import vulkan;
 
 import :render_pass;
 import :shader;
@@ -30,7 +30,7 @@ export struct VulkanPipelineConfig {
 	vk::PrimitiveTopology topology = vk::PrimitiveTopology::eTriangleList;
 	vk::PolygonMode polygonMode = vk::PolygonMode::eFill;
 	vk::CullModeFlags cullMode = vk::CullModeFlagBits::eBack;
-	vk::FrontFace frontFace = vk::FrontFace::eCounterClockwise;  // CCW for right-hand coords
+	vk::FrontFace frontFace = vk::FrontFace::eClockwise;  // CW due to Vulkan Y-flip in projection
 	bool depthTest = false;               // Enable depth testing
 	bool depthWrite = false;              // Enable depth writing
 	bool depthOnly = false;               // Depth-only pass (no color attachment)

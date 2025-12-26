@@ -2,7 +2,7 @@
 
 export module synodic.soul.raster.backend.vulkan:instance;
 import std;
-import vulkan_hpp;
+import vulkan;
 import :physical_device;
 import synodic.soul.engine;
 

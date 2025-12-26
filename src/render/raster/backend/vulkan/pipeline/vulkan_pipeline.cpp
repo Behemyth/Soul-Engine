@@ -168,16 +168,16 @@ void VulkanPipeline::CreatePipeline(std::span<VulkanShader> shaders,
 	colorBlending.blendConstants[2] = 0.0f;
 	colorBlending.blendConstants[3] = 0.0f;
 
-	// Dynamic state for viewport and scissor
-	std::vector<vk::DynamicState> dynamicStates = {
+	// Dynamic state for viewport and scissor - use std::array for better debugger visibility
+	std::array<vk::DynamicState, 2> dynamicStatesArray = {
 		vk::DynamicState::eViewport,
 		vk::DynamicState::eScissor
 	};
 
 	vk::PipelineDynamicStateCreateInfo dynamicState;
 	dynamicState.flags = vk::PipelineDynamicStateCreateFlags();
-	dynamicState.dynamicStateCount = static_cast<std::uint32_t>(dynamicStates.size());
-	dynamicState.pDynamicStates = dynamicStates.data();
+	dynamicState.dynamicStateCount = static_cast<std::uint32_t>(dynamicStatesArray.size());
+	dynamicState.pDynamicStates = dynamicStatesArray.data();
 
 	// Viewport state (dynamic, but need to specify count)
 	vk::PipelineViewportStateCreateInfo viewportState;
@@ -195,11 +195,13 @@ void VulkanPipeline::CreatePipeline(std::span<VulkanShader> shaders,
 	depthStencil.stencilTestEnable = vk::False;
 	depthStencil.front = depthStencil.back;
 
-
-	std::vector<vk::PipelineShaderStageCreateInfo> shaderStages(shaders.size());
-
-	for (auto i = 0; i < shaderStages.size(); ++i) {
-		shaderStages[i] = shaders[i].PipelineInfo();
+	// Use std::array for shader stages so debugger can show all elements
+	// Most graphics pipelines have 2 stages (vertex + fragment)
+	std::array<vk::PipelineShaderStageCreateInfo, 2> shaderStagesArray{};
+	const std::uint32_t actualStageCount = static_cast<std::uint32_t>(std::min(shaders.size(), shaderStagesArray.size()));
+	
+	for (std::uint32_t i = 0; i < actualStageCount; ++i) {
+		shaderStagesArray[i] = shaders[i].PipelineInfo();
 	}
 
 	// Use external layout if provided, otherwise use internal layout
@@ -207,8 +209,8 @@ void VulkanPipeline::CreatePipeline(std::span<VulkanShader> shaders,
 
 	vk::GraphicsPipelineCreateInfo pipelineInfo;
 	pipelineInfo.flags = vk::PipelineCreateFlags();
-	pipelineInfo.stageCount = static_cast<std::uint32_t>(shaderStages.size());
-	pipelineInfo.pStages = shaderStages.data();
+	pipelineInfo.stageCount = actualStageCount;
+	pipelineInfo.pStages = shaderStagesArray.data();
 	pipelineInfo.pVertexInputState = &vertexInputInfo;
 	pipelineInfo.pInputAssemblyState = &inputAssembly;
 	pipelineInfo.pTessellationState = nullptr;
@@ -224,35 +226,11 @@ void VulkanPipeline::CreatePipeline(std::span<VulkanShader> shaders,
 	pipelineInfo.basePipelineHandle = nullptr;
 	pipelineInfo.basePipelineIndex = 0;
 
-	// Validate critical state before pipeline creation
-	if (!device_) {
-		throw std::runtime_error("VulkanPipeline: Invalid device");
+	auto result = device_.createGraphicsPipeline(nullptr, pipelineInfo);
+	if (result.result != vk::Result::eSuccess) {
+		throw std::runtime_error("VulkanPipeline: Failed to create graphics pipeline");
 	}
-	if (!activeLayout) {
-		throw std::runtime_error("VulkanPipeline: Invalid pipeline layout");
-	}
-	if (!renderPass) {
-		throw std::runtime_error("VulkanPipeline: Invalid render pass");
-	}
-	for (const auto& stage : shaderStages) {
-		if (!stage.module) {
-			throw std::runtime_error("VulkanPipeline: Invalid shader module");
-		}
-	}
-
-	// Use try-catch to capture any exceptions from vulkan-hpp
-	try {
-		auto result = device_.createGraphicsPipeline(nullptr, pipelineInfo);  // Pass nullptr for cache to simplify
-		if (result.result != vk::Result::eSuccess) {
-			throw std::runtime_error("VulkanPipeline: Failed to create graphics pipeline - " +
-				vk::to_string(result.result));
-		}
-		pipeline_ = result.value;
-	} catch (const vk::SystemError& e) {
-		throw std::runtime_error(std::string("VulkanPipeline: Vulkan error during pipeline creation - ") + e.what());
-	} catch (const std::exception& e) {
-		throw std::runtime_error(std::string("VulkanPipeline: Exception during pipeline creation - ") + e.what());
-	}
+	pipeline_ = result.value;
 }
 
 VulkanPipeline::~VulkanPipeline()
