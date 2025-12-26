@@ -31,6 +31,10 @@ struct TaskOutput
 // Task Shader - Per-meshlet culling
 // ============================================================================
 
+// Shared memory for compaction (must be at module scope in Slang)
+groupshared uint s_meshletIndices[TASK_WORKGROUP_SIZE];
+groupshared uint s_meshletCount;
+
 [numthreads(TASK_WORKGROUP_SIZE, 1, 1)]
 [shader("amplification")]
 void taskMain(
@@ -43,10 +47,6 @@ void taskMain(
     
     // Calculate which meshlet this thread processes
     uint meshletIndex = gid * TASK_WORKGROUP_SIZE + gtid;
-    
-    // Shared memory for compaction
-    groupshared uint s_meshletIndices[TASK_WORKGROUP_SIZE];
-    groupshared uint s_meshletCount;
     
     // Initialize shared counter
     if (gtid == 0)

@@ -39,7 +39,8 @@ VulkanPipeline::VulkanPipeline(const vk::Device& device,
 	pipelineCache_(device_),
 	pipelineLayout_(config.layoutConfig.has_value() 
 		? VulkanPipelineLayout(device_, config.layoutConfig.value())
-		: VulkanPipelineLayout(device_))
+		: VulkanPipelineLayout(device_)),
+	shaderModel_(config.shaderModel)
 {
 	CreatePipeline(shaders, renderPass, subPassIndex, config);
 }
@@ -54,7 +55,8 @@ VulkanPipeline::VulkanPipeline(const vk::Device& device,
 	device_(device),
 	pipelineCache_(device_),
 	pipelineLayout_(device_),  // Empty internal layout (not used)
-	externalLayout_(externalLayout)
+	externalLayout_(externalLayout),
+	shaderModel_(config.shaderModel)
 {
 	CreatePipeline(shaders, renderPass, subPassIndex, config, externalLayout);
 }

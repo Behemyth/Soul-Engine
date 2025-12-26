@@ -359,16 +359,22 @@ typename VulkanDevice<SchedulerType>::BuildResult VulkanDevice<SchedulerType>::B
 	vulkan12Features.shaderSampledImageArrayNonUniformIndexing = vk::True;
 	vulkan12Features.shaderStorageBufferArrayNonUniformIndexing = vk::True;  // For bindless buffer arrays
 	vulkan12Features.scalarBlockLayout = vk::True;  // Required for PhysicalStorageBuffer with packed structs (vec3 at non-16-byte offsets)
+	vulkan12Features.shaderInt8 = vk::True;  // Required for uint8_t in meshlet struct
+	vulkan12Features.storagePushConstant8 = vk::True;  // Required for 8-bit types in push constants
 
 	// Enable Vulkan 1.1 features
 	vk::PhysicalDeviceVulkan11Features vulkan11Features;
 	vulkan11Features.pNext = &vulkan12Features;
 	vulkan11Features.shaderDrawParameters = vk::True;  // Required for SV_VertexID/SV_InstanceID in shaders
+	vulkan11Features.storagePushConstant16 = vk::True;  // Required for 16-bit types in push constants
+	vulkan11Features.storageBuffer16BitAccess = vk::True;  // For 16-bit storage
+	vulkan11Features.uniformAndStorageBuffer16BitAccess = vk::True;  // For 16-bit uniform/storage
 
 	// Base features
 	vk::PhysicalDeviceFeatures2 deviceFeatures2;
 	deviceFeatures2.pNext = &vulkan11Features;
 	deviceFeatures2.features.shaderInt64 = vk::True;  // Required for uint64_t GPU pointers in shaders
+	deviceFeatures2.features.shaderInt16 = vk::True;  // Required for uint16_t in meshlet struct
 
 	vk::DeviceCreateInfo deviceCreateInfo;
 	deviceCreateInfo.pNext					 = &deviceFeatures2;

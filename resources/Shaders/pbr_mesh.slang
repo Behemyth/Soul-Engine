@@ -124,11 +124,13 @@ void meshMain(
     Meshlet meshlet = meshData.meshlets[meshletIndex];
     MeshInstanceData instance = *meshData.instance;
     
-    // Set output counts
-    SetMeshOutputCounts(meshlet.vertexCount, meshlet.triangleCount);
+    // Set output counts (cast uint8_t to uint for API)
+    uint vertexCount = uint(meshlet.vertexCount);
+    uint triangleCount = uint(meshlet.triangleCount);
+    SetMeshOutputCounts(vertexCount, triangleCount);
     
     // Process vertices - each thread handles multiple vertices if needed
-    for (uint vi = gtid; vi < meshlet.vertexCount; vi += MESH_WORKGROUP_SIZE)
+    for (uint vi = gtid; vi < vertexCount; vi += MESH_WORKGROUP_SIZE)
     {
         // Get actual vertex index from meshlet's vertex list
         uint vertexIndex = meshData.meshletVertices[meshlet.vertexOffset + vi];
@@ -156,16 +158,18 @@ void meshMain(
         verts[vi].texCoord = vertex.texCoord;
     }
     
+    // Synchronize all threads before processing triangles
+    // Ensures all vertices are written before any thread writes triangles
+    GroupMemoryBarrierWithGroupSync();
+    
     // Process triangles - each thread handles multiple triangles if needed
-    for (uint ti = gtid; ti < meshlet.triangleCount; ti += MESH_WORKGROUP_SIZE)
+    for (uint ti = gtid; ti < uint(meshlet.triangleCount); ti += MESH_WORKGROUP_SIZE)
     {
-        // Read triangle indices from packed buffer
-        // meshoptimizer stores as 3 consecutive uint8s per triangle, but we use uint32 for simplicity
-        uint baseIdx = meshlet.triangleOffset + ti * 3;
-        uint i0 = meshData.meshletTriangles[baseIdx + 0] & 0xFF;
-        uint i1 = meshData.meshletTriangles[baseIdx + 1] & 0xFF;
-        uint i2 = meshData.meshletTriangles[baseIdx + 2] & 0xFF;
-        tris[ti] = uint3(i0, i1, i2);
+        // Primitive indices are stored as packed uint8 bytes (3 bytes per triangle)
+        // triangleOffset is already the byte offset into the buffer
+        // We read via UnpackTriangle which handles the byte extraction
+        uint3 triIndices = UnpackTriangle(meshData.meshletTriangles, meshlet.triangleOffset, ti);
+        tris[ti] = triIndices;
     }
 }
 

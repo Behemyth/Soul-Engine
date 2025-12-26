@@ -598,9 +598,11 @@ Entity VulkanRasterBackend<SchedulerType>::CreatePass(const ShaderSet& shaderSet
 	// Use the global bindless pipeline layout for all pipelines
 	vk::PipelineLayout bindlessPipelineLayout = bindlessLayout_->Handle();
 
-	// Prefer mesh shaders if available (modern GPU-driven rendering)
+	// Prefer mesh shaders for modern GPU-driven rendering with meshlets
+	// DrawWithPointers will automatically dispatch drawMeshTasksEXT for mesh pipelines
+	// DrawMeshTasks gives explicit control over workgroup dispatch
 	if (std::filesystem::exists(pbrMeshPath) && std::filesystem::exists(pbrMeshFragmentPath)) {
-		// Mesh shader PBR pipeline
+		// Mesh shader PBR pipeline (works with MeshShaderData containing meshlets)
 		std::vector<VulkanShader> shaders;
 		shaders.emplace_back(devices_[0].Logical(), vk::ShaderStageFlagBits::eMeshEXT,
 			pbrMeshPath, "main");
@@ -620,7 +622,7 @@ Entity VulkanRasterBackend<SchedulerType>::CreatePass(const ShaderSet& shaderSet
 			bindlessPipelineLayout);
 	}
 	else if (std::filesystem::exists(pbrVertexPath) && std::filesystem::exists(pbrFragmentPath)) {
-		// Fallback: Vertex shader PBR pipeline
+		// Fallback: Vertex shader PBR pipeline (works with VertexShaderData)
 		std::vector<VulkanShader> shaders;
 		shaders.emplace_back(devices_[0].Logical(), vk::ShaderStageFlagBits::eVertex,
 			pbrVertexPath, "main");
@@ -916,7 +918,10 @@ void VulkanRasterBackend<SchedulerType>::ExecutePassWithFlags(Entity renderPassE
 
 	// Bind pipeline if available
 	if (!passData.pipelines.empty()) {
-		commandBufferHandle.bindPipeline(vk::PipelineBindPoint::eGraphics, passData.pipelines[0].Handle());
+		const auto& boundPipeline = passData.pipelines[0];
+		const bool isMeshPipeline = boundPipeline.IsMeshPipeline();
+		
+		commandBufferHandle.bindPipeline(vk::PipelineBindPoint::eGraphics, boundPipeline.Handle());
 
 		// Bind descriptor buffers (VK_EXT_descriptor_buffer)
 		// Two buffers: sampler heap (binding 0) and texture heap (binding 1)
@@ -936,7 +941,7 @@ void VulkanRasterBackend<SchedulerType>::ExecutePassWithFlags(Entity renderPassE
 		// Set descriptor buffer offsets for set 0
 		// Buffer indices: 0 = sampler buffer, 1 = texture buffer
 		// Both start at offset 0 in their respective buffers
-		vk::PipelineLayout pipelineLayout = passData.pipelines[0].LayoutHandle();
+		vk::PipelineLayout pipelineLayout = boundPipeline.LayoutHandle();
 		std::array<std::uint32_t, 2> bufferIndices = {0, 1};  // sampler at index 0, texture at index 1
 		std::array<vk::DeviceSize, 2> offsets = {0, 0};
 		
@@ -976,19 +981,34 @@ void VulkanRasterBackend<SchedulerType>::ExecutePassWithFlags(Entity renderPassE
 					rootConstants.pixelData = cmd.pixelData;
 					
 					// Stage flags must match the pipeline layout declaration exactly
+					// Include ALL stages from the layout to satisfy Vulkan spec
 					commandBufferHandle.pushConstants(
 						pipelineLayout,
-						vk::ShaderStageFlagBits::eVertex | vk::ShaderStageFlagBits::eFragment | vk::ShaderStageFlagBits::eCompute,
+						vk::ShaderStageFlagBits::eVertex | vk::ShaderStageFlagBits::eFragment | 
+						vk::ShaderStageFlagBits::eCompute | vk::ShaderStageFlagBits::eMeshEXT | 
+						vk::ShaderStageFlagBits::eTaskEXT,
 						0,
 						sizeof(VulkanBindlessLayout::RootConstants),
 						&rootConstants
 					);
 					
-					// With bindless rendering, the shader does its own indexing via GPU pointer.
-					// We always use draw() - the shader reads indexBuffer[vertexId] if indexed.
-					std::uint32_t vertexCount = cmd.IsIndexed() ? cmd.indexCount : cmd.vertexCount;
-					commandBufferHandle.draw(vertexCount, cmd.instanceCount,
-						cmd.firstVertex, cmd.firstInstance);
+					// Use appropriate draw call based on pipeline type
+					if (isMeshPipeline) {
+						// Mesh shader pipeline: dispatch meshlet workgroups
+						// For DrawWithPointers, we need to calculate workgroup count from meshlet count
+						// The meshData should contain meshlet count in its structure
+						// For now, dispatch 1 workgroup - caller should use DrawMeshTasks for proper control
+						// TODO: Read meshlet count from meshData structure
+						std::uint32_t meshletCount = cmd.IsIndexed() ? 
+							(cmd.indexCount / 3 / 124 + 1) : // Estimate: triangles / max_prims_per_meshlet
+							1;
+						commandBufferHandle.drawMeshTasksEXT(meshletCount, 1, 1);
+					} else {
+						// Vertex shader pipeline: standard draw
+						std::uint32_t vertexCount = cmd.IsIndexed() ? cmd.indexCount : cmd.vertexCount;
+						commandBufferHandle.draw(vertexCount, cmd.instanceCount,
+							cmd.firstVertex, cmd.firstInstance);
+					}
 					hasDrawCommands = true;
 					break;
 				}
@@ -1001,19 +1021,19 @@ void VulkanRasterBackend<SchedulerType>::ExecutePassWithFlags(Entity renderPassE
 				case CommandType::DrawMeshTasks: {
 					const auto& cmd = commandList.GetDrawMeshTasks(i);
 					// Push root constants for mesh shader
+					VulkanBindlessLayout::RootConstants meshRootConstants;
+					meshRootConstants.vertexData = cmd.meshData;
+					meshRootConstants.pixelData = cmd.pixelData;
+					
+					// Must include ALL stages from the layout to satisfy Vulkan spec
 					commandBufferHandle.pushConstants(
-						pipelineLayoutHandle,
-						vk::ShaderStageFlagBits::eMeshEXT | vk::ShaderStageFlagBits::eTaskEXT | vk::ShaderStageFlagBits::eFragment,
+						pipelineLayout,
+						vk::ShaderStageFlagBits::eVertex | vk::ShaderStageFlagBits::eFragment | 
+						vk::ShaderStageFlagBits::eCompute | vk::ShaderStageFlagBits::eMeshEXT | 
+						vk::ShaderStageFlagBits::eTaskEXT,
 						0,
-						sizeof(std::uint64_t),
-						&meshData
-					);
-					commandBufferHandle.pushConstants(
-						pipelineLayoutHandle,
-						vk::ShaderStageFlagBits::eMeshEXT | vk::ShaderStageFlagBits::eTaskEXT | vk::ShaderStageFlagBits::eFragment,
-						sizeof(std::uint64_t),
-						sizeof(std::uint64_t),
-						&pixelData
+						sizeof(VulkanBindlessLayout::RootConstants),
+						&meshRootConstants
 					);
 					commandBufferHandle.drawMeshTasksEXT(cmd.groupCountX, cmd.groupCountY, cmd.groupCountZ);
 					hasDrawCommands = true;
@@ -1022,19 +1042,19 @@ void VulkanRasterBackend<SchedulerType>::ExecutePassWithFlags(Entity renderPassE
 				case CommandType::DrawMeshTasksIndirect: {
 					const auto& cmd = commandList.GetDrawMeshTasksIndirect(i);
 					// Push root constants for mesh shader
+					VulkanBindlessLayout::RootConstants meshIndirectRootConstants;
+					meshIndirectRootConstants.vertexData = cmd.meshData;
+					meshIndirectRootConstants.pixelData = cmd.pixelData;
+					
+					// Must include ALL stages from the layout to satisfy Vulkan spec
 					commandBufferHandle.pushConstants(
-						pipelineLayoutHandle,
-						vk::ShaderStageFlagBits::eMeshEXT | vk::ShaderStageFlagBits::eTaskEXT | vk::ShaderStageFlagBits::eFragment,
+						pipelineLayout,
+						vk::ShaderStageFlagBits::eVertex | vk::ShaderStageFlagBits::eFragment | 
+						vk::ShaderStageFlagBits::eCompute | vk::ShaderStageFlagBits::eMeshEXT | 
+						vk::ShaderStageFlagBits::eTaskEXT,
 						0,
-						sizeof(std::uint64_t),
-						&meshData
-					);
-					commandBufferHandle.pushConstants(
-						pipelineLayoutHandle,
-						vk::ShaderStageFlagBits::eMeshEXT | vk::ShaderStageFlagBits::eTaskEXT | vk::ShaderStageFlagBits::eFragment,
-						sizeof(std::uint64_t),
-						sizeof(std::uint64_t),
-						&pixelData
+						sizeof(VulkanBindlessLayout::RootConstants),
+						&meshIndirectRootConstants
 					);
 					// TODO: Implement indirect buffer support
 					// commandBufferHandle.drawMeshTasksIndirectEXT(buffer, offset, drawCount, stride);

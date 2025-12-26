@@ -32,7 +32,7 @@ inline constexpr std::uint32_t MaxPrimitivesPerMeshlet = 124;
  */
 struct Meshlet {
 	std::uint32_t vertexOffset;      // Offset into meshlet vertex buffer
-	std::uint32_t triangleOffset;    // Offset into meshlet index buffer (byte offset / 4)
+	std::uint32_t triangleOffset;    // Byte offset into meshlet primitive index buffer
 	std::uint8_t vertexCount;        // Number of vertices in this meshlet
 	std::uint8_t triangleCount;      // Number of triangles in this meshlet
 	std::uint16_t padding;           // Padding for alignment

@@ -10,24 +10,24 @@
 // ============================================================================
 
 // Meshlet descriptor - describes a single meshlet's vertex/primitive data
-// Matches meshopt_Meshlet structure (16 bytes)
+// Matches engine Meshlet structure (12 bytes)
+// Requires VkPhysicalDeviceVulkan12Features::shaderInt8 and shaderInt16
 struct Meshlet
 {
     uint vertexOffset;      // Offset into meshlet vertex indices buffer
-    uint triangleOffset;    // Offset into meshlet triangle indices buffer
-    uint vertexCount;       // Number of vertices in this meshlet (max 64)
-    uint triangleCount;     // Number of triangles in this meshlet (max 124)
+    uint triangleOffset;    // Byte offset into meshlet primitive index buffer
+    uint8_t vertexCount;    // Number of vertices in this meshlet (max 64)
+    uint8_t triangleCount;  // Number of triangles in this meshlet (max 124)
+    uint16_t _padding;      // Padding for alignment
 };
 
-// Meshlet bounds for culling (matches meshopt_Bounds - 40 bytes)
+// Meshlet bounds for culling (matches engine MeshletBounds - 32 bytes)
 struct MeshletBounds
 {
     float3 center;          // Bounding sphere center
     float  radius;          // Bounding sphere radius
-    float3 coneApex;        // Cone apex for backface culling
-    float  _padding0;
-    float3 coneAxis;        // Cone axis (normalized)
-    float  coneCutoff;      // cos(angle) for cone culling
+    float3 coneAxis;        // Cone axis (normalized, average normal)
+    float  coneCutoff;      // cos(angle) for cone culling (-1 = no culling)
 };
 
 // ============================================================================
@@ -123,14 +123,40 @@ uint3 UnpackTriangle(uint* triangleBuffer, uint triangleOffset, uint triangleInd
     uint byteInWord = byteOffset % 4;
     
     uint word0 = triangleBuffer[wordOffset];
-    uint word1 = triangleBuffer[wordOffset + 1];  // May need next word
     
     uint3 indices;
-    // Extract 3 consecutive bytes
-    uint combined = (word0 >> (byteInWord * 8)) | (word1 << ((4 - byteInWord) * 8));
-    indices.x = combined & 0xFF;
-    indices.y = (combined >> 8) & 0xFF;
-    indices.z = (combined >> 16) & 0xFF;
+    
+    // Handle each starting byte position separately to avoid shift overflow
+    if (byteInWord == 0)
+    {
+        // All 3 bytes fit in word0 (bytes 0, 1, 2)
+        indices.x = word0 & 0xFF;
+        indices.y = (word0 >> 8) & 0xFF;
+        indices.z = (word0 >> 16) & 0xFF;
+    }
+    else if (byteInWord == 1)
+    {
+        // Bytes at positions 1, 2, 3 of word0
+        indices.x = (word0 >> 8) & 0xFF;
+        indices.y = (word0 >> 16) & 0xFF;
+        indices.z = (word0 >> 24) & 0xFF;
+    }
+    else if (byteInWord == 2)
+    {
+        // 2 bytes from word0 (positions 2, 3), 1 byte from word1 (position 0)
+        uint word1 = triangleBuffer[wordOffset + 1];
+        indices.x = (word0 >> 16) & 0xFF;
+        indices.y = (word0 >> 24) & 0xFF;
+        indices.z = word1 & 0xFF;
+    }
+    else // byteInWord == 3
+    {
+        // 1 byte from word0 (position 3), 2 bytes from word1 (positions 0, 1)
+        uint word1 = triangleBuffer[wordOffset + 1];
+        indices.x = (word0 >> 24) & 0xFF;
+        indices.y = word1 & 0xFF;
+        indices.z = (word1 >> 8) & 0xFF;
+    }
     
     return indices;
 }
@@ -172,17 +198,19 @@ bool FrustumCullMeshlet(MeshletBounds bounds, float4x4 mvp)
 }
 
 // Cone culling for backface meshlets
+// Uses sphere center as the cone apex
 bool ConeCullMeshlet(MeshletBounds bounds, float3 cameraPosition, float4x4 model)
 {
-    // Transform cone apex to world space
-    float3 worldApex = mul(model, float4(bounds.coneApex, 1.0)).xyz;
+    // Transform sphere center to world space (cone apex is at center)
+    float3 worldCenter = mul(model, float4(bounds.center, 1.0)).xyz;
     float3 worldAxis = normalize(mul((float3x3)model, bounds.coneAxis));
     
-    // Direction from camera to cone apex
-    float3 viewDir = normalize(worldApex - cameraPosition);
+    // Direction from camera to center
+    float3 viewDir = normalize(worldCenter - cameraPosition);
     
     // Cull if view direction is outside the cone
-    return dot(viewDir, worldAxis) >= bounds.coneCutoff;
+    // If coneCutoff is -1, cone culling is disabled for this meshlet
+    return bounds.coneCutoff > -1.0 && dot(viewDir, worldAxis) >= bounds.coneCutoff;
 }
 
 #endif // MESHLET_COMMON_SLANG

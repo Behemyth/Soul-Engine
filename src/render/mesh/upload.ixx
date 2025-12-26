@@ -5,6 +5,7 @@ import synodic.soul.core;
 import synodic.soul.raster;  // For GPUBufferHandle
 import :vertex;
 import :mesh;
+import :meshlet;
 
 // Upload request - describes data to upload to GPU
 export struct UploadRequest {
@@ -294,6 +295,108 @@ public:
 		if (result.indexBuffer != 0) {
 			raster_.DestroyBuffer(result.indexBuffer);
 		}
+	}
+	
+	// Upload mesh with meshlets for mesh shader rendering
+	// Generates meshlets from mesh data and uploads all buffers
+	[[nodiscard]] synodic::soul::mesh::GPUMeshletMesh UploadMeshletMesh(const MeshData& meshData, 
+	                                               const synodic::soul::mesh::MeshletOptions& options = {}) {
+		if (!meshData.IsValid()) {
+			return {};
+		}
+		
+		synodic::soul::mesh::GPUMeshletMesh result;
+		
+		// Generate meshlets from mesh data
+		auto meshletData = synodic::soul::mesh::GenerateMeshlets(meshData, options);
+		if (!meshletData.IsValid()) {
+			return {};
+		}
+		
+		result.meshletCount = static_cast<std::uint32_t>(meshletData.MeshletCount());
+		result.vertexCount = meshData.vertexCount;
+		result.vertexLayout = meshData.layout;
+		result.bounds = ComputeAABB(meshData);
+		
+		// Create and upload vertex buffer (mesh shader still reads original vertices)
+		BufferDesc vertexDesc;
+		vertexDesc.size = meshData.VertexBufferSize();
+		vertexDesc.usage = BufferUsage::Storage | BufferUsage::TransferDst | BufferUsage::ShaderDeviceAddress;
+		vertexDesc.memory = BufferMemory::DeviceLocal;
+		
+		result.vertexBuffer = raster_.CreateBuffer(vertexDesc);
+		if (result.vertexBuffer == 0) {
+			return {};
+		}
+		raster_.UploadBufferData(result.vertexBuffer, meshData.vertexData.data(), meshData.VertexBufferSize());
+		result.vertexBufferGPU = raster_.GetBufferGPUAddress(result.vertexBuffer);
+		
+		// Create and upload meshlet descriptor buffer
+		BufferDesc meshletDesc;
+		meshletDesc.size = meshletData.MeshletBufferSize();
+		meshletDesc.usage = BufferUsage::Storage | BufferUsage::TransferDst | BufferUsage::ShaderDeviceAddress;
+		meshletDesc.memory = BufferMemory::DeviceLocal;
+		
+		result.meshletBuffer = raster_.CreateBuffer(meshletDesc);
+		if (result.meshletBuffer == 0) {
+			DestroyMeshletMesh(result);
+			return {};
+		}
+		raster_.UploadBufferData(result.meshletBuffer, meshletData.meshlets.data(), meshletData.MeshletBufferSize());
+		result.meshletBufferGPU = raster_.GetBufferGPUAddress(result.meshletBuffer);
+		
+		// Create and upload meshlet bounds buffer (for culling)
+		BufferDesc boundsDesc;
+		boundsDesc.size = meshletData.BoundsBufferSize();
+		boundsDesc.usage = BufferUsage::Storage | BufferUsage::TransferDst | BufferUsage::ShaderDeviceAddress;
+		boundsDesc.memory = BufferMemory::DeviceLocal;
+		
+		result.boundsBuffer = raster_.CreateBuffer(boundsDesc);
+		if (result.boundsBuffer == 0) {
+			DestroyMeshletMesh(result);
+			return {};
+		}
+		raster_.UploadBufferData(result.boundsBuffer, meshletData.bounds.data(), meshletData.BoundsBufferSize());
+		result.boundsBufferGPU = raster_.GetBufferGPUAddress(result.boundsBuffer);
+		
+		// Create and upload vertex index buffer (meshlet -> original vertex indices)
+		BufferDesc vertexIndexDesc;
+		vertexIndexDesc.size = meshletData.VertexIndexBufferSize();
+		vertexIndexDesc.usage = BufferUsage::Storage | BufferUsage::TransferDst | BufferUsage::ShaderDeviceAddress;
+		vertexIndexDesc.memory = BufferMemory::DeviceLocal;
+		
+		result.vertexIndexBuffer = raster_.CreateBuffer(vertexIndexDesc);
+		if (result.vertexIndexBuffer == 0) {
+			DestroyMeshletMesh(result);
+			return {};
+		}
+		raster_.UploadBufferData(result.vertexIndexBuffer, meshletData.vertexIndices.data(), meshletData.VertexIndexBufferSize());
+		result.vertexIndexBufferGPU = raster_.GetBufferGPUAddress(result.vertexIndexBuffer);
+		
+		// Create and upload primitive index buffer (local triangle indices within meshlet)
+		BufferDesc primitiveIndexDesc;
+		primitiveIndexDesc.size = meshletData.PrimitiveIndexBufferSize();
+		primitiveIndexDesc.usage = BufferUsage::Storage | BufferUsage::TransferDst | BufferUsage::ShaderDeviceAddress;
+		primitiveIndexDesc.memory = BufferMemory::DeviceLocal;
+		
+		result.primitiveIndexBuffer = raster_.CreateBuffer(primitiveIndexDesc);
+		if (result.primitiveIndexBuffer == 0) {
+			DestroyMeshletMesh(result);
+			return {};
+		}
+		raster_.UploadBufferData(result.primitiveIndexBuffer, meshletData.primitiveIndices.data(), meshletData.PrimitiveIndexBufferSize());
+		result.primitiveIndexBufferGPU = raster_.GetBufferGPUAddress(result.primitiveIndexBuffer);
+		
+		return result;
+	}
+	
+	// Destroy a meshlet mesh
+	void DestroyMeshletMesh(const synodic::soul::mesh::GPUMeshletMesh& mesh) {
+		if (mesh.vertexBuffer != 0) raster_.DestroyBuffer(mesh.vertexBuffer);
+		if (mesh.meshletBuffer != 0) raster_.DestroyBuffer(mesh.meshletBuffer);
+		if (mesh.boundsBuffer != 0) raster_.DestroyBuffer(mesh.boundsBuffer);
+		if (mesh.vertexIndexBuffer != 0) raster_.DestroyBuffer(mesh.vertexIndexBuffer);
+		if (mesh.primitiveIndexBuffer != 0) raster_.DestroyBuffer(mesh.primitiveIndexBuffer);
 	}
 
 private:

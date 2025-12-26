@@ -170,6 +170,7 @@ public:
 		pipelineCache_(std::move(other.pipelineCache_)),
 		pipelineLayout_(std::move(other.pipelineLayout_)),
 		externalLayout_(other.externalLayout_),
+		shaderModel_(other.shaderModel_),
 		pipeline_(other.pipeline_)
 	{
 		other.pipeline_ = nullptr;
@@ -189,6 +190,7 @@ public:
 			pipelineCache_ = std::move(other.pipelineCache_);
 			pipelineLayout_ = std::move(other.pipelineLayout_);
 			externalLayout_ = other.externalLayout_;
+			shaderModel_ = other.shaderModel_;
 			pipeline_ = other.pipeline_;
 			other.pipeline_ = nullptr;
 			other.device_ = nullptr;
@@ -202,6 +204,12 @@ public:
 		return externalLayout_ ? externalLayout_ : pipelineLayout_.Handle(); 
 	}
 	[[nodiscard]] const VulkanPipelineLayout& Layout() const { return pipelineLayout_; }
+	
+	// Check if this is a mesh shader pipeline (requires drawMeshTasksEXT instead of draw)
+	[[nodiscard]] bool IsMeshPipeline() const noexcept { 
+		return shaderModel_ == ShaderModel::Mesh || shaderModel_ == ShaderModel::MeshTask; 
+	}
+	[[nodiscard]] ShaderModel GetShaderModel() const noexcept { return shaderModel_; }
 
 
 private:
@@ -219,6 +227,7 @@ private:
 	VulkanPipelineCache pipelineCache_;
 	VulkanPipelineLayout pipelineLayout_;
 	vk::PipelineLayout externalLayout_ = nullptr;  // Non-owning, for bindless
+	ShaderModel shaderModel_ = ShaderModel::Vertex;
 
 	vk::Pipeline pipeline_;
 

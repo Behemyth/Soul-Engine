@@ -112,6 +112,23 @@ struct GPUPixelShaderData {
 };
 static_assert(sizeof(GPUPixelShaderData) == 48, "GPUPixelShaderData must be 48 bytes");
 
+// ============================================================================
+// Mesh Shader GPU Data Structures (must match meshlet_common.slang)
+// ============================================================================
+
+// Mesh shader data passed via root constants (matches meshlet_common.slang MeshShaderData)
+struct GPUMeshShaderData {
+	GPUDeviceAddress vertices;        // GPU pointer to MeshVertexRaw[]
+	GPUDeviceAddress meshletVertices; // GPU pointer to meshlet vertex indices
+	GPUDeviceAddress meshletTriangles;// GPU pointer to packed triangle indices
+	GPUDeviceAddress meshlets;        // GPU pointer to Meshlet[] descriptors
+	GPUDeviceAddress meshletBounds;   // GPU pointer to MeshletBounds[] (optional)
+	GPUDeviceAddress instance;        // GPU pointer to MeshInstanceData
+	std::uint32_t meshletCount;       // Total number of meshlets
+	std::uint32_t _padding;
+};
+static_assert(sizeof(GPUMeshShaderData) == 56, "GPUMeshShaderData must be 56 bytes");
+
 // Type alias for the scheduler
 using Scheduler = PassthroughSchedulerBackend;
 
@@ -186,9 +203,9 @@ protected:
 			cubeMeshData_ = GenerateCube(1.0f);
 		}
 
-		// Upload cube mesh to GPU
+		// Upload cube mesh as meshlets for mesh shader rendering
 		meshUploader_.emplace(GetSoul().Raster());
-		cubeGPUMesh_ = meshUploader_->UploadMesh(cubeMeshData_);
+		cubeGPUMeshlet_ = meshUploader_->UploadMeshletMesh(cubeMeshData_);
 
 		// Create PBR material for the cube (bright red for debugging)
 		cubeMaterial_			 = PBRMaterialData {};
@@ -330,10 +347,10 @@ protected:
 
 	void OnShutdown() override
 	{
-		// Destroy GPU mesh before raster backend
-		if (meshUploader_.has_value() && cubeGPUMesh_.IsValid())
+		// Destroy GPU meshlet mesh before raster backend
+		if (meshUploader_.has_value() && cubeGPUMeshlet_.IsValid())
 		{
-			meshUploader_->DestroyMesh(cubeGPUMesh_);
+			meshUploader_->DestroyMeshletMesh(cubeGPUMeshlet_);
 		}
 		meshUploader_.reset();
 
@@ -450,7 +467,7 @@ private:
 		// Import the surface as an external resource
 		ResourceHandle surfaceResource = renderGraph.ImportSurface(surfaceEntity_);
 
-		// Lambda to record cube draw commands using bindless pattern
+		// Lambda to record cube draw commands using mesh shaders with meshlets
 		auto recordCubeDraw = [this](PassExecutionContext& ctx)
 		{
 			if (!ctx.allocator) {
@@ -458,17 +475,17 @@ private:
 				return;
 			}
 
-			// === Bindless Drawing Pattern (No Graphics API) ===
+			// === Mesh Shader Drawing Pattern with Meshlets ===
 			
-			// 1. Allocate per-draw GPU data
+			// 1. Allocate per-draw GPU data for mesh shader
 			auto instanceRaw = ctx.allocator->AllocateTyped<GPUInstanceData>();
 			auto materialRaw = ctx.allocator->AllocateTyped<GPUMaterialData>();
 			auto sceneRaw = ctx.allocator->AllocateTyped<GPUSceneLighting>();
-			auto vsDataRaw = ctx.allocator->AllocateTyped<GPUVertexShaderData>();
+			auto meshDataRaw = ctx.allocator->AllocateTyped<GPUMeshShaderData>();
 			auto psDataRaw = ctx.allocator->AllocateTyped<GPUPixelShaderData>();
 			
 			if (!instanceRaw.IsValid() || !materialRaw.IsValid() || !sceneRaw.IsValid() ||
-			    !vsDataRaw.IsValid() || !psDataRaw.IsValid()) {
+			    !meshDataRaw.IsValid() || !psDataRaw.IsValid()) {
 				// Out of frame allocator memory
 				return;
 			}
@@ -515,14 +532,16 @@ private:
 				scene->lights[0].range = sceneLighting_.lights[0].range;
 			}
 			
-			// 5. Fill vertex shader data struct
-			auto* vsData = vsDataRaw.As<GPUVertexShaderData>();
-			vsData->vertexBuffer = cubeGPUMesh_.vertexBufferGPU;
-			vsData->indexBuffer = cubeGPUMesh_.indexBufferGPU;
-			vsData->instanceData = instanceRaw.gpu;
-			vsData->vertexCount = static_cast<std::uint32_t>(cubeGPUMesh_.vertexCount);
-			vsData->indexCount = static_cast<std::uint32_t>(cubeGPUMesh_.indexCount);
-			vsData->instanceId = 0;
+			// 5. Fill mesh shader data struct (meshlet-based)
+			auto* meshData = meshDataRaw.As<GPUMeshShaderData>();
+			meshData->vertices = cubeGPUMeshlet_.vertexBufferGPU;
+			meshData->meshletVertices = cubeGPUMeshlet_.vertexIndexBufferGPU;
+			meshData->meshletTriangles = cubeGPUMeshlet_.primitiveIndexBufferGPU;
+			meshData->meshlets = cubeGPUMeshlet_.meshletBufferGPU;
+			meshData->meshletBounds = cubeGPUMeshlet_.boundsBufferGPU;
+			meshData->instance = instanceRaw.gpu;
+			meshData->meshletCount = cubeGPUMeshlet_.meshletCount;
+			meshData->_padding = 0;
 			
 			// 6. Fill pixel shader data struct
 			auto* psData = psDataRaw.As<GPUPixelShaderData>();
@@ -541,20 +560,15 @@ private:
 			// Set blend state for opaque rendering
 			ctx.commands.SetBlendState(BlendState::Opaque());
 			
-			// 7. Draw with GPU pointers!
-			DrawWithPointersCommand drawCmd;
-			drawCmd.vertexData = vsDataRaw.gpu;
+			// 7. Draw with mesh shaders!
+			// Each workgroup processes one meshlet, so dispatch meshletCount workgroups
+			DrawMeshTasksCommand drawCmd;
+			drawCmd.meshData = meshDataRaw.gpu;
 			drawCmd.pixelData = psDataRaw.gpu;
-			drawCmd.indexBuffer = cubeGPUMesh_.indexBufferGPU;
-			drawCmd.vertexCount = 0;  // Not used for indexed
-			drawCmd.indexCount = static_cast<std::uint32_t>(cubeGPUMesh_.indexCount);
-			drawCmd.instanceCount = 1;
-			drawCmd.firstVertex = 0;
-			drawCmd.firstIndex = 0;
-			drawCmd.vertexOffset = 0;
-			drawCmd.firstInstance = 0;
-			drawCmd.use32BitIndices = true;
-			ctx.commands.DrawWithPointers(drawCmd);
+			drawCmd.groupCountX = cubeGPUMeshlet_.meshletCount;  // One workgroup per meshlet
+			drawCmd.groupCountY = 1;
+			drawCmd.groupCountZ = 1;
+			ctx.commands.DrawMeshTasks(drawCmd);
 		};
 
 		// === Depth Pre-Pass ===
@@ -588,7 +602,7 @@ private:
 
 	// Mesh data (CPU-side, ready for GPU upload)
 	MeshData cubeMeshData_;
-	GPUMesh cubeGPUMesh_;
+	synodic::soul::mesh::GPUMeshletMesh cubeGPUMeshlet_;  // Meshlet-based for mesh shader rendering
 
 	// Mesh uploader (deferred construction after Raster is ready)
 	std::optional<MeshUploader> meshUploader_;

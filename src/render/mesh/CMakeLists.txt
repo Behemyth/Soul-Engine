@@ -12,5 +12,6 @@ target_sources(soul-engine
 			module.ixx
 	PRIVATE
 		meshlet.cpp
+		meshlet_impl.cpp
 )
 
