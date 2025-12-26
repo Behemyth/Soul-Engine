@@ -305,8 +305,22 @@ typename VulkanDevice<SchedulerType>::BuildResult VulkanDevice<SchedulerType>::B
 
 	// Create the device
 
+	// Enable VK_EXT_extended_dynamic_state3 for dynamic blend state (No Graphics API pattern)
+	vk::PhysicalDeviceExtendedDynamicState3FeaturesEXT dynamicState3Features;
+	dynamicState3Features.extendedDynamicState3ColorBlendEnable = vk::True;
+	dynamicState3Features.extendedDynamicState3ColorBlendEquation = vk::True;
+	dynamicState3Features.extendedDynamicState3ColorWriteMask = vk::True;
+	dynamicState3Features.extendedDynamicState3LogicOpEnable = vk::True;
+
+	// Enable VK_EXT_descriptor_buffer features for bindless texture heap
+	vk::PhysicalDeviceDescriptorBufferFeaturesEXT descriptorBufferFeatures;
+	descriptorBufferFeatures.pNext = &dynamicState3Features;
+	descriptorBufferFeatures.descriptorBuffer = vk::True;
+	descriptorBufferFeatures.descriptorBufferPushDescriptors = vk::True;
+
 	// Enable Vulkan 1.4 features
 	vk::PhysicalDeviceVulkan14Features vulkan14Features;
+	vulkan14Features.pNext = &descriptorBufferFeatures;
 	vulkan14Features.maintenance5 = vk::True;
 	vulkan14Features.maintenance6 = vk::True;
 	vulkan14Features.pushDescriptor = vk::True;

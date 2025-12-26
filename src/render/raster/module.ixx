@@ -7,6 +7,11 @@ import synodic.soul.core;
 
 export import :types;
 export import :resource;
+export import :gpu_pointer;
+export import :barrier;
+export import :texture_heap;
+export import :depth_stencil_state;
+export import :blend_state;
 export import :commands;
 export import :device;
 export import :command_list;

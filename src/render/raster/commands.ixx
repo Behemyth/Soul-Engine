@@ -1,9 +1,24 @@
+/**
+ * @file commands.ixx
+ * @brief Rasterization command types for command list recording
+ * 
+ * Commands follow "No Graphics API" patterns where possible:
+ * - GPU pointer-based root arguments for shader data
+ * - Simplified barrier model (stage-only)
+ * - Separated depth-stencil state
+ * 
+ * @see https://www.sebastianaaltonen.com/blog/no-graphics-api
+ */
 export module synodic.soul.raster:commands;
 
 import std;
 import synodic.soul.core;
 import :types;
 import :resource;
+import :gpu_pointer;
+import :barrier;
+import :depth_stencil_state;
+import :blend_state;
 
 // Temporary type until proper buffer types are available
 template<typename T> using ExternalBuffer = std::vector<T>;
@@ -13,19 +28,31 @@ export using GPUBufferHandle = std::uint64_t;
 export constexpr GPUBufferHandle InvalidGPUBuffer = 0;
 
 export enum class CommandType : std::uint8_t {
-	Draw,
-	DrawIndexed,
-	DrawIndirect,
-	BindVertexBuffer,
-	BindIndexBuffer,
-	SetPushConstants,
+	// Bindless draw commands (GPU pointer pattern)
+	Draw,              ///< Basic non-indexed draw (uses bound pipeline)
+	DrawIndexed,       ///< Basic indexed draw (uses bound pipeline)
+	DrawWithPointers,  ///< Draw with GPU pointer root arguments (bindless)
+	DrawIndirectWithPointers, ///< Multi-draw indirect with pointers (fully GPU-driven)
+	
+	// Compute dispatch commands
+	Dispatch,          ///< Dispatch compute with GPU pointer root data
+	DispatchIndirect,  ///< Indirect dispatch with GPU-generated arguments
+	
+	// Dynamic state commands
 	BindPipeline,
 	SetViewport,
 	SetScissor,
+	SetDepthStencilState,
+	SetBlendState,
+	SetTextureHeap,
+	
+	// Synchronization
+	Barrier,
+	MemoryBarrier,
+	
+	// Resource updates
 	UpdateBuffer,
-	UpdateTexture,
 	CopyBuffer,
-	CopyTexture
 };
 
 // Draw non-indexed geometry
@@ -43,36 +70,6 @@ export struct DrawIndexedCommand {
 	std::uint32_t firstIndex = 0;
 	std::int32_t vertexOffset = 0;  // Signed for negative offsets
 	std::uint32_t firstInstance = 0;
-};
-
-// Bind vertex buffer to a binding slot
-export struct BindVertexBufferCommand {
-	GPUBufferHandle buffer = InvalidGPUBuffer;
-	std::uint32_t binding = 0;
-	std::uint64_t offset = 0;
-};
-
-// Bind index buffer
-export struct BindIndexBufferCommand {
-	GPUBufferHandle buffer = InvalidGPUBuffer;
-	std::uint64_t offset = 0;
-	bool use32BitIndices = true;  // false = 16-bit indices
-};
-
-// Set push constant data
-export struct SetPushConstantsCommand {
-	std::array<std::byte, 128> data{};  // Max 128 bytes (typical limit)
-	std::uint32_t size = 0;
-	std::uint32_t offset = 0;
-	
-	// Helper to set typed data
-	template<typename T>
-	void Set(const T& value, std::uint32_t offsetBytes = 0) {
-		static_assert(sizeof(T) <= 128, "Push constant data exceeds 128 bytes");
-		std::memcpy(data.data() + offsetBytes, &value, sizeof(T));
-		size = sizeof(T) + offsetBytes;
-		offset = 0;
-	}
 };
 
 // Bind a pipeline (identified by Entity/handle)
@@ -98,20 +95,10 @@ export struct SetScissorCommand {
 	std::uint32_t height = 0;
 };
 
-export struct DrawIndirectCommand {
-	GPUBufferHandle buffer = InvalidGPUBuffer;
-	std::uint64_t offset = 0;
-	std::uint32_t drawCount = 1;
-	std::uint32_t stride = 0;
-};
-
 export struct UpdateBufferCommand {
 	std::uint32_t offset = 0;
 	ExternalBuffer<std::byte> data;
 	Entity* buffer = nullptr;
-};
-
-export struct UpdateTextureCommand {
 };
 
 export struct CopyBufferCommand {
@@ -122,5 +109,156 @@ export struct CopyBufferCommand {
 	std::uint64_t size = 0;
 };
 
-export struct CopyTextureCommand {
+// ============================================================================
+// Bindless / GPU Pointer Commands (No Graphics API patterns)
+// ============================================================================
+
+/**
+ * @brief Dispatch compute shader with GPU pointer root arguments
+ * 
+ * Follows "No Graphics API" pattern where shader data is passed via
+ * a single 64-bit GPU pointer to a user-defined struct instead of
+ * descriptor sets or push constants.
+ * 
+ * Usage:
+ * @code
+ * struct ComputeData {
+ *     const float* input;   // GPU pointer
+ *     float* output;        // GPU pointer
+ *     uint32_t count;
+ * };
+ * GPUPointer<ComputeData> data = allocator.Allocate<ComputeData>();
+ * data->input = inputBuffer.GPU();
+ * data->output = outputBuffer.GPU();
+ * data->count = 1024;
+ * 
+ * commands.DispatchWithPointer({data.GPU(), {128, 1, 1}});
+ * @endcode
+ */
+export struct DispatchCommand {
+	GPUDeviceAddress rootData = InvalidGPUAddress;  ///< GPU pointer to shader data struct
+	std::uint32_t groupCountX = 1;
+	std::uint32_t groupCountY = 1;
+	std::uint32_t groupCountZ = 1;
+	
+	constexpr DispatchCommand() noexcept = default;
+	
+	constexpr DispatchCommand(GPUDeviceAddress data, 
+	                          std::uint32_t x, std::uint32_t y = 1, std::uint32_t z = 1) noexcept
+		: rootData(data), groupCountX(x), groupCountY(y), groupCountZ(z)
+	{}
 };
+
+/**
+ * @brief Indirect dispatch with GPU-generated arguments
+ * 
+ * Both root data pointer and dispatch arguments can be GPU-generated.
+ */
+export struct DispatchIndirectCommand {
+	GPUDeviceAddress rootData = InvalidGPUAddress;  ///< GPU pointer to shader data
+	GPUDeviceAddress arguments = InvalidGPUAddress; ///< GPU pointer to {groupCountX, Y, Z}
+	
+	constexpr DispatchIndirectCommand() noexcept = default;
+	
+	constexpr DispatchIndirectCommand(GPUDeviceAddress data, GPUDeviceAddress args) noexcept
+		: rootData(data), arguments(args)
+	{}
+};
+
+/**
+ * @brief Draw with GPU pointer root arguments
+ * 
+ * Passes separate GPU pointers for vertex and pixel shader data,
+ * following the blog's pattern of two data pointers per draw.
+ * 
+ * With bindless, vertex buffers are accessed via pointers in the
+ * shader data struct rather than bound via BindVertexBuffer.
+ * 
+ * Usage:
+ * @code
+ * struct VertexData {
+ *     const Vertex* vertices;  // GPU pointer to vertex buffer
+ *     mat4 modelViewProj;
+ * };
+ * struct PixelData {
+ *     uint32_t albedoTexture;  // Texture heap index
+ *     uint32_t normalTexture;
+ *     float roughness;
+ * };
+ * 
+ * commands.DrawWithPointers({
+ *     .vertexData = vertexData.GPU(),
+ *     .pixelData = pixelData.GPU(),
+ *     .indexBuffer = indexBuffer.GPU(),
+ *     .indexCount = mesh.indexCount,
+ * });
+ * @endcode
+ */
+export struct DrawWithPointersCommand {
+	GPUDeviceAddress vertexData = InvalidGPUAddress;  ///< GPU pointer to vertex shader data
+	GPUDeviceAddress pixelData = InvalidGPUAddress;   ///< GPU pointer to pixel shader data
+	GPUDeviceAddress indexBuffer = InvalidGPUAddress; ///< GPU pointer to index buffer (optional)
+	std::uint32_t vertexCount = 0;      ///< Vertex count (if not indexed)
+	std::uint32_t indexCount = 0;       ///< Index count (if indexed)
+	std::uint32_t instanceCount = 1;
+	std::uint32_t firstVertex = 0;
+	std::uint32_t firstIndex = 0;
+	std::int32_t vertexOffset = 0;      ///< Vertex offset for indexed draws
+	std::uint32_t firstInstance = 0;
+	bool use32BitIndices = true;
+	
+	constexpr DrawWithPointersCommand() noexcept = default;
+	
+	/**
+	 * @brief Check if this is an indexed draw
+	 */
+	[[nodiscard]] constexpr bool IsIndexed() const noexcept {
+		return indexBuffer != InvalidGPUAddress && indexCount > 0;
+	}
+};
+
+/**
+ * @brief Multi-draw indirect with GPU pointer root arguments
+ * 
+ * Enables fully GPU-driven rendering where both per-draw data pointers
+ * AND draw arguments are generated by compute shaders.
+ * 
+ * This is the ultimate bindless pattern for culling/LOD systems.
+ */
+export struct DrawIndirectWithPointersCommand {
+	GPUDeviceAddress vertexDataArray = InvalidGPUAddress;  ///< Array of vertex data pointers
+	GPUDeviceAddress pixelDataArray = InvalidGPUAddress;   ///< Array of pixel data pointers
+	std::uint32_t vertexDataStride = 0;   ///< Stride between vertex data structs
+	std::uint32_t pixelDataStride = 0;    ///< Stride between pixel data structs
+	GPUDeviceAddress arguments = InvalidGPUAddress;  ///< GPU pointer to draw arguments
+	GPUDeviceAddress drawCount = InvalidGPUAddress;  ///< GPU pointer to draw count (optional)
+	std::uint32_t maxDrawCount = 0;       ///< Maximum draws (if drawCount is GPU-generated)
+	std::uint32_t argumentStride = 0;     ///< Stride between draw argument structs
+	bool indexed = true;
+	
+	constexpr DrawIndirectWithPointersCommand() noexcept = default;
+};
+
+/**
+ * @brief Set active texture heap for bindless texture access
+ * 
+ * Must be called before draws/dispatches that use bindless textures.
+ * The heap GPU address is used by shaders to index into the texture array.
+ */
+export struct SetTextureHeapCommand {
+	GPUDeviceAddress textureHeap = InvalidGPUAddress;
+	GPUDeviceAddress samplerHeap = InvalidGPUAddress;  ///< Optional separate sampler heap
+	
+	constexpr SetTextureHeapCommand() noexcept = default;
+	
+	constexpr explicit SetTextureHeapCommand(GPUDeviceAddress textures, 
+	                                         GPUDeviceAddress samplers = InvalidGPUAddress) noexcept
+		: textureHeap(textures), samplerHeap(samplers)
+	{}
+};
+
+// Re-export barrier, depth-stencil, and blend commands from their modules
+export using ::BarrierCommand;
+export using ::MemoryBarrierCommand;
+export using ::SetDepthStencilStateCommand;
+export using ::SetBlendStateCommand;

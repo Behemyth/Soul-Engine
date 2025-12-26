@@ -12,21 +12,29 @@ target_sources(soul-engine
 			vulkan_render_pass.ixx
 			vulkan_shader.ixx
 			vulkan_sub_pass.ixx
+			# Bindless resources (No Graphics API pattern)
+			vulkan_texture_heap.ixx
+			vulkan_sampler_heap.ixx
+			vulkan_gpu_allocator.ixx
+			vulkan_bindless_layout.ixx
+			# Device
 			device/vulkan_physical_device.ixx
 			device/vulkan_queue.ixx
 			device/vulkan_device.ixx
+			# Commands
 			command/vulkan_command_pool.ixx
 			command/vulkan_command_buffer.ixx
+			# Buffers
 			buffer/vulkan_buffer.ixx
+			# Pipelines
 			pipeline/vulkan_pipeline.ixx
 			pipeline/vulkan_pipeline_layout.ixx
 			pipeline/vulkan_pipeline_cache.ixx
+			# Surface
 			surface/vulkan_surface.ixx
 			surface/vulkan_swap_chain.ixx
 			surface/vulkan_frame.ixx
-			descriptor/vulkan_descriptor_pool.ixx
-			descriptor/vulkan_descriptor_set_layout.ixx
-			descriptor/vulkan_descriptor_set.ixx
+			# Shader
 			shader/vulkan_shader_reflection_utils.ixx
 	PRIVATE
 		vulkan_allocator.cpp

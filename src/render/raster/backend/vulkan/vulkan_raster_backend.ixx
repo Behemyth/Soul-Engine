@@ -22,9 +22,6 @@ import :render_pass;
 import :semaphore;
 import :framebuffer;
 import :allocator;
-import :descriptor_pool;
-import :descriptor_set_layout;
-import :descriptor_set;
 
 // Simple ID types to replace Entity for resource management
 export using SurfaceId = std::uint64_t;
@@ -294,21 +291,12 @@ private:
 	std::optional<BufferData> stagingBuffer_;
 	static constexpr std::size_t stagingBufferSize_ = 64 * 1024 * 1024;  // 64 MB staging buffer
 
-	// Descriptor infrastructure
-	std::optional<VulkanDescriptorPool> descriptorPool_;
-	std::optional<VulkanDescriptorSetLayout> materialLayout_;    // Set 0: Material + Lighting
-	
-	// Per-frame material/lighting uniform buffers
-	struct FrameUniforms {
-		BufferData materialBuffer;
-		BufferData lightingBuffer;
-		VulkanDescriptorSet descriptorSet;
-	};
-	std::vector<FrameUniforms> frameUniforms_;
-
-	// Initialize descriptor infrastructure
-	void InitializeDescriptors();
-	void DestroyDescriptors();
+	// TODO: Bindless infrastructure (No Graphics API pattern)
+	// - VulkanTextureHeap for bindless textures
+	// - VulkanSamplerHeap for bindless samplers  
+	// - VulkanGPUAllocator for GPU memory
+	// - VulkanBindlessLayout for global pipeline layout
+	// These will replace the legacy descriptor infrastructure
 
 	// TODO: put on stack and remove deferred construction
 	std::unique_ptr<VulkanInstance> instance_;
@@ -355,8 +343,15 @@ VulkanRasterBackend<SchedulerType>::VulkanRasterBackend(SchedulerType& scheduler
 
 	instance_.reset(new VulkanInstance(appInfo, validationLayers, instanceExtensions));
 
-	std::vector<std::string> deviceExtensions {"VK_KHR_swapchain"};
+	std::vector<std::string> deviceExtensions {
+		"VK_KHR_swapchain",
+		"VK_EXT_descriptor_buffer",       // Required for bindless texture heap
+		"VK_EXT_extended_dynamic_state3", // Required for dynamic blend state
+	};
 	// Note: Many extensions promoted to core in Vulkan 1.4
+	// - VK_KHR_buffer_device_address (core in 1.2)
+	// - VK_KHR_synchronization2 (core in 1.3)
+	// - VK_KHR_dynamic_rendering (core in 1.3)
 
 	// TODO: Device groups and multiple devices
 	physicalDevices_ = instance_->EnumeratePhysicalDevices();
@@ -370,8 +365,11 @@ VulkanRasterBackend<SchedulerType>::VulkanRasterBackend(SchedulerType& scheduler
 		commandPools_.push_back(VulkanCommandPool(scheduler_, vkDevice));
 	}
 
-	// Initialize descriptor infrastructure for PBR rendering
-	InitializeDescriptors();
+	// TODO: Initialize bindless infrastructure
+	// - Create VulkanGPUAllocator (requires ReBAR)
+	// - Create VulkanTextureHeap
+	// - Create VulkanSamplerHeap
+	// - Create VulkanBindlessLayout
 }
 
 template<SchedulerBackend SchedulerType>
@@ -427,109 +425,24 @@ void VulkanRasterBackend<SchedulerType>::Present()
 	currentFrame_ = (currentFrame_ + 1) % frameCount;
 }
 
-template<SchedulerBackend SchedulerType>
-void VulkanRasterBackend<SchedulerType>::InitializeDescriptors()
-{
-	if (devices_.empty()) return;
-	
-	auto& device = devices_[0];
-	auto logicalDevice = device.Logical();
-	
-	// Create descriptor pool with capacity for per-frame descriptor sets
-	// We need 1 set per frame with 2 uniform buffers each (Material + SceneLighting)
-	DescriptorPoolSizes poolSizes;
-	poolSizes.uniformBuffers = frameCount * 2;  // 2 UBOs per frame
-	poolSizes.maxSets = frameCount;
-	
-	descriptorPool_.emplace(logicalDevice, poolSizes);
-	
-	// Create layout for set 0: Material (binding 0) + SceneLighting (binding 1)
-	std::vector<DescriptorBinding> bindings {
-		DescriptorBinding::UniformBuffer(0, vk::ShaderStageFlagBits::eFragment),  // Material
-		DescriptorBinding::UniformBuffer(1, vk::ShaderStageFlagBits::eFragment),  // SceneLighting
-	};
-	
-	materialLayout_.emplace(logicalDevice, bindings);
-	
-	// Create per-frame uniform buffers and descriptor sets
-	frameUniforms_.resize(frameCount);
-	
-	for (std::uint32_t i = 0; i < frameCount; ++i) {
-		// Allocate material UBO (64 bytes for alignment)
-		BufferDesc materialDesc;
-		materialDesc.size = 64;  // MaterialData is 48 bytes, pad to 64 for alignment
-		materialDesc.usage = BufferUsage::Uniform;
-		materialDesc.memory = BufferMemory::HostVisible;  // CPU-visible for easy updates
-		
-		auto materialHandle = CreateBuffer(materialDesc);
-		if (auto it = buffers_.find(materialHandle); it != buffers_.end()) {
-			frameUniforms_[i].materialBuffer = std::move(it->second);
-			buffers_.erase(it);
-		}
-		
-		// Allocate scene lighting UBO (512 bytes to hold SceneLighting struct)
-		BufferDesc sceneDesc;
-		sceneDesc.size = 512;  // SceneLighting struct
-		sceneDesc.usage = BufferUsage::Uniform;
-		sceneDesc.memory = BufferMemory::HostVisible;
-		
-		auto sceneHandle = CreateBuffer(sceneDesc);
-		if (auto it = buffers_.find(sceneHandle); it != buffers_.end()) {
-			frameUniforms_[i].lightingBuffer = std::move(it->second);
-			buffers_.erase(it);
-		}
-		
-		// Allocate descriptor set from pool
-		auto rawSet = descriptorPool_->AllocateOne(materialLayout_->Handle());
-		frameUniforms_[i].descriptorSet = VulkanDescriptorSet(logicalDevice, rawSet, *materialLayout_);
-		
-		// Write buffer bindings to descriptor set
-		std::vector<DescriptorWrite> writes {
-			DescriptorWrite::Buffer(0, frameUniforms_[i].materialBuffer.buffer, 64),
-			DescriptorWrite::Buffer(1, frameUniforms_[i].lightingBuffer.buffer, 512),
-		};
-		frameUniforms_[i].descriptorSet.Update(writes);
-	}
-}
-
-template<SchedulerBackend SchedulerType>
-void VulkanRasterBackend<SchedulerType>::DestroyDescriptors()
-{
-	// Free descriptor sets and buffers
-	frameUniforms_.clear();
-	
-	// Descriptor pool and layouts will be destroyed by their destructors
-	materialLayout_.reset();
-	descriptorPool_.reset();
-}
+// NOTE: Legacy descriptor infrastructure removed in favor of bindless pattern.
+// Material/lighting data is now passed via GPU pointers in root constants.
+// See: DrawWithPointersCommand, VulkanBindlessLayout, VulkanGPUAllocator
 
 template<SchedulerBackend SchedulerType>
 void VulkanRasterBackend<SchedulerType>::UpdateMaterial(const void* materialData, std::size_t size)
 {
-	if (currentFrame_ >= frameUniforms_.size()) return;
-	
-	auto& frameUniform = frameUniforms_[currentFrame_];
-	if (!frameUniform.materialBuffer.IsValid() || !frameUniform.materialBuffer.mappedPtr) return;
-	
-	// Copy to mapped memory (up to buffer size)
-	std::size_t copySize = std::min(size, frameUniform.materialBuffer.size);
-	std::memcpy(frameUniform.materialBuffer.mappedPtr, materialData, copySize);
-	
-	// Note: VK_MEMORY_PROPERTY_HOST_COHERENT_BIT is typically used for Shared memory,
-	// so explicit flush may not be needed. If issues arise, add vkFlushMappedMemoryRanges.
+	// TODO: With bindless, material data should be allocated via GPUAllocator
+	// and passed as a GPU pointer in the draw command's vertexData/pixelData.
+	// This legacy function is kept as a stub for now.
 }
 
 template<SchedulerBackend SchedulerType>
 void VulkanRasterBackend<SchedulerType>::UpdateSceneLighting(const void* lightingData, std::size_t size)
 {
-	if (currentFrame_ >= frameUniforms_.size()) return;
-	
-	auto& frameUniform = frameUniforms_[currentFrame_];
-	if (!frameUniform.lightingBuffer.IsValid() || !frameUniform.lightingBuffer.mappedPtr) return;
-	
-	// Copy to mapped memory (up to buffer size)
-	std::size_t copySize = std::min(size, frameUniform.lightingBuffer.size);
-	std::memcpy(frameUniform.lightingBuffer.mappedPtr, lightingData, copySize);
+	// TODO: With bindless, lighting data should be allocated via GPUAllocator
+	// and passed as a GPU pointer in the draw command's pixelData.
+	// This legacy function is kept as a stub for now.
 }
 
 template<SchedulerBackend SchedulerType>
@@ -915,59 +828,15 @@ void VulkanRasterBackend<SchedulerType>::ExecutePassWithFlags(Entity renderPassE
 	if (!passData.pipelines.empty()) {
 		commandBufferHandle.bindPipeline(vk::PipelineBindPoint::eGraphics, passData.pipelines[0].Handle());
 
-		// Bind descriptor sets for material/lighting uniforms (if PBR pipeline)
-		if (currentFrame_ < frameUniforms_.size() && 
-			frameUniforms_[currentFrame_].descriptorSet.IsValid()) {
-			vk::DescriptorSet descSet = frameUniforms_[currentFrame_].descriptorSet.Handle();
-			commandBufferHandle.bindDescriptorSets(
-				vk::PipelineBindPoint::eGraphics,
-				passData.pipelines[0].Layout().Handle(),
-				0,  // First set
-				1, &descSet,
-				0, nullptr);  // No dynamic offsets
-		}
+		// NOTE: With bindless pattern, descriptor sets are replaced by:
+		// 1. VK_EXT_descriptor_buffer for texture/sampler heaps
+		// 2. Push constants for GPU pointers (RootConstants)
+		// TODO: Bind descriptor buffer once bindless infrastructure is initialized
 
-		// Process command list commands using index-based iteration
+		// Process command list commands using the bindless pattern
 		bool hasDrawCommands = false;
 		for (std::size_t i = 0; i < commandList.CommandCount(); ++i) {
 			switch (commandList.GetCommandType(i)) {
-				case CommandType::BindVertexBuffer: {
-					const auto& cmd = commandList.GetBindVertexBuffer(i);
-					const BufferId bufferId = static_cast<BufferId>(cmd.buffer);
-					auto bufferIt = buffers_.find(bufferId);
-					if (bufferIt != buffers_.end()) {
-						vk::Buffer vkBuffer = bufferIt->second.buffer;
-						vk::DeviceSize offset = cmd.offset;
-						commandBufferHandle.bindVertexBuffers(cmd.binding, 1, &vkBuffer, &offset);
-					}
-					break;
-				}
-				case CommandType::BindIndexBuffer: {
-					const auto& cmd = commandList.GetBindIndexBuffer(i);
-					const BufferId bufferId = static_cast<BufferId>(cmd.buffer);
-					auto bufferIt = buffers_.find(bufferId);
-					if (bufferIt != buffers_.end()) {
-						vk::IndexType indexType = cmd.use32BitIndices 
-							? vk::IndexType::eUint32 
-							: vk::IndexType::eUint16;
-						commandBufferHandle.bindIndexBuffer(bufferIt->second.buffer, cmd.offset, indexType);
-					}
-					break;
-				}
-				case CommandType::SetPushConstants: {
-					const auto& cmd = commandList.GetSetPushConstants(i);
-					if (cmd.size > 0) {
-						// Use vertex + fragment stages by default
-						vk::ShaderStageFlags stages = vk::ShaderStageFlagBits::eVertex | vk::ShaderStageFlagBits::eFragment;
-						commandBufferHandle.pushConstants(
-							passData.pipelines[0].Layout().Handle(),
-							stages,
-							cmd.offset,
-							cmd.size,
-							cmd.data.data());
-					}
-					break;
-				}
 				case CommandType::DrawIndexed: {
 					const auto& cmd = commandList.GetDrawIndexed(i);
 					commandBufferHandle.drawIndexed(cmd.indexCount, cmd.instanceCount, 
@@ -982,8 +851,45 @@ void VulkanRasterBackend<SchedulerType>::ExecutePassWithFlags(Entity renderPassE
 					hasDrawCommands = true;
 					break;
 				}
+				case CommandType::DrawWithPointers: {
+					// TODO: With bindless initialized:
+					// 1. Push RootConstants with vertexData/pixelData GPU pointers
+					// 2. Bind index buffer if indexed
+					// 3. Issue draw call
+					const auto& cmd = commandList.GetDrawWithPointers(i);
+					if (cmd.IsIndexed()) {
+						// TODO: Bind index buffer from GPU pointer
+						commandBufferHandle.drawIndexed(cmd.indexCount, cmd.instanceCount,
+							cmd.firstIndex, cmd.vertexOffset, cmd.firstInstance);
+					} else {
+						commandBufferHandle.draw(cmd.vertexCount, cmd.instanceCount,
+							cmd.firstVertex, cmd.firstInstance);
+					}
+					hasDrawCommands = true;
+					break;
+				}
+				case CommandType::Dispatch: {
+					// TODO: Push root data pointer, dispatch compute
+					const auto& cmd = commandList.GetDispatch(i);
+					commandBufferHandle.dispatch(cmd.groupCountX, cmd.groupCountY, cmd.groupCountZ);
+					break;
+				}
+				case CommandType::SetDepthStencilState: {
+					// TODO: Use vkCmdSetDepthTestEnable, vkCmdSetDepthWriteEnable, etc.
+					// (VK_EXT_extended_dynamic_state)
+					break;
+				}
+				case CommandType::SetBlendState: {
+					// TODO: Use vkCmdSetColorBlendEnableEXT, vkCmdSetColorBlendEquationEXT, etc.
+					// (VK_EXT_extended_dynamic_state3)
+					break;
+				}
+				case CommandType::Barrier: {
+					// TODO: Convert BarrierCommand to vk::MemoryBarrier2
+					break;
+				}
 				default:
-					// Other command types not yet implemented
+					// Other command types handled elsewhere or not yet implemented
 					break;
 			}
 		}

@@ -15,13 +15,14 @@ export import :framebuffer;
 export import :render_pass;
 export import :shader;
 export import :subpass;
-export import :descriptor_pool;
-export import :descriptor_set_layout;
-export import :descriptor_set;
 export import :pipeline_layout;
 export import :pipeline_cache;
 export import :pipeline;
 export import :surface;
 export import :swapchain;
 export import :frame;
-export import :backend;
+// Bindless resources (No Graphics API pattern)
+export import :texture_heap;
+export import :sampler_heap;
+export import :gpu_allocator;
+export import :bindless_layout;

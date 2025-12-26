@@ -12,12 +12,14 @@ export enum class VulkanError {
 	MemoryTypeNotFound,
 	OutOfDeviceMemory,
 	OutOfHostMemory,
+	ReBarNotSupported,  // Resizable BAR not available for CPU-mapped GPU memory
 
 	// Device errors
 	DeviceNotFound,
 	DeviceLost,
 	SurfaceNotSupported,
 	SurfaceLost,
+	FeatureNotSupported,  // Required Vulkan feature not supported
 
 	// Swapchain errors
 	SwapchainOutOfDate,
@@ -27,6 +29,11 @@ export enum class VulkanError {
 	// Pipeline errors
 	PipelineCreationFailed,
 	ShaderCompilationFailed,
+
+	// Bindless errors
+	TextureHeapFull,
+	InvalidTextureIndex,
+	DescriptorBufferNotSupported,
 
 	// Synchronization errors
 	FenceTimeout,
@@ -71,6 +78,8 @@ export constexpr const char* ToString(VulkanError error) noexcept {
 			return "Out of device memory";
 		case VulkanError::OutOfHostMemory:
 			return "Out of host memory";
+		case VulkanError::ReBarNotSupported:
+			return "Resizable BAR not available for CPU-mapped GPU memory";
 		case VulkanError::DeviceNotFound:
 			return "Device not found";
 		case VulkanError::DeviceLost:
@@ -79,6 +88,8 @@ export constexpr const char* ToString(VulkanError error) noexcept {
 			return "Surface not supported by device";
 		case VulkanError::SurfaceLost:
 			return "Surface lost";
+		case VulkanError::FeatureNotSupported:
+			return "Required Vulkan feature not supported";
 		case VulkanError::SwapchainOutOfDate:
 			return "Swapchain out of date";
 		case VulkanError::SwapchainAcquireFailed:
@@ -89,6 +100,12 @@ export constexpr const char* ToString(VulkanError error) noexcept {
 			return "Pipeline creation failed";
 		case VulkanError::ShaderCompilationFailed:
 			return "Shader compilation failed";
+		case VulkanError::TextureHeapFull:
+			return "Texture heap is full";
+		case VulkanError::InvalidTextureIndex:
+			return "Invalid texture index";
+		case VulkanError::DescriptorBufferNotSupported:
+			return "VK_EXT_descriptor_buffer not supported";
 		case VulkanError::FenceTimeout:
 			return "Fence wait timeout";
 		case VulkanError::NotImplemented:
