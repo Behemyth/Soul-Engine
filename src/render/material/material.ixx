@@ -1,7 +1,7 @@
 export module synodic.soul.render.material;
 
 import std;
-import synodic.library;
+import synodic.periapsis;
 import synodic.soul.core;
 
 // PBR material parameters
@@ -31,17 +31,17 @@ static_assert(sizeof(PBRMaterialData) == 48, "PBRMaterialData must be 48 bytes")
 // Per-object transform data for push constants
 // Push constant limit is typically 128 bytes, so we use 192 bytes via uniform
 export struct TransformData {
-	synodic::math::mat4 model;          // 64 bytes - object to world
-	synodic::math::mat4 viewProjection; // 64 bytes - world to clip
-	synodic::math::mat4 normalMatrix;   // 64 bytes - for transforming normals (inverse transpose of model)
+	peri::math::mat4 model;          // 64 bytes - object to world
+	peri::math::mat4 viewProjection; // 64 bytes - world to clip
+	peri::math::mat4 normalMatrix;   // 64 bytes - for transforming normals (inverse transpose of model)
 };
 
 static_assert(sizeof(TransformData) == 192, "TransformData must be 192 bytes");
 
 // Compact push constant data (fits in 128 bytes)
 export struct PushConstantData {
-	synodic::math::mat4 mvp;           // 64 bytes - model-view-projection
-	synodic::math::mat4 model;         // 64 bytes - model matrix for lighting
+	peri::math::mat4 mvp;           // 64 bytes - model-view-projection
+	peri::math::mat4 model;         // 64 bytes - model matrix for lighting
 };
 
 static_assert(sizeof(PushConstantData) == 128, "PushConstantData must be 128 bytes");

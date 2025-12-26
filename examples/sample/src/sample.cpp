@@ -1,5 +1,5 @@
 import std;
-import synodic.library;
+import synodic.periapsis;
 import synodic.soul.core;
 import synodic.soul.engine;
 import synodic.soul.scheduler;
@@ -107,11 +107,11 @@ protected:
 
 		// Calculate view and projection matrices
 		float aspectRatio = static_cast<float>(surfaceSize_.x) / static_cast<float>(surfaceSize_.y);
-		viewMatrix_		  = synodic::math::LookAt(
+		viewMatrix_		  = peri::math::LookAt(
 			cameraPosition_,
 			cameraTarget_,
-			synodic::math::vec3{0.0f, 1.0f, 0.0f});
-		projectionMatrix_ = synodic::math::Perspective(
+			peri::math::vec3{0.0f, 1.0f, 0.0f});
+		projectionMatrix_ = peri::math::Perspective(
 			0.785398f,	// 45 degrees FOV
 			aspectRatio,
 			0.1f,  // Near plane
@@ -235,10 +235,10 @@ private:
 		cameraTarget_	= {0.0f, 0.0f, 0.0f};
 
 		// Update view matrix
-		viewMatrix_ = synodic::math::LookAt(
+		viewMatrix_ = peri::math::LookAt(
 			cameraPosition_,
 			cameraTarget_,
-			synodic::math::vec3{0.0f, 1.0f, 0.0f});
+			peri::math::vec3{0.0f, 1.0f, 0.0f});
 
 		// Update scene lighting camera position for specular
 		sceneLighting_.cameraPositionX = cameraPosition_.x;
@@ -246,10 +246,10 @@ private:
 		sceneLighting_.cameraPositionZ = cameraPosition_.z;
 
 		// Model matrix - static cube at origin
-		modelMatrix_ = synodic::math::Mat4<float>::identity();
+		modelMatrix_ = peri::math::Mat4<float>::identity();
 
 		// Compute MVP and push constant data
-		synodic::math::mat4 vp = projectionMatrix_ * viewMatrix_;
+		peri::math::mat4 vp = projectionMatrix_ * viewMatrix_;
 		pushConstants_.mvp	 = vp * modelMatrix_;
 		pushConstants_.model = modelMatrix_;
 	}
@@ -334,7 +334,7 @@ private:
 
 	// Window/surface state
 	Entity surfaceEntity_;
-	synodic::math::uvec2 surfaceSize_ = {0, 0};
+	peri::math::uvec2 surfaceSize_ = {0, 0};
 	bool hasValidSurface_			  = false;
 
 	// Mesh data (CPU-side, ready for GPU upload)
@@ -351,8 +351,8 @@ private:
 	SceneLightingData sceneLighting_;
 
 	// Camera
-	synodic::math::vec3 cameraPosition_;
-	synodic::math::vec3 cameraTarget_;
+	peri::math::vec3 cameraPosition_;
+	peri::math::vec3 cameraTarget_;
 
 	// Orbit camera controls
 	float orbitYaw_		 = 0.0f;
@@ -363,9 +363,9 @@ private:
 	bool isOrbiting_	 = false;
 
 	// Transforms
-	synodic::math::mat4 modelMatrix_;
-	synodic::math::mat4 viewMatrix_;
-	synodic::math::mat4 projectionMatrix_;
+	peri::math::mat4 modelMatrix_;
+	peri::math::mat4 viewMatrix_;
+	peri::math::mat4 projectionMatrix_;
 	PushConstantData pushConstants_;
 };
 

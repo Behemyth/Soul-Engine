@@ -2,7 +2,7 @@ export module synodic.soul.raster.backend.vulkan:backend;
 
 import std;
 import vulkan_hpp;
-import synodic.library;
+import synodic.periapsis;
 
 import synodic.soul.core;
 import synodic.soul.raster;
@@ -83,7 +83,7 @@ export struct DepthBuffer {
 	vk::ImageView view = nullptr;
 	VmaAllocationHandle allocation = nullptr;
 	vk::Format format = vk::Format::eD32Sfloat;  // D32 for best precision
-	synodic::math::uvec2 size = {0, 0};
+	peri::math::uvec2 size = {0, 0};
 	
 	DepthBuffer() = default;
 	~DepthBuffer() = default;
@@ -148,12 +148,12 @@ struct SurfaceData {
 	std::vector<FrameData<SchedulerType>> frames;  // Per frame-in-flight sync resources
 	std::vector<VulkanFrameBuffer<SchedulerType>> swapchainFramebuffers;  // Per swapchain image framebuffers
 	DepthBuffer depthBuffer;  // Shared depth buffer for all swapchain images
-	synodic::math::uvec2 size;
+	peri::math::uvec2 size;
 	bool needsSwapchainRecreation = false;
 	std::uint32_t currentAcquiredImageIndex = 0;  // Index of acquired swapchain image for multi-pass
 	bool frameAcquired = false;  // True if swapchain image was acquired this frame
 
-	SurfaceData(VulkanSurface&& surf, synodic::math::uvec2 surfaceSize) :
+	SurfaceData(VulkanSurface&& surf, peri::math::uvec2 surfaceSize) :
 		surface(std::move(surf)),
 		size(surfaceSize) {}
 
@@ -223,8 +223,8 @@ public:
 	void CreatePassInput(Entity, Entity, Format) override;
 	void CreatePassOutput(Entity, Entity, Format) override;
 
-	Entity CreateSurface(NativeSurfaceHandle, synodic::math::uvec2) override;
-	void UpdateSurface(Entity, synodic::math::uvec2) override;
+	Entity CreateSurface(NativeSurfaceHandle, peri::math::uvec2) override;
+	void UpdateSurface(Entity, peri::math::uvec2) override;
 	void RemoveSurface(Entity) override;
 	void AttachSurface(Entity, Entity) override;
 	void DetachSurface(Entity, Entity) override;
@@ -268,7 +268,7 @@ private:
 	BufferId GenerateBufferId() { return nextBufferId_++; }
 
 	// Depth buffer management
-	void CreateDepthBuffer(SurfaceData<SchedulerType>& surfaceData, synodic::math::uvec2 size);
+	void CreateDepthBuffer(SurfaceData<SchedulerType>& surfaceData, peri::math::uvec2 size);
 	void DestroyDepthBuffer(SurfaceData<SchedulerType>& surfaceData);
 
 	// Command helpers
@@ -1098,7 +1098,7 @@ void VulkanRasterBackend<SchedulerType>::CreatePassOutput(Entity passEntity, Ent
 }
 
 template<SchedulerBackend SchedulerType>
-Entity VulkanRasterBackend<SchedulerType>::CreateSurface(NativeSurfaceHandle nativeSurface, synodic::math::uvec2 size)
+Entity VulkanRasterBackend<SchedulerType>::CreateSurface(NativeSurfaceHandle nativeSurface, peri::math::uvec2 size)
 {
 	auto surfaceHandle = vk::SurfaceKHR(reinterpret_cast<VkSurfaceKHR>(nativeSurface));
 	const SurfaceId surfaceId = GenerateSurfaceId();
@@ -1156,7 +1156,7 @@ Entity VulkanRasterBackend<SchedulerType>::CreateSurface(NativeSurfaceHandle nat
 }
 
 template<SchedulerBackend SchedulerType>
-void VulkanRasterBackend<SchedulerType>::UpdateSurface(Entity surfaceEntity, synodic::math::uvec2 size)
+void VulkanRasterBackend<SchedulerType>::UpdateSurface(Entity surfaceEntity, peri::math::uvec2 size)
 {
 	// Extract surface ID from Entity
 	SurfaceId surfaceId;
@@ -1637,7 +1637,7 @@ vk::Format VulkanRasterBackend<SchedulerType>::ConvertFormat(Format format)
 
 // Create depth buffer for a surface
 template<SchedulerBackend SchedulerType>
-void VulkanRasterBackend<SchedulerType>::CreateDepthBuffer(SurfaceData<SchedulerType>& surfaceData, synodic::math::uvec2 size)
+void VulkanRasterBackend<SchedulerType>::CreateDepthBuffer(SurfaceData<SchedulerType>& surfaceData, peri::math::uvec2 size)
 {
 	// Don't recreate if size matches
 	if (surfaceData.depthBuffer.IsValid() && 

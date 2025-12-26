@@ -1,7 +1,7 @@
 export module synodic.soul.raster:types;
 
 import std;
-import synodic.library;
+import synodic.periapsis;
 import synodic.soul.core;
 
 // Opaque handle for platform/backend-specific surface handles (e.g., VkSurfaceKHR)

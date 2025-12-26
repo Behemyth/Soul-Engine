@@ -1,7 +1,7 @@
 export module synodic.soul.engine:core.geometry.face;
 
 import std;
-import synodic.library;
+import synodic.periapsis;
 import synodic.soul.core;
 
 export class Face : Component
@@ -12,7 +12,7 @@ public:
 	Face() = default;
 	~Face() = default;
 
-	synodic::math::uvec3 indices;
+	peri::math::uvec3 indices;
 	std::uint32_t material; //TODO investigate materials
 };
 

@@ -11,6 +11,7 @@ project(tests
 )
 
 find_package(honesty REQUIRED)
+find_package(periapsis REQUIRED)
 
 add_executable(tests)
 
@@ -24,12 +25,9 @@ set_target_properties(tests
 
 target_link_libraries(tests
 	PRIVATE
-)
-
-target_link_libraries(tests
-	PRIVATE
 	synodic::honesty
 	synodic::honesty_main
+	synodic::periapsis
 	synodic::soul-engine
 )
 

@@ -22,7 +22,7 @@ project(SoulEngine
 #Dependencies
 
 find_package(honesty REQUIRED)
-find_package(synodic-template-library REQUIRED)
+find_package(periapsis REQUIRED)
 find_package(cppaste REQUIRED)
 find_package(SDL3 REQUIRED)
 find_package(glaze REQUIRED)
@@ -144,7 +144,7 @@ target_link_libraries(soul-engine
         synodic::cppaste
     PRIVATE
 		synodic::honesty
-		synodic::synodic-template-library
+		synodic::periapsis
 		SDL3::SDL3
 		GPUOpen::VulkanMemoryAllocator
 		VulkanHppModule

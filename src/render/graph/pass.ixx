@@ -1,7 +1,7 @@
 export module synodic.soul.render.graph:pass;
 
 import std;
-import synodic.library;
+import synodic.periapsis;
 import synodic.soul.core;
 import synodic.soul.raster;
 
@@ -106,7 +106,7 @@ export struct ComputePassDesc {
 	std::vector<ResourceRef> inputs;
 	std::vector<ResourceRef> outputs;
 
-	synodic::math::uvec2 dispatchSize = {1, 1};
+	peri::math::uvec2 dispatchSize = {1, 1};
 
 	std::uint32_t originalIndex = 0;
 };

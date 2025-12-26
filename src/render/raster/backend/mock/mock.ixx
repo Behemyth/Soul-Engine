@@ -1,7 +1,7 @@
 export module synodic.soul.raster.backend.mock;
 
 import std;
-import synodic.library;
+import synodic.periapsis;
 import synodic.soul.raster;
 
 export class MockRasterBackend : public RasterModule
@@ -46,12 +46,12 @@ public:
 	{
 	}
 
-	Entity CreateSurface(NativeSurfaceHandle, synodic::math::uvec2) override
+	Entity CreateSurface(NativeSurfaceHandle, peri::math::uvec2) override
 	{
 		return Entity();
 	}
 
-	void UpdateSurface(Entity, synodic::math::uvec2) override
+	void UpdateSurface(Entity, peri::math::uvec2) override
 	{
 	}
 

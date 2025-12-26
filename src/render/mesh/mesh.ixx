@@ -1,13 +1,13 @@
 export module synodic.soul.render.mesh:mesh;
 
 import std;
-import synodic.library;
+import synodic.periapsis;
 import synodic.soul.core;
 import synodic.soul.raster;  // For GPUBufferHandle
 import :vertex;
 
-// Use synodic library's AABB with min/max storage
-export using AABB = synodic::math::AABB<synodic::math::AABBMinMax<float>>;
+// Use periapsis library's AABB with min/max storage
+export using AABB = peri::math::AABB<peri::math::AABBMinMax<float>>;
 
 // CPU-side mesh data - raw interleaved vertex buffer with layout metadata
 export struct MeshData {
@@ -102,7 +102,7 @@ export inline AABB ComputeAABB(const MeshData& data) {
 
 	for (std::uint32_t i = 0; i < data.vertexCount; ++i) {
 		const float* vertex = data.vertexData.data() + (i * floatsPerVertex);
-		bounds = synodic::math::Expand(bounds, synodic::math::vec3{vertex[0], vertex[1], vertex[2]});
+		bounds = peri::math::Expand(bounds, peri::math::vec3{vertex[0], vertex[1], vertex[2]});
 	}
 	return bounds;
 }
