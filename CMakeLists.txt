@@ -21,6 +21,7 @@ project(SoulEngine
 ##############################################
 #Dependencies
 
+find_package(portability REQUIRED)
 find_package(honesty REQUIRED)
 find_package(periapsis REQUIRED)
 find_package(cppaste REQUIRED)
