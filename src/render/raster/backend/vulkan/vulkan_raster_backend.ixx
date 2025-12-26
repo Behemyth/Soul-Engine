@@ -871,11 +871,12 @@ void VulkanRasterBackend<SchedulerType>::ExecutePassWithFlags(Entity renderPassE
 	commandBufferHandle.beginRenderPass(renderPassBeginInfo, vk::SubpassContents::eInline);
 
 	// Set viewport and scissor
+	// Use negative height to flip Y-axis (Vulkan has Y-down, OpenGL/GLM has Y-up)
 	vk::Viewport viewport;
 	viewport.x = 0.0f;
-	viewport.y = 0.0f;
+	viewport.y = static_cast<float>(swapChainSize.height);  // Start at bottom
 	viewport.width = static_cast<float>(swapChainSize.width);
-	viewport.height = static_cast<float>(swapChainSize.height);
+	viewport.height = -static_cast<float>(swapChainSize.height);  // Negative to flip Y
 	viewport.minDepth = 0.0f;
 	viewport.maxDepth = 1.0f;
 	commandBufferHandle.setViewport(0, viewport);

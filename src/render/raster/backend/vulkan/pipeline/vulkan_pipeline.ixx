@@ -30,7 +30,7 @@ export struct VulkanPipelineConfig {
 	vk::PrimitiveTopology topology = vk::PrimitiveTopology::eTriangleList;
 	vk::PolygonMode polygonMode = vk::PolygonMode::eFill;
 	vk::CullModeFlags cullMode = vk::CullModeFlagBits::eBack;
-	vk::FrontFace frontFace = vk::FrontFace::eClockwise;  // CW due to Vulkan Y-flip in projection
+	vk::FrontFace frontFace = vk::FrontFace::eClockwise;  // CW due to negative viewport height Y-flip
 	bool depthTest = false;               // Enable depth testing
 	bool depthWrite = false;              // Enable depth writing
 	bool depthOnly = false;               // Depth-only pass (no color attachment)

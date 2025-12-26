@@ -209,14 +209,13 @@ protected:
 		viewMatrix_ = peri::math::LookAt(
 			cameraPosition_,
 			cameraTarget_,
-			peri::math::vec3{0.0f, 1.0f, 0.0f});
+			peri::math::vec3{0.0f, 1.0f, 0.0f});  // Standard Y-up
 		projectionMatrix_ = peri::math::Perspective(
 			0.785398f,	// 45 degrees FOV
 			aspectRatio,
 			0.1f,   // Near plane
 			100.0f);  // Far plane
-		// Flip Y for Vulkan's coordinate system (Y-down in clip space)
-		projectionMatrix_[1][1] *= -1.0f;
+		// Note: Y-flip handled by negative viewport height in Vulkan backend
 
 		// Set up lighting
 		sceneLighting_.cameraPositionX	= cameraPosition_.x;
@@ -228,10 +227,10 @@ protected:
 		sceneLighting_.ambientColorB	= 0.2f;
 		sceneLighting_.ambientIntensity = 1.0f;
 
-		// Main directional light
+		// Main directional light (direction points from light source toward scene)
 		sceneLighting_.lights[0].type		= LightType::Directional;
 		sceneLighting_.lights[0].directionX = -0.5f;
-		sceneLighting_.lights[0].directionY = -1.0f;
+		sceneLighting_.lights[0].directionY = -1.0f;  // Pointing downward = light from above
 		sceneLighting_.lights[0].directionZ = -0.3f;
 		sceneLighting_.lights[0].colorR		= 1.0f;
 		sceneLighting_.lights[0].colorG		= 0.95f;
@@ -264,6 +263,8 @@ protected:
 					double deltaY = y - lastMouseY_;
 
 					const float sensitivity = 0.005f;
+					// Standard orbit: drag right = rotate view right (yaw decreases)
+					// drag up = tilt view up (pitch increases with screen-space up)
 					orbitYaw_	-= static_cast<float>(deltaX) * sensitivity;
 					orbitPitch_ += static_cast<float>(deltaY) * sensitivity;
 
@@ -406,7 +407,7 @@ private:
 		viewMatrix_ = peri::math::LookAt(
 			cameraPosition_,
 			cameraTarget_,
-			peri::math::vec3{0.0f, 1.0f, 0.0f});
+			peri::math::vec3{0.0f, 1.0f, 0.0f});  // Standard Y-up
 
 		// Update scene lighting camera position for specular
 		sceneLighting_.cameraPositionX = cameraPosition_.x;
