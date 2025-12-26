@@ -57,3 +57,4 @@
 #*.PDF   diff=astextplain
 #*.rtf   diff=astextplain
 #*.RTF   diff=astextplain
+resources/assets/** filter=lfs diff=lfs merge=lfs -text
