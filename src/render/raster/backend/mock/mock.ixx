@@ -77,6 +77,11 @@ public:
 	{
 	}
 
+	GPUDeviceAddress GetBufferGPUAddress(GPUBufferHandle) override
+	{
+		return InvalidGPUAddress;
+	}
+
 	void UploadBufferData(GPUBufferHandle, const void*, std::size_t, std::size_t) override
 	{
 	}
@@ -91,6 +96,15 @@ public:
 	}
 
 	void FlushBuffer(GPUBufferHandle, std::size_t, std::size_t) override
+	{
+	}
+
+	FrameAllocator* GetFrameAllocator() override
+	{
+		return nullptr;
+	}
+
+	void ResetFrameAllocator() override
 	{
 	}
 
