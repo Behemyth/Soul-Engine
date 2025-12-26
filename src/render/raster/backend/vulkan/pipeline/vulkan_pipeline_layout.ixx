@@ -26,6 +26,18 @@ export struct PipelineLayoutConfig {
 		return config;
 	}
 	
+	// Helper for bindless root constants (two 64-bit GPU pointers)
+	// Matches RootConstants in shaders: vertexDataPtr + pixelDataPtr = 16 bytes
+	static PipelineLayoutConfig WithBindlessRootConstants() {
+		PipelineLayoutConfig config;
+		config.pushConstantRanges.push_back({
+			vk::ShaderStageFlagBits::eVertex | vk::ShaderStageFlagBits::eFragment,
+			0,
+			16  // RootConstants: vertexDataPtr (8) + pixelDataPtr (8)
+		});
+		return config;
+	}
+	
 	// Helper for vertex-only push constants
 	static PipelineLayoutConfig WithVertexPushConstants(std::uint32_t size) {
 		PipelineLayoutConfig config;

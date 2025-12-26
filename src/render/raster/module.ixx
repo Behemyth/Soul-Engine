@@ -8,6 +8,7 @@ import synodic.soul.core;
 export import :types;
 export import :resource;
 export import :gpu_pointer;
+export import :frame_allocator;
 export import :barrier;
 export import :texture_heap;
 export import :depth_stencil_state;
@@ -36,12 +37,13 @@ export constexpr bool HasFlag(PassExecutionFlags flags, PassExecutionFlags flag)
 // Buffer usage flags for GPU buffers
 export enum class BufferUsage : std::uint32_t {
 	None = 0,
-	Vertex = 1 << 0,       // Can be bound as vertex buffer
-	Index = 1 << 1,        // Can be bound as index buffer
-	Uniform = 1 << 2,      // Can be bound as uniform buffer
-	Storage = 1 << 3,      // Can be bound as storage buffer
-	TransferSrc = 1 << 4,  // Source for transfer operations
-	TransferDst = 1 << 5,  // Destination for transfer operations
+	Vertex = 1 << 0,              // Can be bound as vertex buffer
+	Index = 1 << 1,               // Can be bound as index buffer
+	Uniform = 1 << 2,             // Can be bound as uniform buffer
+	Storage = 1 << 3,             // Can be bound as storage buffer
+	TransferSrc = 1 << 4,         // Source for transfer operations
+	TransferDst = 1 << 5,         // Destination for transfer operations
+	ShaderDeviceAddress = 1 << 6, // Can be accessed via GPU pointer (BDA)
 };
 
 export constexpr BufferUsage operator|(BufferUsage a, BufferUsage b) {
@@ -104,6 +106,9 @@ public:
 	virtual GPUBufferHandle CreateBuffer(const BufferDesc& desc) = 0;
 	virtual void DestroyBuffer(GPUBufferHandle handle) = 0;
 	
+	// Get GPU device address for a buffer (returns InvalidGPUAddress if not created with ShaderDeviceAddress)
+	virtual GPUDeviceAddress GetBufferGPUAddress(GPUBufferHandle handle) = 0;
+	
 	// Upload data to a device-local buffer (uses staging + transfer queue)
 	virtual void UploadBufferData(GPUBufferHandle handle, const void* data, 
 		std::size_t size, std::size_t offset = 0) = 0;
@@ -113,6 +118,13 @@ public:
 	virtual void UnmapBuffer(GPUBufferHandle handle) = 0;
 	virtual void FlushBuffer(GPUBufferHandle handle, std::size_t offset = 0, 
 		std::size_t size = std::numeric_limits<std::size_t>::max()) = 0;
+
+	// Bindless allocator (No Graphics API pattern)
+	// Returns per-frame allocator for GPU data passed via root arguments
+	virtual FrameAllocator* GetFrameAllocator() = 0;
+	
+	// Reset frame allocator (call at start of each frame)
+	virtual void ResetFrameAllocator() = 0;
 
 	// Agnostic raster API interface
 	virtual void Compile(CommandList&) = 0;

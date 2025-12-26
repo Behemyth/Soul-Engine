@@ -39,6 +39,28 @@ export using GPUDeviceAddress = std::uint64_t;
 export constexpr GPUDeviceAddress InvalidGPUAddress = 0;
 
 /**
+ * @brief Raw (untyped) GPU pointer pair
+ * 
+ * Used by allocators to return CPU/GPU address pairs before casting to typed.
+ */
+export struct GPUPointerRaw {
+	void* cpu = nullptr;
+	GPUDeviceAddress gpu = InvalidGPUAddress;
+	
+	[[nodiscard]] constexpr bool IsValid() const noexcept {
+		return cpu != nullptr && gpu != InvalidGPUAddress;
+	}
+	
+	/**
+	 * @brief Cast to typed pointer
+	 */
+	template<GPUTransferable T>
+	[[nodiscard]] T* As() const noexcept {
+		return static_cast<T*>(cpu);
+	}
+};
+
+/**
  * @brief Bindless GPU pointer with paired CPU/GPU addresses
  * 
  * Wraps a GPU allocation providing both CPU-mapped pointer for direct writes

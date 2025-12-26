@@ -272,6 +272,11 @@ export struct MemoryBarrierCommand {
 	
 	constexpr MemoryBarrierCommand() noexcept = default;
 	
+	constexpr MemoryBarrierCommand(StageFlags src, StageFlags dst, 
+	                               MemoryDomain srcDom, MemoryDomain dstDom) noexcept
+		: srcStages(src), dstStages(dst), srcDomain(srcDom), dstDomain(dstDom)
+	{}
+	
 	/**
 	 * @brief Create host-to-device transfer completion barrier
 	 */

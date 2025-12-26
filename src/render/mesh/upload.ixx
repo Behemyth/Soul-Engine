@@ -157,6 +157,8 @@ private:
 export struct MeshUploadResult {
 	GPUBufferHandle vertexBuffer = 0;
 	GPUBufferHandle indexBuffer = 0;
+	GPUDeviceAddress vertexBufferGPU = InvalidGPUAddress;  // GPU device address for bindless
+	GPUDeviceAddress indexBufferGPU = InvalidGPUAddress;   // GPU device address for bindless
 	std::uint32_t vertexCount = 0;
 	std::uint32_t indexCount = 0;
 	VertexLayout layout;
@@ -171,6 +173,8 @@ export struct MeshUploadResult {
 		GPUMesh mesh;
 		mesh.vertexBuffer = vertexBuffer;
 		mesh.indexBuffer = indexBuffer;
+		mesh.vertexBufferGPU = vertexBufferGPU;
+		mesh.indexBufferGPU = indexBufferGPU;
 		mesh.indexCount = indexCount;
 		mesh.vertexCount = vertexCount;
 		mesh.layout = layout;
@@ -228,10 +232,10 @@ public:
 		result.layout = meshData.layout;
 		result.bounds = ComputeAABB(meshData);
 		
-		// Create vertex buffer (device-local)
+		// Create vertex buffer (device-local with BDA support for bindless rendering)
 		BufferDesc vertexDesc;
 		vertexDesc.size = meshData.VertexBufferSize();
-		vertexDesc.usage = BufferUsage::Vertex | BufferUsage::TransferDst;
+		vertexDesc.usage = BufferUsage::Vertex | BufferUsage::TransferDst | BufferUsage::ShaderDeviceAddress;
 		vertexDesc.memory = BufferMemory::DeviceLocal;
 		
 		result.vertexBuffer = raster_.CreateBuffer(vertexDesc);
@@ -239,10 +243,10 @@ public:
 			return {};  // Failed to create vertex buffer
 		}
 		
-		// Create index buffer (device-local)
+		// Create index buffer (device-local with BDA support for bindless rendering)
 		BufferDesc indexDesc;
 		indexDesc.size = meshData.IndexBufferSize();
-		indexDesc.usage = BufferUsage::Index | BufferUsage::TransferDst;
+		indexDesc.usage = BufferUsage::Index | BufferUsage::TransferDst | BufferUsage::ShaderDeviceAddress;
 		indexDesc.memory = BufferMemory::DeviceLocal;
 		
 		result.indexBuffer = raster_.CreateBuffer(indexDesc);
@@ -258,6 +262,10 @@ public:
 		// Upload index data
 		raster_.UploadBufferData(result.indexBuffer,
 			meshData.indices.data(), meshData.IndexBufferSize());
+		
+		// Capture GPU device addresses for bindless rendering
+		result.vertexBufferGPU = raster_.GetBufferGPUAddress(result.vertexBuffer);
+		result.indexBufferGPU = raster_.GetBufferGPUAddress(result.indexBuffer);
 		
 		return result;
 	}

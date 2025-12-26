@@ -341,7 +341,10 @@ typename VulkanDevice<SchedulerType>::BuildResult VulkanDevice<SchedulerType>::B
 	vulkan12Features.runtimeDescriptorArray = vk::True;
 	vulkan12Features.descriptorBindingPartiallyBound = vk::True;
 	vulkan12Features.descriptorBindingVariableDescriptorCount = vk::True;
+	vulkan12Features.descriptorBindingSampledImageUpdateAfterBind = vk::True;  // For bindless texture/sampler heaps (covers SAMPLER, COMBINED_IMAGE_SAMPLER, SAMPLED_IMAGE)
 	vulkan12Features.shaderSampledImageArrayNonUniformIndexing = vk::True;
+	vulkan12Features.shaderStorageBufferArrayNonUniformIndexing = vk::True;  // For bindless buffer arrays
+	vulkan12Features.scalarBlockLayout = vk::True;  // Required for PhysicalStorageBuffer with packed structs (vec3 at non-16-byte offsets)
 
 	// Enable Vulkan 1.1 features
 	vk::PhysicalDeviceVulkan11Features vulkan11Features;
@@ -351,6 +354,7 @@ typename VulkanDevice<SchedulerType>::BuildResult VulkanDevice<SchedulerType>::B
 	// Base features
 	vk::PhysicalDeviceFeatures2 deviceFeatures2;
 	deviceFeatures2.pNext = &vulkan11Features;
+	deviceFeatures2.features.shaderInt64 = vk::True;  // Required for uint64_t GPU pointers in shaders
 
 	vk::DeviceCreateInfo deviceCreateInfo;
 	deviceCreateInfo.pNext					 = &deviceFeatures2;

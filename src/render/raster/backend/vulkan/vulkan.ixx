@@ -21,8 +21,10 @@ export import :pipeline;
 export import :surface;
 export import :swapchain;
 export import :frame;
+export import :backend;  // VulkanRasterBackend class
 // Bindless resources (No Graphics API pattern)
 export import :texture_heap;
 export import :sampler_heap;
 export import :gpu_allocator;
 export import :bindless_layout;
+export import :frame_allocator;

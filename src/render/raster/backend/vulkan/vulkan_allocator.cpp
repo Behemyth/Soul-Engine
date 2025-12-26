@@ -19,6 +19,9 @@ VulkanAllocator::VulkanAllocator(
 	allocatorInfo.instance		   = static_cast<VkInstance>(instance);
 	allocatorInfo.physicalDevice   = static_cast<VkPhysicalDevice>(physicalDevice);
 	allocatorInfo.device		   = static_cast<VkDevice>(device);
+	
+	// Enable buffer device address for bindless rendering (BDA/GPU pointers)
+	allocatorInfo.flags = VMA_ALLOCATOR_CREATE_BUFFER_DEVICE_ADDRESS_BIT;
 
 	// With VMA_STATIC_VULKAN_FUNCTIONS=1, VMA calls Vulkan functions directly
 	// No need to provide pVulkanFunctions

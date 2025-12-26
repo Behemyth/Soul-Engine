@@ -7,6 +7,7 @@ target_sources(soul-engine
 			types.ixx
 			resource.ixx
 			gpu_pointer.ixx
+			frame_allocator.ixx
 			barrier.ixx
 			texture_heap.ixx
 			depth_stencil_state.ixx

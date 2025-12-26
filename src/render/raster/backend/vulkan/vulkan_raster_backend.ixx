@@ -22,6 +22,9 @@ import :render_pass;
 import :semaphore;
 import :framebuffer;
 import :allocator;
+import :bindless_layout;
+import :gpu_allocator;
+import :frame_allocator;
 
 // Simple ID types to replace Entity for resource management
 export using SurfaceId = std::uint64_t;
@@ -37,6 +40,7 @@ export struct BufferData {
 	BufferUsage usage = BufferUsage::None;
 	BufferMemory memory = BufferMemory::DeviceLocal;
 	void* mappedPtr = nullptr;  // Non-null if persistently mapped
+	GPUDeviceAddress gpuAddress = InvalidGPUAddress;  // For bindless / BDA access
 	
 	BufferData() = default;
 	~BufferData() = default;
@@ -48,11 +52,13 @@ export struct BufferData {
 		size(other.size),
 		usage(other.usage),
 		memory(other.memory),
-		mappedPtr(other.mappedPtr)
+		mappedPtr(other.mappedPtr),
+		gpuAddress(other.gpuAddress)
 	{
 		other.buffer = nullptr;
 		other.allocation = nullptr;
 		other.mappedPtr = nullptr;
+		other.gpuAddress = InvalidGPUAddress;
 	}
 	
 	BufferData& operator=(const BufferData&) = delete;
@@ -64,9 +70,11 @@ export struct BufferData {
 			usage = other.usage;
 			memory = other.memory;
 			mappedPtr = other.mappedPtr;
+			gpuAddress = other.gpuAddress;
 			other.buffer = nullptr;
 			other.allocation = nullptr;
 			other.mappedPtr = nullptr;
+			other.gpuAddress = InvalidGPUAddress;
 		}
 		return *this;
 	}
@@ -200,7 +208,7 @@ public:
 	static constexpr std::uint32_t frameCount = 3;
 
 	VulkanRasterBackend(SchedulerType&);
-	~VulkanRasterBackend() override = default;
+	~VulkanRasterBackend() override;
 
 	VulkanRasterBackend(const VulkanRasterBackend &) = delete;
 	VulkanRasterBackend(VulkanRasterBackend &&) noexcept = default;
@@ -229,12 +237,24 @@ public:
 	// Buffer management
 	GPUBufferHandle CreateBuffer(const BufferDesc& desc) override;
 	void DestroyBuffer(GPUBufferHandle handle) override;
+	GPUDeviceAddress GetBufferGPUAddress(GPUBufferHandle handle) override;
 	void UploadBufferData(GPUBufferHandle handle, const void* data, 
 		std::size_t size, std::size_t offset = 0) override;
 	void* MapBuffer(GPUBufferHandle handle) override;
 	void UnmapBuffer(GPUBufferHandle handle) override;
 	void FlushBuffer(GPUBufferHandle handle, std::size_t offset = 0, 
 		std::size_t size = std::numeric_limits<std::size_t>::max()) override;
+
+	// Bindless allocator (No Graphics API pattern)
+	FrameAllocator* GetFrameAllocator() override {
+		return frameAllocator_ ? &*frameAllocator_ : nullptr;
+	}
+	
+	void ResetFrameAllocator() override {
+		if (frameAllocator_) {
+			frameAllocator_->Reset();
+		}
+	}
 
 	void Compile(CommandList& commandList) override;
 
@@ -270,11 +290,8 @@ private:
 
 	// Command helpers
 	void Draw(DrawCommand&, vk::CommandBuffer&);
-	void DrawIndirect(DrawIndirectCommand&, vk::CommandBuffer&);
 	void UpdateBuffer(UpdateBufferCommand&, vk::CommandBuffer&);
-	void UpdateTexture(UpdateTextureCommand&, vk::CommandBuffer&);
 	void CopyBuffer(CopyBufferCommand&, vk::CommandBuffer&);
-	void CopyTexture(CopyTextureCommand&, vk::CommandBuffer&);
 
 	// Vulkan infrastructure
 	std::vector<VulkanPhysicalDevice> physicalDevices_;
@@ -291,16 +308,21 @@ private:
 	std::optional<BufferData> stagingBuffer_;
 	static constexpr std::size_t stagingBufferSize_ = 64 * 1024 * 1024;  // 64 MB staging buffer
 
-	// TODO: Bindless infrastructure (No Graphics API pattern)
-	// - VulkanTextureHeap for bindless textures
-	// - VulkanSamplerHeap for bindless samplers  
-	// - VulkanGPUAllocator for GPU memory
-	// - VulkanBindlessLayout for global pipeline layout
-	// These will replace the legacy descriptor infrastructure
+	// Bindless infrastructure (No Graphics API pattern)
+	std::optional<VulkanBindlessLayout> bindlessLayout_;
+	vk::DescriptorPool bindlessDescriptorPool_ = nullptr;
+	vk::DescriptorSet bindlessDescriptorSet_ = nullptr;
+	std::optional<VulkanGPUAllocator> gpuAllocator_;
+	std::optional<VulkanFrameAllocator> frameAllocator_;
 
 	// TODO: put on stack and remove deferred construction
 	std::unique_ptr<VulkanInstance> instance_;
 
+public:
+	// Expose GPU allocator for bindless patterns
+	[[nodiscard]] VulkanGPUAllocator* GPUAllocator() { 
+		return gpuAllocator_ ? &*gpuAllocator_ : nullptr; 
+	}
 };
 
 // Template implementations
@@ -365,11 +387,64 @@ VulkanRasterBackend<SchedulerType>::VulkanRasterBackend(SchedulerType& scheduler
 		commandPools_.push_back(VulkanCommandPool(scheduler_, vkDevice));
 	}
 
-	// TODO: Initialize bindless infrastructure
-	// - Create VulkanGPUAllocator (requires ReBAR)
-	// - Create VulkanTextureHeap
-	// - Create VulkanSamplerHeap
-	// - Create VulkanBindlessLayout
+	// Initialize bindless infrastructure
+	auto& device = devices_[0].Logical();
+	
+	// Create the global bindless layout (pipeline layout + descriptor set layout)
+	bindlessLayout_.emplace(device);
+	
+	// Create descriptor pool for bindless heaps (update-after-bind)
+	std::array<vk::DescriptorPoolSize, 2> poolSizes = {{
+		{ vk::DescriptorType::eSampledImage, VulkanBindlessLayout::MaxTextureCount },
+		{ vk::DescriptorType::eSampler, VulkanBindlessLayout::MaxSamplerCount }
+	}};
+	
+	vk::DescriptorPoolCreateInfo poolInfo;
+	poolInfo.flags = vk::DescriptorPoolCreateFlagBits::eUpdateAfterBind;
+	poolInfo.maxSets = 1;
+	poolInfo.poolSizeCount = static_cast<std::uint32_t>(poolSizes.size());
+	poolInfo.pPoolSizes = poolSizes.data();
+	
+	bindlessDescriptorPool_ = device.createDescriptorPool(poolInfo);
+	
+	// Allocate the bindless descriptor set with variable count for texture array
+	vk::DescriptorSetLayout setLayout = bindlessLayout_->DescriptorSetLayout();
+	
+	// Variable descriptor count for the texture array (binding 0)
+	std::uint32_t variableCount = VulkanBindlessLayout::MaxTextureCount;
+	vk::DescriptorSetVariableDescriptorCountAllocateInfo variableInfo;
+	variableInfo.descriptorSetCount = 1;
+	variableInfo.pDescriptorCounts = &variableCount;
+	
+	vk::DescriptorSetAllocateInfo allocInfo;
+	allocInfo.pNext = &variableInfo;
+	allocInfo.descriptorPool = bindlessDescriptorPool_;
+	allocInfo.descriptorSetCount = 1;
+	allocInfo.pSetLayouts = &setLayout;
+	
+	bindlessDescriptorSet_ = device.allocateDescriptorSets(allocInfo)[0];
+	
+	// Create GPU allocator for bindless root arguments
+	gpuAllocator_.emplace(device, devices_[0].Physical(), devices_[0].Allocator());
+	
+	// Create frame allocator for per-frame bindless data
+	frameAllocator_.emplace(device, devices_[0].Allocator());
+}
+
+template<SchedulerBackend SchedulerType>
+VulkanRasterBackend<SchedulerType>::~VulkanRasterBackend()
+{
+	// Wait for all GPU work to complete before destroying resources
+	if (!devices_.empty()) {
+		devices_[0].Logical().waitIdle();
+		
+		// Destroy bindless descriptor pool (implicitly frees descriptor set)
+		if (bindlessDescriptorPool_) {
+			devices_[0].Logical().destroyDescriptorPool(bindlessDescriptorPool_);
+		}
+		
+		// VulkanBindlessLayout destructor handles its own cleanup
+	}
 }
 
 template<SchedulerBackend SchedulerType>
@@ -527,49 +602,55 @@ Entity VulkanRasterBackend<SchedulerType>::CreatePass(const ShaderSet& shaderSet
 	// Create the VulkanRenderPass
 	passData.renderPass.emplace(devices_[0], passData.attachments, subPassDescriptions, passData.dependencies);
 
-	// Load shaders and create pipeline
+	// Load shaders and create pipeline using the global bindless layout
 	// Shader naming convention: <name>.<stage>.spv
-	// TODO: Use shaderSet entities to specify shaders dynamically
 	std::filesystem::path shaderDir = SOUL_SHADER_DIR;
 	
-	// Try PBR shaders first (for mesh rendering)
+	// PBR shaders for mesh rendering (primary)
 	std::filesystem::path pbrVertexPath = shaderDir / "pbr.vertex.spv";
 	std::filesystem::path pbrFragmentPath = shaderDir / "pbr.fragment.spv";
 	
-	// Fall back to triangle shaders (for basic testing)
+	// Triangle shaders (fallback for testing)
 	std::filesystem::path triangleVertexPath = shaderDir / "triangle.vertex.spv";
 	std::filesystem::path triangleFragmentPath = shaderDir / "triangle.fragment.spv";
 
-	if (std::filesystem::exists(pbrVertexPath) && std::filesystem::exists(pbrFragmentPath) &&
-		materialLayout_.has_value()) {
-		// Create PBR pipeline with material/lighting descriptor sets
+	// Use the global bindless pipeline layout for all pipelines
+	vk::PipelineLayout bindlessPipelineLayout = bindlessLayout_->Handle();
+
+	if (std::filesystem::exists(pbrVertexPath) && std::filesystem::exists(pbrFragmentPath)) {
+		// PBR pipeline with bindless layout
 		std::vector<VulkanShader> shaders;
 		shaders.emplace_back(devices_[0].Logical(), vk::ShaderStageFlagBits::eVertex,
 			pbrVertexPath, "main");
 		shaders.emplace_back(devices_[0].Logical(), vk::ShaderStageFlagBits::eFragment,
 			pbrFragmentPath, "main");
 
-		// PBR config with descriptor sets for Material (binding 0) + SceneLighting (binding 1)
-		VulkanPipelineConfig pipelineConfig = VulkanPipelineConfig::PBRWithDescriptors(
-			materialLayout_->Handle());
+		// Bindless pattern: no vertex input (data via GPU pointers), depth enabled
+		VulkanPipelineConfig pipelineConfig;
+		pipelineConfig.vertexFormat = VertexFormat::None;
+		pipelineConfig.depthTest = true;
+		pipelineConfig.depthWrite = true;
+		pipelineConfig.cullMode = vk::CullModeFlagBits::eBack;
 
 		passData.pipelines.emplace_back(
 			devices_[0].Logical(),
 			shaders,
 			passData.renderPass->Handle(),
 			0,  // subpass index
-			pipelineConfig);
+			pipelineConfig,
+			bindlessPipelineLayout);  // Use global bindless layout
 	}
 	else if (std::filesystem::exists(triangleVertexPath) && std::filesystem::exists(triangleFragmentPath)) {
-		// Fallback: simple triangle pipeline
+		// Fallback: simple triangle pipeline with bindless layout
 		std::vector<VulkanShader> shaders;
 		shaders.emplace_back(devices_[0].Logical(), vk::ShaderStageFlagBits::eVertex,
 			triangleVertexPath, "main");
 		shaders.emplace_back(devices_[0].Logical(), vk::ShaderStageFlagBits::eFragment,
 			triangleFragmentPath, "main");
 
-		// Create pipeline with no vertex input (shader uses SV_VertexID)
+		// Simple pipeline: no vertex input, no depth
 		VulkanPipelineConfig pipelineConfig;
+		pipelineConfig.vertexFormat = VertexFormat::None;
 		pipelineConfig.depthTest = false;
 		pipelineConfig.depthWrite = false;
 		pipelineConfig.cullMode = vk::CullModeFlagBits::eNone;
@@ -579,7 +660,8 @@ Entity VulkanRasterBackend<SchedulerType>::CreatePass(const ShaderSet& shaderSet
 			shaders,
 			passData.renderPass->Handle(),
 			0,  // subpass index
-			pipelineConfig);
+			pipelineConfig,
+			bindlessPipelineLayout);  // Use global bindless layout
 	}
 
 	// Return pass ID as Entity
@@ -828,10 +910,15 @@ void VulkanRasterBackend<SchedulerType>::ExecutePassWithFlags(Entity renderPassE
 	if (!passData.pipelines.empty()) {
 		commandBufferHandle.bindPipeline(vk::PipelineBindPoint::eGraphics, passData.pipelines[0].Handle());
 
-		// NOTE: With bindless pattern, descriptor sets are replaced by:
-		// 1. VK_EXT_descriptor_buffer for texture/sampler heaps
-		// 2. Push constants for GPU pointers (RootConstants)
-		// TODO: Bind descriptor buffer once bindless infrastructure is initialized
+		// Bind the global bindless descriptor set (texture/sampler heaps)
+		vk::PipelineLayout pipelineLayout = passData.pipelines[0].LayoutHandle();
+		commandBufferHandle.bindDescriptorSets(
+			vk::PipelineBindPoint::eGraphics,
+			pipelineLayout,
+			0,  // firstSet
+			bindlessDescriptorSet_,
+			nullptr  // dynamic offsets
+		);
 
 		// Process command list commands using the bindless pattern
 		bool hasDrawCommands = false;
@@ -852,11 +939,22 @@ void VulkanRasterBackend<SchedulerType>::ExecutePassWithFlags(Entity renderPassE
 					break;
 				}
 				case CommandType::DrawWithPointers: {
-					// TODO: With bindless initialized:
-					// 1. Push RootConstants with vertexData/pixelData GPU pointers
-					// 2. Bind index buffer if indexed
-					// 3. Issue draw call
+					// Push RootConstants with GPU pointers then draw
 					const auto& cmd = commandList.GetDrawWithPointers(i);
+					
+					// Push the root constants (GPU pointers)
+					VulkanBindlessLayout::RootConstants rootConstants;
+					rootConstants.vertexData = cmd.vertexData;
+					rootConstants.pixelData = cmd.pixelData;
+					
+					commandBufferHandle.pushConstants(
+						pipelineLayout,
+						vk::ShaderStageFlagBits::eVertex | vk::ShaderStageFlagBits::eFragment,
+						0,
+						sizeof(VulkanBindlessLayout::RootConstants),
+						&rootConstants
+					);
+					
 					if (cmd.IsIndexed()) {
 						// TODO: Bind index buffer from GPU pointer
 						commandBufferHandle.drawIndexed(cmd.indexCount, cmd.instanceCount,
@@ -1234,6 +1332,12 @@ GPUBufferHandle VulkanRasterBackend<SchedulerType>::CreateBuffer(const BufferDes
 	if (desc.memory == BufferMemory::DeviceLocal) {
 		vkUsage |= vk::BufferUsageFlagBits::eTransferDst;
 	}
+	
+	// Add ShaderDeviceAddress for bindless/BDA access
+	const bool needsDeviceAddress = HasBufferUsage(desc.usage, BufferUsage::ShaderDeviceAddress);
+	if (needsDeviceAddress) {
+		vkUsage |= vk::BufferUsageFlagBits::eShaderDeviceAddress;
+	}
 
 	// Set up VMA allocation based on memory type
 	VulkanAllocationCreateInfo allocInfo;
@@ -1267,6 +1371,13 @@ GPUBufferHandle VulkanRasterBackend<SchedulerType>::CreateBuffer(const BufferDes
 	bufferData.usage = desc.usage;
 	bufferData.memory = desc.memory;
 	bufferData.mappedPtr = bufferResult.value().mappedData;
+	
+	// Query GPU device address if requested
+	if (needsDeviceAddress) {
+		vk::BufferDeviceAddressInfo addressInfo{};
+		addressInfo.buffer = bufferData.buffer;
+		bufferData.gpuAddress = device.Logical().getBufferAddress(addressInfo);
+	}
 
 	buffers_.emplace(bufferId, std::move(bufferData));
 
@@ -1292,6 +1403,17 @@ void VulkanRasterBackend<SchedulerType>::DestroyBuffer(GPUBufferHandle handle)
 	}
 
 	buffers_.erase(bufferIt);
+}
+
+template<SchedulerBackend SchedulerType>
+GPUDeviceAddress VulkanRasterBackend<SchedulerType>::GetBufferGPUAddress(GPUBufferHandle handle)
+{
+	const BufferId bufferId = static_cast<BufferId>(handle);
+	auto bufferIt = buffers_.find(bufferId);
+	if (bufferIt == buffers_.end()) {
+		return InvalidGPUAddress;  // Invalid handle
+	}
+	return bufferIt->second.gpuAddress;
 }
 
 template<SchedulerBackend SchedulerType>
@@ -1490,36 +1612,15 @@ void VulkanRasterBackend<SchedulerType>::Draw(DrawCommand& command, vk::CommandB
 }
 
 template<SchedulerBackend SchedulerType>
-void VulkanRasterBackend<SchedulerType>::DrawIndirect(DrawIndirectCommand&, vk::CommandBuffer& commandBuffer)
-{
-	// TODO: Implement indirect drawing
-	return;
-}
-
-template<SchedulerBackend SchedulerType>
 void VulkanRasterBackend<SchedulerType>::UpdateBuffer(UpdateBufferCommand&, vk::CommandBuffer& commandBuffer)
 {
-}
-
-template<SchedulerBackend SchedulerType>
-void VulkanRasterBackend<SchedulerType>::UpdateTexture(UpdateTextureCommand&, vk::CommandBuffer& commandBuffer)
-{
-	// TODO: Implement texture update
-	return;
+	// TODO: Implement buffer update
 }
 
 template<SchedulerBackend SchedulerType>
 void VulkanRasterBackend<SchedulerType>::CopyBuffer(CopyBufferCommand&, vk::CommandBuffer& commandBuffer)
 {
 	// TODO: Implement buffer copy
-	return;
-}
-
-template<SchedulerBackend SchedulerType>
-void VulkanRasterBackend<SchedulerType>::CopyTexture(CopyTextureCommand&, vk::CommandBuffer& commandBuffer)
-{
-	// TODO: Implement texture copy
-	return;
 }
 
 

@@ -44,10 +44,26 @@ VulkanPipeline::VulkanPipeline(const vk::Device& device,
 	CreatePipeline(shaders, renderPass, subPassIndex, config);
 }
 
+// Constructor with external pipeline layout (for bindless)
+VulkanPipeline::VulkanPipeline(const vk::Device& device,
+	const std::span<VulkanShader> shaders,
+	const vk::RenderPass& renderPass,
+	const std::uint32_t subPassIndex,
+	const VulkanPipelineConfig& config,
+	vk::PipelineLayout externalLayout):
+	device_(device),
+	pipelineCache_(device_),
+	pipelineLayout_(device_),  // Empty internal layout (not used)
+	externalLayout_(externalLayout)
+{
+	CreatePipeline(shaders, renderPass, subPassIndex, config, externalLayout);
+}
+
 void VulkanPipeline::CreatePipeline(std::span<VulkanShader> shaders,
 	const vk::RenderPass& renderPass,
 	std::uint32_t subPassIndex,
-	const VulkanPipelineConfig& config)
+	const VulkanPipelineConfig& config,
+	vk::PipelineLayout layoutOverride)
 {
 	// Vertex input state - based on vertex format
 	vk::VertexInputBindingDescription bindingDescription;
@@ -186,6 +202,8 @@ void VulkanPipeline::CreatePipeline(std::span<VulkanShader> shaders,
 		shaderStages[i] = shaders[i].PipelineInfo();
 	}
 
+	// Use external layout if provided, otherwise use internal layout
+	vk::PipelineLayout activeLayout = layoutOverride ? layoutOverride : pipelineLayout_.Handle();
 
 	vk::GraphicsPipelineCreateInfo pipelineInfo;
 	pipelineInfo.flags = vk::PipelineCreateFlags();
@@ -200,13 +218,41 @@ void VulkanPipeline::CreatePipeline(std::span<VulkanShader> shaders,
 	pipelineInfo.pDepthStencilState = &depthStencil;
 	pipelineInfo.pColorBlendState = &colorBlending;
 	pipelineInfo.pDynamicState = &dynamicState;
-	pipelineInfo.layout = pipelineLayout_.Handle();
+	pipelineInfo.layout = activeLayout;
 	pipelineInfo.renderPass = renderPass;
 	pipelineInfo.subpass = subPassIndex;
 	pipelineInfo.basePipelineHandle = nullptr;
 	pipelineInfo.basePipelineIndex = 0;
 
-	pipeline_ = device_.createGraphicsPipeline(pipelineCache_.Handle(), pipelineInfo).value;
+	// Validate critical state before pipeline creation
+	if (!device_) {
+		throw std::runtime_error("VulkanPipeline: Invalid device");
+	}
+	if (!activeLayout) {
+		throw std::runtime_error("VulkanPipeline: Invalid pipeline layout");
+	}
+	if (!renderPass) {
+		throw std::runtime_error("VulkanPipeline: Invalid render pass");
+	}
+	for (const auto& stage : shaderStages) {
+		if (!stage.module) {
+			throw std::runtime_error("VulkanPipeline: Invalid shader module");
+		}
+	}
+
+	// Use try-catch to capture any exceptions from vulkan-hpp
+	try {
+		auto result = device_.createGraphicsPipeline(nullptr, pipelineInfo);  // Pass nullptr for cache to simplify
+		if (result.result != vk::Result::eSuccess) {
+			throw std::runtime_error("VulkanPipeline: Failed to create graphics pipeline - " +
+				vk::to_string(result.result));
+		}
+		pipeline_ = result.value;
+	} catch (const vk::SystemError& e) {
+		throw std::runtime_error(std::string("VulkanPipeline: Vulkan error during pipeline creation - ") + e.what());
+	} catch (const std::exception& e) {
+		throw std::runtime_error(std::string("VulkanPipeline: Exception during pipeline creation - ") + e.what());
+	}
 }
 
 VulkanPipeline::~VulkanPipeline()

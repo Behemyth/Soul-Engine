@@ -11,6 +11,7 @@ import std;
 export struct PassExecutionContext {
 	const EntityRegistry& entities;
 	CommandList& commands;
+	FrameAllocator* allocator = nullptr;  // Per-frame GPU allocator for bindless data
 	ResourceHandle surfaceTarget = InvalidResourceHandle;
 	peri::math::uvec2 renderArea = {0, 0};
 };
@@ -45,6 +46,10 @@ public:
 	void BeginFrame() {
 		frameGraph_.Clear();
 		passCallbacks_.clear();
+		// Reset frame allocator for new frame's allocations
+		if (rasterModule_) {
+			rasterModule_->ResetFrameAllocator();
+		}
 	}
 
 	// Import an external surface resource
@@ -169,10 +174,11 @@ private:
 		if (callbackIt != passCallbacks_.end()) {
 			EntityRegistry dummyRegistry;  // TODO: Get actual registry
 			PassExecutionContext context{
-				dummyRegistry,
-				commandList,
-				passDesc.colorOutputs.empty() ? InvalidResourceHandle : passDesc.colorOutputs[0].handle,
-				surfaceSize
+				.entities = dummyRegistry,
+				.commands = commandList,
+				.allocator = rasterModule_->GetFrameAllocator(),
+				.surfaceTarget = passDesc.colorOutputs.empty() ? InvalidResourceHandle : passDesc.colorOutputs[0].handle,
+				.renderArea = surfaceSize
 			};
 			callbackIt->second(context);
 		}

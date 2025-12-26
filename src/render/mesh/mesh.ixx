@@ -63,6 +63,8 @@ export struct MeshData {
 export struct GPUMesh {
 	GPUBufferHandle vertexBuffer = 0;   // Handle to GPU vertex buffer
 	GPUBufferHandle indexBuffer = 0;    // Handle to GPU index buffer
+	GPUDeviceAddress vertexBufferGPU = InvalidGPUAddress;  // GPU device address for bindless
+	GPUDeviceAddress indexBufferGPU = InvalidGPUAddress;   // GPU device address for bindless
 	std::uint32_t indexCount = 0;
 	std::uint32_t vertexCount = 0;
 	VertexLayout layout;                // Layout for pipeline binding

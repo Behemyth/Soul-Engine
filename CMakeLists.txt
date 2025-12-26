@@ -27,6 +27,7 @@ find_package(periapsis REQUIRED)
 find_package(cppaste REQUIRED)
 find_package(SDL3 REQUIRED)
 find_package(glaze REQUIRED)
+find_package(freetype REQUIRED)
 
 # Find Vulkan from system SDK (not from Conan)
 # Use VULKAN_SDK environment variable to locate the system Vulkan SDK
@@ -150,6 +151,7 @@ target_link_libraries(soul-engine
 		GPUOpen::VulkanMemoryAllocator
 		VulkanHppModule
 		slang::slang
+		Freetype::Freetype
 )
 
 # Conditionally define SOUL_ENABLE_SHADER_HOT_RELOAD macro

@@ -216,9 +216,8 @@ TextureHeapResult<TextureIndex> VulkanTextureHeap::Allocate(
 	
 	std::uint32_t index = AllocateIndex();
 	
-	// Native handle is VkImageView
-	vk::ImageView imageView = reinterpret_cast<vk::ImageView>(static_cast<VkImageView>(
-		reinterpret_cast<void*>(nativeHandle)));
+	// Native handle is VkImageView - use vk::ImageView constructor
+	vk::ImageView imageView{reinterpret_cast<VkImageView>(nativeHandle)};
 	
 	WriteDescriptor(index, imageView, viewDesc);
 	
@@ -242,8 +241,8 @@ void VulkanTextureHeap::Update(
 		return;
 	}
 	
-	vk::ImageView imageView = reinterpret_cast<vk::ImageView>(static_cast<VkImageView>(
-		reinterpret_cast<void*>(nativeHandle)));
+	// Native handle is VkImageView - use vk::ImageView constructor
+	vk::ImageView imageView{reinterpret_cast<VkImageView>(nativeHandle)};
 	
 	WriteDescriptor(index.value, imageView, viewDesc);
 }

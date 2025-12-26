@@ -221,8 +221,8 @@ public:
 	}
 	
 	// Convenience: Create barrier between stages with hazard type
-	void Barrier(StageFlags srcStage, StageFlags dstStage, HazardFlags hazard) {
-		Barrier(BarrierCommand::Between(srcStage, dstStage, hazard));
+	void Barrier(StageFlags srcStage, StageFlags dstStage, HazardFlags hazard = HazardFlags::None) {
+		Barrier(BarrierCommand{srcStage, dstStage, hazard});
 	}
 	
 	/**

@@ -17,6 +17,7 @@ target_sources(soul-engine
 			vulkan_sampler_heap.ixx
 			vulkan_gpu_allocator.ixx
 			vulkan_bindless_layout.ixx
+			vulkan_frame_allocator.ixx
 			# Device
 			device/vulkan_physical_device.ixx
 			device/vulkan_queue.ixx

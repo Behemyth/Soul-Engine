@@ -112,6 +112,13 @@ public:
 		const vk::RenderPass&,
 		std::uint32_t subPassIndex,
 		const VulkanPipelineConfig& config);
+	
+	// Constructor with external pipeline layout (for bindless)
+	VulkanPipeline(const vk::Device&, std::span<VulkanShader>,
+		const vk::RenderPass&,
+		std::uint32_t subPassIndex,
+		const VulkanPipelineConfig& config,
+		vk::PipelineLayout externalLayout);
 
 	~VulkanPipeline();
 
@@ -122,10 +129,12 @@ public:
 		stages_(std::move(other.stages_)),
 		pipelineCache_(std::move(other.pipelineCache_)),
 		pipelineLayout_(std::move(other.pipelineLayout_)),
+		externalLayout_(other.externalLayout_),
 		pipeline_(other.pipeline_)
 	{
 		other.pipeline_ = nullptr;
 		other.device_ = nullptr;
+		other.externalLayout_ = nullptr;
 	}
 
 	VulkanPipeline& operator=(const VulkanPipeline&) = delete;
@@ -139,14 +148,19 @@ public:
 			stages_ = std::move(other.stages_);
 			pipelineCache_ = std::move(other.pipelineCache_);
 			pipelineLayout_ = std::move(other.pipelineLayout_);
+			externalLayout_ = other.externalLayout_;
 			pipeline_ = other.pipeline_;
 			other.pipeline_ = nullptr;
 			other.device_ = nullptr;
+			other.externalLayout_ = nullptr;
 		}
 		return *this;
 	}
 
 	[[nodiscard]] const vk::Pipeline& Handle() const;
+	[[nodiscard]] vk::PipelineLayout LayoutHandle() const { 
+		return externalLayout_ ? externalLayout_ : pipelineLayout_.Handle(); 
+	}
 	[[nodiscard]] const VulkanPipelineLayout& Layout() const { return pipelineLayout_; }
 
 
@@ -155,7 +169,8 @@ private:
 	void CreatePipeline(std::span<VulkanShader> shaders,
 		const vk::RenderPass& renderPass,
 		std::uint32_t subPassIndex,
-		const VulkanPipelineConfig& config);
+		const VulkanPipelineConfig& config,
+		vk::PipelineLayout layoutOverride = nullptr);
 
 	vk::Device device_;
 
@@ -163,6 +178,7 @@ private:
 
 	VulkanPipelineCache pipelineCache_;
 	VulkanPipelineLayout pipelineLayout_;
+	vk::PipelineLayout externalLayout_ = nullptr;  // Non-owning, for bindless
 
 	vk::Pipeline pipeline_;
 
