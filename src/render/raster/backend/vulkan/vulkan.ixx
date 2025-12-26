@@ -1,5 +1,6 @@
 export module synodic.soul.raster.backend.vulkan;
 
+export import :dispatch;  // Dynamic dispatcher initialization (must be first)
 export import :error;
 export import :allocator;
 export import :physical_device;

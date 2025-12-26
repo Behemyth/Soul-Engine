@@ -2,6 +2,7 @@ module synodic.soul.raster.backend.vulkan;
 
 import vulkan;
 import std;
+import :dispatch;
 
 namespace
 {
@@ -60,6 +61,9 @@ VulkanInstance::VulkanInstance(
 	const std::span<std::string> validationLayers,
 	const std::span<std::string> requiredExtensions)
 {
+	// Initialize dynamic dispatcher with global Vulkan functions BEFORE creating instance
+	InitializeVulkanDispatcher();
+	
 	std::vector<const char*> cValidationLayers;
 	cValidationLayers.reserve(validationLayers.size());
 	for (auto& layer: validationLayers)
@@ -97,6 +101,9 @@ VulkanInstance::VulkanInstance(
 	// See: https://github.com/KhronosGroup/Vulkan-ValidationLayers/blob/main/docs/gpu_av_descriptor_buffer.md
 
 	instance_ = createInstance(instanceCreationInfo);
+	
+	// Initialize instance-level functions in the dynamic dispatcher
+	InitializeVulkanDispatcherInstance(instance_);
 
 	if constexpr (Compiler::Debug())
 	{

@@ -5,6 +5,7 @@ target_sources(soul-engine
 			vulkan_error.ixx
 			vulkan_allocator.ixx
 			vulkan_instance.ixx
+			vulkan_dispatch.ixx
 			vulkan_raster_backend.ixx
 			vulkan_fence.ixx
 			vulkan_semaphore.ixx
@@ -47,6 +48,7 @@ target_sources(soul-engine
 		pipeline/vulkan_pipeline_layout.cpp
 		pipeline/vulkan_pipeline_cache.cpp
 		vulkan_instance.cpp
+		vulkan_dispatch.cpp
 		vulkan_sub_pass.cpp
 		vulkan_semaphore.cpp
 		vulkan_fence.cpp

@@ -6,6 +6,7 @@ import vulkan;
 import :queue;
 import :allocator;
 import :error;
+import :dispatch;
 import synodic.soul.scheduler;
 import synodic.soul.engine;
 
@@ -175,6 +176,10 @@ VulkanDevice<SchedulerType>::VulkanDevice(
 	device_(buildResult.device),
 	allocator_(instance, physicalDevice_, device_, vulkanApiVersion)
 {
+	// Initialize device-level functions in the dynamic dispatcher
+	// This loads extension functions like vkCmdBindDescriptorBuffersEXT, vkGetDescriptorEXT
+	InitializeVulkanDispatcherDevice(device_);
+	
 	// Create queue objects from indices
 	for (auto& indices: buildResult.transferIndices)
 	{

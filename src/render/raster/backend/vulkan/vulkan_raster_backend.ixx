@@ -23,8 +23,11 @@ import :semaphore;
 import :framebuffer;
 import :allocator;
 import :bindless_layout;
+import :texture_heap;
+import :sampler_heap;
 import :gpu_allocator;
 import :frame_allocator;
+import :dispatch;
 
 // Simple ID types to replace Entity for resource management
 export using SurfaceId = std::uint64_t;
@@ -308,10 +311,10 @@ private:
 	std::optional<BufferData> stagingBuffer_;
 	static constexpr std::size_t stagingBufferSize_ = 64 * 1024 * 1024;  // 64 MB staging buffer
 
-	// Bindless infrastructure (No Graphics API pattern)
+	// Bindless infrastructure (No Graphics API pattern with VK_EXT_descriptor_buffer)
 	std::optional<VulkanBindlessLayout> bindlessLayout_;
-	vk::DescriptorPool bindlessDescriptorPool_ = nullptr;
-	vk::DescriptorSet bindlessDescriptorSet_ = nullptr;
+	std::optional<VulkanTextureHeap> textureHeap_;
+	std::optional<VulkanSamplerHeap> samplerHeap_;
 	std::optional<VulkanGPUAllocator> gpuAllocator_;
 	std::optional<VulkanFrameAllocator> frameAllocator_;
 
@@ -390,46 +393,21 @@ VulkanRasterBackend<SchedulerType>::VulkanRasterBackend(SchedulerType& scheduler
 
 	// Initialize bindless infrastructure
 	auto& device = devices_[0].Logical();
+	auto& physicalDevice = devices_[0].Physical();
+	auto& allocator = devices_[0].Allocator();
 	
 	// Create the global bindless layout (pipeline layout + descriptor set layout)
 	bindlessLayout_.emplace(device);
 	
-	// Create descriptor pool for bindless heaps (update-after-bind)
-	std::array<vk::DescriptorPoolSize, 2> poolSizes = {{
-		{ vk::DescriptorType::eSampledImage, VulkanBindlessLayout::MaxTextureCount },
-		{ vk::DescriptorType::eSampler, VulkanBindlessLayout::MaxSamplerCount }
-	}};
-	
-	vk::DescriptorPoolCreateInfo poolInfo;
-	poolInfo.flags = vk::DescriptorPoolCreateFlagBits::eUpdateAfterBind;
-	poolInfo.maxSets = 1;
-	poolInfo.poolSizeCount = static_cast<std::uint32_t>(poolSizes.size());
-	poolInfo.pPoolSizes = poolSizes.data();
-	
-	bindlessDescriptorPool_ = device.createDescriptorPool(poolInfo);
-	
-	// Allocate the bindless descriptor set with variable count for texture array
-	vk::DescriptorSetLayout setLayout = bindlessLayout_->DescriptorSetLayout();
-	
-	// Variable descriptor count for the texture array (binding 0)
-	std::uint32_t variableCount = VulkanBindlessLayout::MaxTextureCount;
-	vk::DescriptorSetVariableDescriptorCountAllocateInfo variableInfo;
-	variableInfo.descriptorSetCount = 1;
-	variableInfo.pDescriptorCounts = &variableCount;
-	
-	vk::DescriptorSetAllocateInfo allocInfo;
-	allocInfo.pNext = &variableInfo;
-	allocInfo.descriptorPool = bindlessDescriptorPool_;
-	allocInfo.descriptorSetCount = 1;
-	allocInfo.pSetLayouts = &setLayout;
-	
-	bindlessDescriptorSet_ = device.allocateDescriptorSets(allocInfo)[0];
+	// Create texture and sampler heaps using VK_EXT_descriptor_buffer
+	textureHeap_.emplace(device, physicalDevice, allocator, VulkanBindlessLayout::MaxTextureCount);
+	samplerHeap_.emplace(device, physicalDevice, allocator, VulkanBindlessLayout::MaxSamplerCount);
 	
 	// Create GPU allocator for bindless root arguments
-	gpuAllocator_.emplace(device, devices_[0].Physical(), devices_[0].Allocator());
+	gpuAllocator_.emplace(device, physicalDevice, allocator);
 	
 	// Create frame allocator for per-frame bindless data
-	frameAllocator_.emplace(device, devices_[0].Allocator());
+	frameAllocator_.emplace(device, allocator);
 }
 
 template<SchedulerBackend SchedulerType>
@@ -439,12 +417,7 @@ VulkanRasterBackend<SchedulerType>::~VulkanRasterBackend()
 	if (!devices_.empty()) {
 		devices_[0].Logical().waitIdle();
 		
-		// Destroy bindless descriptor pool (implicitly frees descriptor set)
-		if (bindlessDescriptorPool_) {
-			devices_[0].Logical().destroyDescriptorPool(bindlessDescriptorPool_);
-		}
-		
-		// VulkanBindlessLayout destructor handles its own cleanup
+		// Texture/sampler heaps and bindless layout destructors handle their own cleanup
 	}
 }
 
@@ -853,6 +826,11 @@ void VulkanRasterBackend<SchedulerType>::ExecutePassWithFlags(Entity renderPassE
 		// Increment timeline value for this frame's submission
 		frameData.timelineValue++;
 
+		// Reset command buffer explicitly before beginning
+		// This is required when reusing command buffers - the implicit reset in begin()
+		// can fail if the validation layer's state tracking is inconsistent
+		commandBufferHandle.reset(vk::CommandBufferResetFlags{});
+
 		// Begin command buffer
 		vk::CommandBufferBeginInfo beginInfo;
 		beginInfo.flags = vk::CommandBufferUsageFlagBits::eOneTimeSubmit;
@@ -911,14 +889,34 @@ void VulkanRasterBackend<SchedulerType>::ExecutePassWithFlags(Entity renderPassE
 	if (!passData.pipelines.empty()) {
 		commandBufferHandle.bindPipeline(vk::PipelineBindPoint::eGraphics, passData.pipelines[0].Handle());
 
-		// Bind the global bindless descriptor set (texture/sampler heaps)
+		// Bind descriptor buffers (VK_EXT_descriptor_buffer)
+		// Two buffers: sampler heap (binding 0) and texture heap (binding 1)
+		std::array<vk::DescriptorBufferBindingInfoEXT, 2> bufferBindings;
+		
+		// Sampler descriptor buffer
+		bufferBindings[0].address = samplerHeap_->GPUAddress();
+		bufferBindings[0].usage = vk::BufferUsageFlagBits::eSamplerDescriptorBufferEXT;
+		
+		// Texture (resource) descriptor buffer  
+		bufferBindings[1].address = textureHeap_->GPUAddress();
+		bufferBindings[1].usage = vk::BufferUsageFlagBits::eResourceDescriptorBufferEXT;
+		
+		// Bind descriptor buffers (VK_EXT_descriptor_buffer via dynamic dispatch)
+		commandBufferHandle.bindDescriptorBuffersEXT(bufferBindings);
+		
+		// Set descriptor buffer offsets for set 0
+		// Buffer indices: 0 = sampler buffer, 1 = texture buffer
+		// Both start at offset 0 in their respective buffers
 		vk::PipelineLayout pipelineLayout = passData.pipelines[0].LayoutHandle();
-		commandBufferHandle.bindDescriptorSets(
+		std::array<std::uint32_t, 2> bufferIndices = {0, 1};  // sampler at index 0, texture at index 1
+		std::array<vk::DeviceSize, 2> offsets = {0, 0};
+		
+		commandBufferHandle.setDescriptorBufferOffsetsEXT(
 			vk::PipelineBindPoint::eGraphics,
 			pipelineLayout,
 			0,  // firstSet
-			bindlessDescriptorSet_,
-			nullptr  // dynamic offsets
+			bufferIndices,
+			offsets
 		);
 
 		// Process command list commands using the bindless pattern

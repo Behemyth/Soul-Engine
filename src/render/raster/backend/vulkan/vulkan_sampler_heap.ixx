@@ -333,6 +333,7 @@ void VulkanSamplerHeap::WriteDescriptor(std::uint32_t index, vk::Sampler sampler
 	getInfo.type = vk::DescriptorType::eSampler;
 	getInfo.data.pSampler = &sampler;
 	
-	device_.getDescriptorEXT(&getInfo, descriptorSize_, dstPtr);
+	// Write descriptor using dynamic dispatch
+	device_.getDescriptorEXT(getInfo, descriptorSize_, dstPtr);
 }
 

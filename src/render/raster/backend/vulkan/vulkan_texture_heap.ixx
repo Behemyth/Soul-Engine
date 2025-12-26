@@ -127,9 +127,8 @@ VulkanTextureHeap::VulkanTextureHeap(
 	allocInfo.usage = MemoryUsage::Auto;
 	allocInfo.mapped = true;  // Persistently mapped for descriptor writes
 	
-	// Buffer usage flags for descriptor buffer
+	// Buffer usage flags for resource descriptor buffer (textures only)
 	vk::BufferUsageFlags usage = vk::BufferUsageFlagBits::eResourceDescriptorBufferEXT |
-	                             vk::BufferUsageFlagBits::eSamplerDescriptorBufferEXT |
 	                             vk::BufferUsageFlagBits::eShaderDeviceAddress;
 	
 	auto result = allocator_->CreateBuffer(bufferSize, usage, allocInfo);
@@ -266,8 +265,8 @@ void VulkanTextureHeap::WriteDescriptor(
 	getInfo.type = vk::DescriptorType::eSampledImage;
 	getInfo.data.pSampledImage = &imageInfo;
 	
-	// Write descriptor directly to buffer
-	device_.getDescriptorEXT(&getInfo, descriptorSize_, dstPtr);
+	// Write descriptor directly to buffer using dynamic dispatch
+	device_.getDescriptorEXT(getInfo, descriptorSize_, dstPtr);
 }
 
 std::uint32_t VulkanTextureHeap::AllocateIndex() {

@@ -137,14 +137,15 @@ struct RootConstants
 ConstantBuffer<RootConstants> root;
 
 // ============================================================================
-// Texture/Sampler Heaps (Descriptor Indexing)
+// Texture/Sampler Heaps (Descriptor Buffer with Separate Sets)
 // ============================================================================
-// Note: Sampler at binding 0, Texture at binding 1 due to Vulkan requirement
-// that VariableDescriptorCount can only be on the last binding
+// Set 0: Sampler descriptor buffer (binding 0)
+// Set 1: Resource descriptor buffer (binding 0 for textures)
+// Each descriptor set maps to its own descriptor buffer
 [[vk::binding(0, 0)]]
 SamplerState samplerHeap[];
 
-[[vk::binding(1, 0)]]
+[[vk::binding(0, 1)]]
 Texture2D textureHeap[];
 
 // ============================================================================

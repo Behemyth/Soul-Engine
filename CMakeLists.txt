@@ -126,7 +126,11 @@ target_sources(VulkanHppModule PUBLIC
     "${Vulkan_INCLUDE_DIR_NORMALIZED}/vulkan/vulkan.cppm"
 )
 target_compile_features(VulkanHppModule PUBLIC cxx_std_23)
-target_compile_definitions(VulkanHppModule PUBLIC VULKAN_HPP_CXX_MODULE_EXPERIMENTAL_WARNING)
+target_compile_definitions(VulkanHppModule PUBLIC 
+  VULKAN_HPP_CXX_MODULE_EXPERIMENTAL_WARNING
+  VULKAN_HPP_DISPATCH_LOADER_DYNAMIC=1
+  # Note: Do NOT define VK_NO_PROTOTYPES - VMA and bootstrap need static prototypes
+)
 target_link_libraries(VulkanHppModule PUBLIC Vulkan::Vulkan)
 
 add_library(soul-engine)

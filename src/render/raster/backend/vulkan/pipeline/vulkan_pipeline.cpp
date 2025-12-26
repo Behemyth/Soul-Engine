@@ -208,7 +208,8 @@ void VulkanPipeline::CreatePipeline(std::span<VulkanShader> shaders,
 	vk::PipelineLayout activeLayout = layoutOverride ? layoutOverride : pipelineLayout_.Handle();
 
 	vk::GraphicsPipelineCreateInfo pipelineInfo;
-	pipelineInfo.flags = vk::PipelineCreateFlags();
+	// Use descriptor buffer extension for bindless resources
+	pipelineInfo.flags = vk::PipelineCreateFlagBits::eDescriptorBufferEXT;
 	pipelineInfo.stageCount = actualStageCount;
 	pipelineInfo.pStages = shaderStagesArray.data();
 	pipelineInfo.pVertexInputState = &vertexInputInfo;
