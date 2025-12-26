@@ -18,7 +18,7 @@ import synodic.soul.scheduler.backend.passthrough;
 import synodic.soul.backend.sdl;
 import synodic.soul.transput; // GLTF mesh loading
 
-using SampleApp = synodic::soul::App<
+using ViewerApp = synodic::soul::App<
 	PassthroughSchedulerBackend,
 	MockBackend,
 	SDLInputBackend,
@@ -27,15 +27,15 @@ using SampleApp = synodic::soul::App<
 	SDLWindowBackend,
 	StandardGUIBackend>;
 
-class Sample : public SampleApp
+class Viewer : public ViewerApp
 {
 public:
-	explicit Sample(
+	explicit Viewer(
 		const synodic::soul::Parameters& params,
 		SDLInputBackend inputBackend,
 		SDLWindowBackend windowBackend,
 		PassthroughSchedulerBackend& schedulerBackend) :
-		SampleApp(params, std::move(inputBackend), std::move(windowBackend), VulkanRasterBackend(schedulerBackend))
+		ViewerApp(params, std::move(inputBackend), std::move(windowBackend), VulkanRasterBackend(schedulerBackend))
 	{
 	}
 
@@ -378,7 +378,7 @@ std::int32_t main(std::int32_t, char*[])
 
 	Property<std::uint32_t> threadCount(1);
 	PassthroughSchedulerBackend schedulerBackend(threadCount);
-	Sample app(appParams, std::move(inputBackend), std::move(windowBackend), schedulerBackend);
+	Viewer app(appParams, std::move(inputBackend), std::move(windowBackend), schedulerBackend);
 
 	app.Run();
 
