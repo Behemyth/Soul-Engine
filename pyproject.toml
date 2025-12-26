@@ -34,7 +34,8 @@ dependencies = [
 	'sdl>=3.2.20',
 	'vulkan-memory-allocator==3.3.0',
 	'glaze>=6.0.1',
-	'freetype==2.14.1'
+	'freetype==2.14.1',
+	'meshoptimizer==0.25'
 ]
 
 [tool.cppython.generators.cmake]

@@ -65,76 +65,84 @@ void VulkanPipeline::CreatePipeline(std::span<VulkanShader> shaders,
 	const VulkanPipelineConfig& config,
 	vk::PipelineLayout layoutOverride)
 {
-	// Vertex input state - based on vertex format
+	// Check if this is a mesh shader pipeline
+	const bool isMeshPipeline = config.shaderModel == ShaderModel::Mesh || 
+	                            config.shaderModel == ShaderModel::MeshTask;
+
+	// Vertex input state - only used for vertex shader pipelines
 	vk::VertexInputBindingDescription bindingDescription;
 	std::vector<vk::VertexInputAttributeDescription> attributeDescriptions;
 
 	vk::PipelineVertexInputStateCreateInfo vertexInputInfo;
 
-	if (config.vertexFormat == VertexFormat::PBR) {
-		// PBR vertex format: position, normal, tangent, texcoord
-		bindingDescription.binding = 0;
-		bindingDescription.stride = PBRLayout::Stride;
-		bindingDescription.inputRate = vk::VertexInputRate::eVertex;
+	if (!isMeshPipeline) {
+		// Traditional vertex shader pipeline
+		if (config.vertexFormat == VertexFormat::PBR) {
+			// PBR vertex format: position, normal, tangent, texcoord
+			bindingDescription.binding = 0;
+			bindingDescription.stride = PBRLayout::Stride;
+			bindingDescription.inputRate = vk::VertexInputRate::eVertex;
 
-		attributeDescriptions.resize(4);
+			attributeDescriptions.resize(4);
 
-		// Position - location 0
-		attributeDescriptions[0].binding = 0;
-		attributeDescriptions[0].location = PBRLayout::PositionLocation;
-		attributeDescriptions[0].format = vk::Format::eR32G32B32Sfloat;
-		attributeDescriptions[0].offset = PBRLayout::PositionOffset;
+			// Position - location 0
+			attributeDescriptions[0].binding = 0;
+			attributeDescriptions[0].location = PBRLayout::PositionLocation;
+			attributeDescriptions[0].format = vk::Format::eR32G32B32Sfloat;
+			attributeDescriptions[0].offset = PBRLayout::PositionOffset;
 
-		// Normal - location 1
-		attributeDescriptions[1].binding = 0;
-		attributeDescriptions[1].location = PBRLayout::NormalLocation;
-		attributeDescriptions[1].format = vk::Format::eR32G32B32Sfloat;
-		attributeDescriptions[1].offset = PBRLayout::NormalOffset;
+			// Normal - location 1
+			attributeDescriptions[1].binding = 0;
+			attributeDescriptions[1].location = PBRLayout::NormalLocation;
+			attributeDescriptions[1].format = vk::Format::eR32G32B32Sfloat;
+			attributeDescriptions[1].offset = PBRLayout::NormalOffset;
 
-		// Tangent - location 2 (vec4 for handedness)
-		attributeDescriptions[2].binding = 0;
-		attributeDescriptions[2].location = PBRLayout::TangentLocation;
-		attributeDescriptions[2].format = vk::Format::eR32G32B32A32Sfloat;
-		attributeDescriptions[2].offset = PBRLayout::TangentOffset;
+			// Tangent - location 2 (vec4 for handedness)
+			attributeDescriptions[2].binding = 0;
+			attributeDescriptions[2].location = PBRLayout::TangentLocation;
+			attributeDescriptions[2].format = vk::Format::eR32G32B32A32Sfloat;
+			attributeDescriptions[2].offset = PBRLayout::TangentOffset;
 
-		// TexCoord - location 3
-		attributeDescriptions[3].binding = 0;
-		attributeDescriptions[3].location = PBRLayout::TexCoordLocation;
-		attributeDescriptions[3].format = vk::Format::eR32G32Sfloat;
-		attributeDescriptions[3].offset = PBRLayout::TexCoordOffset;
+			// TexCoord - location 3
+			attributeDescriptions[3].binding = 0;
+			attributeDescriptions[3].location = PBRLayout::TexCoordLocation;
+			attributeDescriptions[3].format = vk::Format::eR32G32Sfloat;
+			attributeDescriptions[3].offset = PBRLayout::TexCoordOffset;
 
-		vertexInputInfo.vertexBindingDescriptionCount = 1;
-		vertexInputInfo.vertexAttributeDescriptionCount = static_cast<std::uint32_t>(attributeDescriptions.size());
-		vertexInputInfo.pVertexBindingDescriptions = &bindingDescription;
-		vertexInputInfo.pVertexAttributeDescriptions = attributeDescriptions.data();
-	} else if (config.vertexFormat == VertexFormat::Custom && !config.customVertexAttributes.empty()) {
-		// Custom vertex format from reflection or explicit configuration
-		bindingDescription.binding = 0;
-		bindingDescription.stride = config.customVertexStride;
-		bindingDescription.inputRate = vk::VertexInputRate::eVertex;
+			vertexInputInfo.vertexBindingDescriptionCount = 1;
+			vertexInputInfo.vertexAttributeDescriptionCount = static_cast<std::uint32_t>(attributeDescriptions.size());
+			vertexInputInfo.pVertexBindingDescriptions = &bindingDescription;
+			vertexInputInfo.pVertexAttributeDescriptions = attributeDescriptions.data();
+		} else if (config.vertexFormat == VertexFormat::Custom && !config.customVertexAttributes.empty()) {
+			// Custom vertex format from reflection or explicit configuration
+			bindingDescription.binding = 0;
+			bindingDescription.stride = config.customVertexStride;
+			bindingDescription.inputRate = vk::VertexInputRate::eVertex;
 
-		attributeDescriptions.reserve(config.customVertexAttributes.size());
-		for (const auto& attr : config.customVertexAttributes) {
-			vk::VertexInputAttributeDescription desc;
-			desc.binding = 0;
-			desc.location = attr.location;
-			desc.format = attr.format;
-			desc.offset = attr.offset;
-			attributeDescriptions.push_back(desc);
+			attributeDescriptions.reserve(config.customVertexAttributes.size());
+			for (const auto& attr : config.customVertexAttributes) {
+				vk::VertexInputAttributeDescription desc;
+				desc.binding = 0;
+				desc.location = attr.location;
+				desc.format = attr.format;
+				desc.offset = attr.offset;
+				attributeDescriptions.push_back(desc);
+			}
+
+			vertexInputInfo.vertexBindingDescriptionCount = 1;
+			vertexInputInfo.vertexAttributeDescriptionCount = static_cast<std::uint32_t>(attributeDescriptions.size());
+			vertexInputInfo.pVertexBindingDescriptions = &bindingDescription;
+			vertexInputInfo.pVertexAttributeDescriptions = attributeDescriptions.data();
+		} else {
+			// No vertex input - shader uses SV_VertexID with hardcoded vertices
+			vertexInputInfo.vertexBindingDescriptionCount = 0;
+			vertexInputInfo.vertexAttributeDescriptionCount = 0;
+			vertexInputInfo.pVertexBindingDescriptions = nullptr;
+			vertexInputInfo.pVertexAttributeDescriptions = nullptr;
 		}
-
-		vertexInputInfo.vertexBindingDescriptionCount = 1;
-		vertexInputInfo.vertexAttributeDescriptionCount = static_cast<std::uint32_t>(attributeDescriptions.size());
-		vertexInputInfo.pVertexBindingDescriptions = &bindingDescription;
-		vertexInputInfo.pVertexAttributeDescriptions = attributeDescriptions.data();
-	} else {
-		// No vertex input - shader uses SV_VertexID with hardcoded vertices
-		vertexInputInfo.vertexBindingDescriptionCount = 0;
-		vertexInputInfo.vertexAttributeDescriptionCount = 0;
-		vertexInputInfo.pVertexBindingDescriptions = nullptr;
-		vertexInputInfo.pVertexAttributeDescriptions = nullptr;
 	}
 
+	// Input assembly - only for vertex shader pipelines
 	vk::PipelineInputAssemblyStateCreateInfo inputAssembly;
 	inputAssembly.topology = config.topology;
 	inputAssembly.primitiveRestartEnable = vk::False;
@@ -196,8 +204,9 @@ void VulkanPipeline::CreatePipeline(std::span<VulkanShader> shaders,
 	depthStencil.front = depthStencil.back;
 
 	// Use std::array for shader stages so debugger can show all elements
-	// Most graphics pipelines have 2 stages (vertex + fragment)
-	std::array<vk::PipelineShaderStageCreateInfo, 2> shaderStagesArray{};
+	// Most graphics pipelines have 2 stages (vertex + fragment) or (mesh + fragment)
+	// Task + mesh + fragment would have 3 stages
+	std::array<vk::PipelineShaderStageCreateInfo, 3> shaderStagesArray{};
 	const std::uint32_t actualStageCount = static_cast<std::uint32_t>(std::min(shaders.size(), shaderStagesArray.size()));
 	
 	for (std::uint32_t i = 0; i < actualStageCount; ++i) {
@@ -212,8 +221,16 @@ void VulkanPipeline::CreatePipeline(std::span<VulkanShader> shaders,
 	pipelineInfo.flags = vk::PipelineCreateFlagBits::eDescriptorBufferEXT;
 	pipelineInfo.stageCount = actualStageCount;
 	pipelineInfo.pStages = shaderStagesArray.data();
-	pipelineInfo.pVertexInputState = &vertexInputInfo;
-	pipelineInfo.pInputAssemblyState = &inputAssembly;
+	
+	// Mesh shader pipelines don't use vertex input or input assembly
+	if (isMeshPipeline) {
+		pipelineInfo.pVertexInputState = nullptr;
+		pipelineInfo.pInputAssemblyState = nullptr;
+	} else {
+		pipelineInfo.pVertexInputState = &vertexInputInfo;
+		pipelineInfo.pInputAssemblyState = &inputAssembly;
+	}
+	
 	pipelineInfo.pTessellationState = nullptr;
 	pipelineInfo.pViewportState = &viewportState;
 	pipelineInfo.pRasterizationState = &rasterizer;

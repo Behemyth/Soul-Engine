@@ -30,6 +30,7 @@ class CPPythonBase(ConanFile):
         self.requires("vulkan-memory-allocator/3.3.0")
         self.requires("glaze/[>=6.0.1]")
         self.requires("freetype/2.14.1")
+        self.requires("meshoptimizer/0.25")
 
     def build_requirements(self):
         """CPPython managed build and test requirements."""

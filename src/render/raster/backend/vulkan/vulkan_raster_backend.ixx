@@ -373,6 +373,7 @@ VulkanRasterBackend<SchedulerType>::VulkanRasterBackend(SchedulerType& scheduler
 		"VK_KHR_swapchain",
 		"VK_EXT_descriptor_buffer",       // Required for bindless texture heap
 		"VK_EXT_extended_dynamic_state3", // Required for dynamic blend state
+		"VK_EXT_mesh_shader",             // Required for mesh/task shaders
 	};
 	// Note: Many extensions promoted to core in Vulkan 1.4
 	// - VK_KHR_buffer_device_address (core in 1.2)
@@ -587,12 +588,39 @@ Entity VulkanRasterBackend<SchedulerType>::CreatePass(const ShaderSet& shaderSet
 	// Triangle shaders (fallback for testing)
 	std::filesystem::path triangleVertexPath = shaderDir / "triangle.vertex.spv";
 	std::filesystem::path triangleFragmentPath = shaderDir / "triangle.fragment.spv";
+	
+	// Mesh shader paths (preferred for 3D geometry)
+	std::filesystem::path pbrMeshPath = shaderDir / "pbr_mesh.mesh.spv";
+	std::filesystem::path pbrMeshFragmentPath = shaderDir / "pbr_mesh.fragment.spv";
+	std::filesystem::path pbrTaskPath = shaderDir / "pbr_task.amplification.spv";
+	std::filesystem::path pbrTaskMeshPath = shaderDir / "pbr_task.mesh.spv";
 
 	// Use the global bindless pipeline layout for all pipelines
 	vk::PipelineLayout bindlessPipelineLayout = bindlessLayout_->Handle();
 
-	if (std::filesystem::exists(pbrVertexPath) && std::filesystem::exists(pbrFragmentPath)) {
-		// PBR pipeline with bindless layout
+	// Prefer mesh shaders if available (modern GPU-driven rendering)
+	if (std::filesystem::exists(pbrMeshPath) && std::filesystem::exists(pbrMeshFragmentPath)) {
+		// Mesh shader PBR pipeline
+		std::vector<VulkanShader> shaders;
+		shaders.emplace_back(devices_[0].Logical(), vk::ShaderStageFlagBits::eMeshEXT,
+			pbrMeshPath, "main");
+		shaders.emplace_back(devices_[0].Logical(), vk::ShaderStageFlagBits::eFragment,
+			pbrMeshFragmentPath, "main");
+
+		// Mesh shader config: no vertex input, depth enabled
+		VulkanPipelineConfig pipelineConfig = VulkanPipelineConfig::MeshShaderBindless();
+		pipelineConfig.cullMode = vk::CullModeFlagBits::eBack;
+
+		passData.pipelines.emplace_back(
+			devices_[0].Logical(),
+			shaders,
+			passData.renderPass->Handle(),
+			0,  // subpass index
+			pipelineConfig,
+			bindlessPipelineLayout);
+	}
+	else if (std::filesystem::exists(pbrVertexPath) && std::filesystem::exists(pbrFragmentPath)) {
+		// Fallback: Vertex shader PBR pipeline
 		std::vector<VulkanShader> shaders;
 		shaders.emplace_back(devices_[0].Logical(), vk::ShaderStageFlagBits::eVertex,
 			pbrVertexPath, "main");
@@ -968,6 +996,49 @@ void VulkanRasterBackend<SchedulerType>::ExecutePassWithFlags(Entity renderPassE
 					// TODO: Push root data pointer, dispatch compute
 					const auto& cmd = commandList.GetDispatch(i);
 					commandBufferHandle.dispatch(cmd.groupCountX, cmd.groupCountY, cmd.groupCountZ);
+					break;
+				}
+				case CommandType::DrawMeshTasks: {
+					const auto& cmd = commandList.GetDrawMeshTasks(i);
+					// Push root constants for mesh shader
+					commandBufferHandle.pushConstants(
+						pipelineLayoutHandle,
+						vk::ShaderStageFlagBits::eMeshEXT | vk::ShaderStageFlagBits::eTaskEXT | vk::ShaderStageFlagBits::eFragment,
+						0,
+						sizeof(std::uint64_t),
+						&meshData
+					);
+					commandBufferHandle.pushConstants(
+						pipelineLayoutHandle,
+						vk::ShaderStageFlagBits::eMeshEXT | vk::ShaderStageFlagBits::eTaskEXT | vk::ShaderStageFlagBits::eFragment,
+						sizeof(std::uint64_t),
+						sizeof(std::uint64_t),
+						&pixelData
+					);
+					commandBufferHandle.drawMeshTasksEXT(cmd.groupCountX, cmd.groupCountY, cmd.groupCountZ);
+					hasDrawCommands = true;
+					break;
+				}
+				case CommandType::DrawMeshTasksIndirect: {
+					const auto& cmd = commandList.GetDrawMeshTasksIndirect(i);
+					// Push root constants for mesh shader
+					commandBufferHandle.pushConstants(
+						pipelineLayoutHandle,
+						vk::ShaderStageFlagBits::eMeshEXT | vk::ShaderStageFlagBits::eTaskEXT | vk::ShaderStageFlagBits::eFragment,
+						0,
+						sizeof(std::uint64_t),
+						&meshData
+					);
+					commandBufferHandle.pushConstants(
+						pipelineLayoutHandle,
+						vk::ShaderStageFlagBits::eMeshEXT | vk::ShaderStageFlagBits::eTaskEXT | vk::ShaderStageFlagBits::eFragment,
+						sizeof(std::uint64_t),
+						sizeof(std::uint64_t),
+						&pixelData
+					);
+					// TODO: Implement indirect buffer support
+					// commandBufferHandle.drawMeshTasksIndirectEXT(buffer, offset, drawCount, stride);
+					hasDrawCommands = true;
 					break;
 				}
 				case CommandType::SetDepthStencilState: {

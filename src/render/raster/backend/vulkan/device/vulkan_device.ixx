@@ -317,9 +317,18 @@ typename VulkanDevice<SchedulerType>::BuildResult VulkanDevice<SchedulerType>::B
 	dynamicState3Features.extendedDynamicState3ColorWriteMask = vk::True;
 	dynamicState3Features.extendedDynamicState3LogicOpEnable = vk::True;
 
+	// Enable VK_EXT_mesh_shader for mesh/task shader pipeline
+	vk::PhysicalDeviceMeshShaderFeaturesEXT meshShaderFeatures;
+	meshShaderFeatures.pNext = &dynamicState3Features;
+	meshShaderFeatures.meshShader = vk::True;
+	meshShaderFeatures.taskShader = vk::True;
+	meshShaderFeatures.multiviewMeshShader = vk::False;
+	meshShaderFeatures.primitiveFragmentShadingRateMeshShader = vk::False;
+	meshShaderFeatures.meshShaderQueries = vk::False;
+
 	// Enable VK_EXT_descriptor_buffer features for bindless texture heap
 	vk::PhysicalDeviceDescriptorBufferFeaturesEXT descriptorBufferFeatures;
-	descriptorBufferFeatures.pNext = &dynamicState3Features;
+	descriptorBufferFeatures.pNext = &meshShaderFeatures;
 	descriptorBufferFeatures.descriptorBuffer = vk::True;
 	descriptorBufferFeatures.descriptorBufferPushDescriptors = vk::True;
 

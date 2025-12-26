@@ -38,6 +38,9 @@ public:
 		drawIndexedCommands_.clear();
 		drawWithPointersCommands_.clear();
 		drawIndirectWithPointersCommands_.clear();
+		// Mesh shader commands
+		drawMeshTasksCommands_.clear();
+		drawMeshTasksIndirectCommands_.clear();
 		// Compute commands
 		dispatchCommands_.clear();
 		dispatchIndirectCommands_.clear();
@@ -112,6 +115,33 @@ public:
 		auto pos = static_cast<std::uint32_t>(drawIndirectWithPointersCommands_.size());
 		drawIndirectWithPointersCommands_.push_back(command);
 		commands_.push_back({CommandType::DrawIndirectWithPointers, pos});
+	}
+	
+	// ========================================================================
+	// Mesh Shader Commands (VK_EXT_mesh_shader)
+	// ========================================================================
+	
+	/**
+	 * @brief Dispatch mesh shader workgroups with GPU pointer root arguments
+	 * 
+	 * Modern replacement for vertex+index draws using meshlet-based rendering.
+	 * One workgroup per meshlet typically.
+	 */
+	void DrawMeshTasks(const DrawMeshTasksCommand& command) {
+		auto pos = static_cast<std::uint32_t>(drawMeshTasksCommands_.size());
+		drawMeshTasksCommands_.push_back(command);
+		commands_.push_back({CommandType::DrawMeshTasks, pos});
+	}
+	
+	/**
+	 * @brief Dispatch mesh shader with GPU-generated arguments
+	 * 
+	 * For GPU-driven meshlet rendering after compute culling.
+	 */
+	void DrawMeshTasksIndirect(const DrawMeshTasksIndirectCommand& command) {
+		auto pos = static_cast<std::uint32_t>(drawMeshTasksIndirectCommands_.size());
+		drawMeshTasksIndirectCommands_.push_back(command);
+		commands_.push_back({CommandType::DrawMeshTasksIndirect, pos});
 	}
 	
 	// ========================================================================
@@ -281,6 +311,12 @@ public:
 				case CommandType::DrawIndirectWithPointers:
 					visitor(drawIndirectWithPointersCommands_[entry.index]);
 					break;
+				case CommandType::DrawMeshTasks:
+					visitor(drawMeshTasksCommands_[entry.index]);
+					break;
+				case CommandType::DrawMeshTasksIndirect:
+					visitor(drawMeshTasksIndirectCommands_[entry.index]);
+					break;
 				case CommandType::Dispatch:
 					visitor(dispatchCommands_[entry.index]);
 					break;
@@ -356,6 +392,14 @@ public:
 	[[nodiscard]] const BarrierCommand& GetBarrier(std::size_t cmdIndex) const {
 		return barrierCommands_[commands_[cmdIndex].index];
 	}
+	
+	[[nodiscard]] const DrawMeshTasksCommand& GetDrawMeshTasks(std::size_t cmdIndex) const {
+		return drawMeshTasksCommands_[commands_[cmdIndex].index];
+	}
+	
+	[[nodiscard]] const DrawMeshTasksIndirectCommand& GetDrawMeshTasksIndirect(std::size_t cmdIndex) const {
+		return drawMeshTasksIndirectCommands_[commands_[cmdIndex].index];
+	}
 
 private:
 
@@ -366,6 +410,10 @@ private:
 	std::vector<DrawIndexedCommand> drawIndexedCommands_;
 	std::vector<DrawWithPointersCommand> drawWithPointersCommands_;
 	std::vector<DrawIndirectWithPointersCommand> drawIndirectWithPointersCommands_;
+	
+	// Mesh shader commands
+	std::vector<DrawMeshTasksCommand> drawMeshTasksCommands_;
+	std::vector<DrawMeshTasksIndirectCommand> drawMeshTasksIndirectCommands_;
 	
 	// Compute commands
 	std::vector<DispatchCommand> dispatchCommands_;

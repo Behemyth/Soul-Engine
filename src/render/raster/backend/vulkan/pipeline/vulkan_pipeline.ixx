@@ -17,6 +17,13 @@ export enum class VertexFormat {
 	Custom,     // Use custom vertex attributes from reflection or explicit config
 };
 
+// Shader model determines pipeline type (vertex-based vs mesh shader)
+export enum class ShaderModel {
+	Vertex,     // Traditional vertex + fragment pipeline
+	Mesh,       // Mesh shader + fragment pipeline (no vertex input)
+	MeshTask,   // Task + Mesh + fragment pipeline (with GPU culling)
+};
+
 // Custom vertex attribute for reflection-based or explicit configuration
 export struct VertexAttribute {
 	std::uint32_t location = 0;
@@ -26,6 +33,7 @@ export struct VertexAttribute {
 
 // Pipeline configuration options
 export struct VulkanPipelineConfig {
+	ShaderModel shaderModel = ShaderModel::Vertex;  // Vertex or Mesh shader pipeline
 	VertexFormat vertexFormat = VertexFormat::None;
 	vk::PrimitiveTopology topology = vk::PrimitiveTopology::eTriangleList;
 	vk::PolygonMode polygonMode = vk::PolygonMode::eFill;
@@ -94,6 +102,38 @@ export struct VulkanPipelineConfig {
 			layoutCfg.descriptorSetLayouts.push_back(descriptorLayout);
 		}
 		config.layoutConfig = std::move(layoutCfg);
+		return config;
+	}
+	
+	// Helper for mesh shader pipeline with bindless data (no vertex input)
+	static VulkanPipelineConfig MeshShaderBindless() {
+		VulkanPipelineConfig config;
+		config.shaderModel = ShaderModel::Mesh;
+		config.vertexFormat = VertexFormat::None;  // Mesh shaders don't use vertex input
+		config.depthTest = true;
+		config.depthWrite = true;
+		return config;
+	}
+	
+	// Helper for task + mesh shader pipeline with GPU culling
+	static VulkanPipelineConfig MeshTaskShaderBindless() {
+		VulkanPipelineConfig config;
+		config.shaderModel = ShaderModel::MeshTask;
+		config.vertexFormat = VertexFormat::None;
+		config.depthTest = true;
+		config.depthWrite = true;
+		return config;
+	}
+	
+	// Helper for mesh shader depth-only pre-pass
+	static VulkanPipelineConfig MeshShaderDepthPrePass() {
+		VulkanPipelineConfig config;
+		config.shaderModel = ShaderModel::Mesh;
+		config.vertexFormat = VertexFormat::None;
+		config.depthTest = true;
+		config.depthWrite = true;
+		config.depthOnly = true;
+		config.depthCompareOp = vk::CompareOp::eLess;
 		return config;
 	}
 };

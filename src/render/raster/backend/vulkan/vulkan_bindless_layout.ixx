@@ -106,7 +106,9 @@ VulkanBindlessLayout::VulkanBindlessLayout(vk::Device device)
 	samplerBinding.binding = 0;
 	samplerBinding.descriptorType = vk::DescriptorType::eSampler;
 	samplerBinding.descriptorCount = MaxSamplerCount;
-	samplerBinding.stageFlags = vk::ShaderStageFlagBits::eFragment;
+	samplerBinding.stageFlags = vk::ShaderStageFlagBits::eFragment |
+	                            vk::ShaderStageFlagBits::eMeshEXT |
+	                            vk::ShaderStageFlagBits::eTaskEXT;
 	samplerBinding.pImmutableSamplers = nullptr;
 	
 	// Create sampler set layout (set 0) - for sampler descriptor buffer
@@ -122,7 +124,9 @@ VulkanBindlessLayout::VulkanBindlessLayout(vk::Device device)
 	textureBinding.binding = 0;
 	textureBinding.descriptorType = vk::DescriptorType::eSampledImage;
 	textureBinding.descriptorCount = MaxTextureCount;
-	textureBinding.stageFlags = vk::ShaderStageFlagBits::eFragment;
+	textureBinding.stageFlags = vk::ShaderStageFlagBits::eFragment |
+	                            vk::ShaderStageFlagBits::eMeshEXT |
+	                            vk::ShaderStageFlagBits::eTaskEXT;
 	textureBinding.pImmutableSamplers = nullptr;
 	
 	// Create texture set layout (set 1) - for resource descriptor buffer
@@ -137,7 +141,9 @@ VulkanBindlessLayout::VulkanBindlessLayout(vk::Device device)
 	vk::PushConstantRange pushConstantRange;
 	pushConstantRange.stageFlags = vk::ShaderStageFlagBits::eVertex | 
 	                               vk::ShaderStageFlagBits::eFragment |
-	                               vk::ShaderStageFlagBits::eCompute;
+	                               vk::ShaderStageFlagBits::eCompute |
+	                               vk::ShaderStageFlagBits::eMeshEXT |
+	                               vk::ShaderStageFlagBits::eTaskEXT;
 	pushConstantRange.offset = 0;
 	pushConstantRange.size = sizeof(RootConstants);
 	
