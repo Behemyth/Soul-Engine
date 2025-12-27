@@ -1,4 +1,7 @@
 add_subdirectory(
-	transput
+	render
 )
 
+add_subdirectory(
+	transput
+)
