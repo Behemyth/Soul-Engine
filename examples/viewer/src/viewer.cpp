@@ -1,9 +1,8 @@
 /**
- * @file viewer.cpp
- * @brief PBR Cube Viewer using "No Graphics API" bindless rendering pattern
+ * @brief PBR Cube Viewer
  * 
  * This example demonstrates:
- * - GPU pointer-based rendering (no descriptor sets)
+ * - GPU pointer-based rendering
  * - Bindless texture/sampler heaps
  * - Dynamic state for depth/stencil/blend
  * - Stage-only barriers
@@ -40,7 +39,7 @@ enum class RenderMode : std::int32_t {
 };
 
 // ============================================================================
-// GPU Data Structures (must match shader layout exactly)
+// GPU Data Structures
 // ============================================================================
 
 // Instance transform data (matches pbr.slang InstanceData)
